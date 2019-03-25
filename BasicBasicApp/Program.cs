@@ -53,13 +53,21 @@ namespace BasicBasicApp
             return 0;
         }
 
+//        static string _source = @"1
+//05 FOR I = 1. TO I = 10.01234 STEP .25
+//10 PRINT ""Hello""
+//15
+//20 NEXT I
+//25 asfdfgd dfg dfkg dsgjuldjg lsdkjgusldfjg duslfkgj sudlgkj
+//30
+//99 END
+//";
+
         static string _source = @"1
-05 FOR I = 1 TO I = 10 DO
-10 PRINT ""Hello""
+10 PRINT a1
+11 print b$
+12 PRINT ""Hello, world!""
 15
-20 NEXT I
-25 asfdfgd dfg dfkg dsgjuldjg lsdkjgusldfjg duslfkgj sudlgkj
-30
 99 END
 ";
     }

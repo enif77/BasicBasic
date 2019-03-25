@@ -20,11 +20,6 @@ namespace BasicBasic
 
         public Interpreter()
         {
-            // label :: integer <1 .. 99>
-            
-
-            // variable = float <'A' .. 'Z'>
-            _vars = new float['Z' - 'A'];
         }
 
         #endregion
@@ -55,7 +50,7 @@ namespace BasicBasic
             _source = source;
             _programLines = new ProgramLine[MaxLabel + 1];
 
-            ScanForLabels();
+            ScanSource();
             InterpretImpl();
             
             return 0;
@@ -88,6 +83,31 @@ namespace BasicBasic
             while (tok != TOK_EOLN)
             {
                 // Do something.
+                if (tok == TOK_INT)
+                {
+                    Console.WriteLine("INT " + _intValue);
+                }
+                else if (tok == TOK_NUM)
+                {
+                    Console.WriteLine("NUM " + _numValue);
+                }
+
+                else if (tok == TOK_VARIDNT)
+                {
+                    Console.WriteLine("NUMVAR " + _strValue);
+                }
+                else if (tok == TOK_STRIDNT)
+                {
+                    Console.WriteLine("STRVAR " + _strValue);
+                }
+                else if (tok == TOK_QSTR)
+                {
+                    Console.WriteLine("QSTR '" + _strValue + "'");
+                }
+                else if (tok >= TOK_FIRST_KEY && tok <= TOK_LAST_KEY)
+                {
+                    Console.WriteLine("KEY " + _strValue);
+                }
 
                 tok = NextToken();
             }
@@ -106,9 +126,22 @@ namespace BasicBasic
             var c = NextChar();
             while (c != C_EOLN)
             {
-                // Tokenize.
-
                 //Console.WriteLine("C[{0:00}]: {1}", _currentProgramLinePos, c);
+
+                if (IsDigit(c) || c == '.')
+                {
+                    return ParseNumber(c);
+                }
+
+                if (IsLetter(c))
+                {
+                    return ParseIdent(c);
+                }
+
+                if (c == '"')
+                {
+                    return ParseQuotedString(c);
+                }
 
                 c = NextChar();
             }
@@ -116,10 +149,145 @@ namespace BasicBasic
             return TOK_EOLN;
         }
 
+        // A or A5 -> numeric var name
+        // A$ -> string var name
+        // A(..) -> array var name
+        // PRINT -> a key word
+        private int ParseIdent(char c)
+        {
+            var tok = TOK_VARIDNT;
+            var strValue = c.ToString();
+
+            c = NextChar();
+
+            if (IsDigit(c))
+            {
+                // A numeric Ax variable.
+                strValue += c;
+
+                _strValue = strValue.ToUpperInvariant();
+            }
+            else if (c == '$')
+            {
+                // A string A$ variable.
+                tok = TOK_STRIDNT;
+
+                _strValue = strValue.ToUpperInvariant();
+            }
+            else if (IsLetter(c))
+            {
+                // A key word?
+                while (IsLetter(c))
+                {
+                    strValue += c;
+
+                    c = NextChar();
+                }
+
+                strValue = strValue.ToUpperInvariant();
+
+                if (_keyWordsMap.ContainsKey(strValue))
+                {
+                    tok = _keyWordsMap[strValue];
+
+                    // Go one char back, so the next time we will read the character behind this identifier.
+                    _currentProgramLinePos--;
+                }
+                else
+                {
+                    throw new InterpreterException(string.Format("unknown token '{0}' at line {1}.", strValue, _currentProgramLine.Label));
+                }
+
+                _strValue = strValue;
+            }
+
+            return tok;
+        }
+
+
+        // '"' ... '"'
+        private int ParseQuotedString(char c)
+        {
+            var strValue = string.Empty;
+
+            c = NextChar();
+            while (c != '"' && c != C_EOLN)
+            {
+                strValue += c;
+
+                c = NextChar();
+            }
+
+            if (c != '"')
+            {
+                throw new InterpreterException(string.Format("Unexpected end of quoted string at line {0}.", _currentProgramLine.Label));
+            }
+
+            _strValue = strValue;
+
+            return TOK_QSTR;
+        }
+
+
+        // 123 -> integer
+        // 12.3 -> number
+        // 12. -> number
+        // .12 -> number
+        private int ParseNumber(char c)
+        {
+            var tok = TOK_INT;
+            var intValue = 0;
+            while (IsDigit(c))
+            {
+                intValue = intValue * 10 + (c - '0');
+
+                c = NextChar();
+            }
+
+            if (c == '.')
+            {
+                var numValue = (float)intValue;
+                var exp = 0.1f;
+
+                c = NextChar();
+                while (IsDigit(c))
+                {
+                    numValue += (c - '0') * exp;
+                    exp *= 0.1f;
+
+                    c = NextChar();
+                }
+
+                _numValue = numValue;
+                tok = TOK_NUM;
+            }
+            else
+            {
+                _intValue = intValue;
+            }
+            
+            // Go one char back, so the next time we will read the character behind this number.
+            _currentProgramLinePos--;
+
+            return tok;
+        }
+
 
         private char NextChar()
         {
             return _source[_currentProgramLine.Start + _currentProgramLinePos++];
+        }
+
+
+        private bool IsDigit(char c)
+        {
+            return c >= '0' && c <= '9';
+        }
+
+
+        private bool IsLetter(char c)
+        {
+            return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
         }
 
         
@@ -138,7 +306,7 @@ namespace BasicBasic
         }
 
 
-        private void ScanForLabels()
+        private void ScanSource()
         {
             ProgramLine programLine = null;
             var atLineStart = true;
@@ -153,11 +321,11 @@ namespace BasicBasic
                     programLine = new ProgramLine();
 
                     // Label.
-                    if (char.IsDigit(c))
+                    if (IsDigit(c))
                     {
                         var programLineStart = i;
                         var label = 0;
-                        while (char.IsDigit(c))
+                        while (IsDigit(c))
                         {
                             label = label * 10 + (c - '0');
 
@@ -256,8 +424,59 @@ namespace BasicBasic
         private const char C_EOLN = '\n';
 
         private const int TOK_EOLN = 0;
+        private const int TOK_VARIDNT = 5;
+        private const int TOK_STRIDNT = 6;
+        private const int TOK_INT = 10;
+        private const int TOK_NUM = 11;
+        private const int TOK_QSTR = 12;
 
-        private float[] _vars;
+        private const int TOK_FIRST_KEY = 100;
+        //private const int TOK_KEY_BASE = 100;
+        //private const int TOK_KEY_DATA = 101;
+        //private const int TOK_KEY_DEF = 102;
+        //private const int TOK_KEY_DIM = 103;
+        private const int TOK_KEY_END = 104;
+        //private const int TOK_KEY_FOR = 105;
+        //private const int TOK_KEY_GO = 106;
+        //private const int TOK_KEY_GOSUB = 107;
+        //private const int TOK_KEY_GOTO = 108;
+        //private const int TOK_KEY_IF = 109;
+        //private const int TOK_KEY_INPUT = 110;
+        private const int TOK_KEY_LET = 111;
+        //private const int TOK_KEY_NEXT = 112;
+        //private const int TOK_KEY_ON = 113;
+        //private const int TOK_KEY_OPTION = 114;
+        private const int TOK_KEY_PRINT = 115;
+        //private const int TOK_KEY_RANDOMIZE = 116;
+        //private const int TOK_KEY_READ = 117;
+        //private const int TOK_KEY_REM = 118;
+        //private const int TOK_KEY_RESTORE = 119;
+        //private const int TOK_KEY_RETURN = 120;
+        //private const int TOK_KEY_STEP = 121;
+        //private const int TOK_KEY_STOP = 122;
+        //private const int TOK_KEY_SUB = 123;
+        //private const int TOK_KEY_THEN = 124;
+        private const int TOK_LAST_KEY = 124;
+
+        private readonly Dictionary<string, int> _keyWordsMap = new Dictionary<string, int>()
+        {
+            { "END", TOK_KEY_END },
+            { "LET", TOK_KEY_LET },
+            { "PRINT", TOK_KEY_PRINT },
+        };
+
+        /// <summary>
+        /// A value of the TOK_INT.
+        /// </summary>
+        private int _intValue = 0;
+
+        /// <summary>
+        /// A value of the TOK_NUM.
+        /// </summary>
+        private float _numValue = 0.0f;
+
+        // A value of TOK_VARIDNT, TOK_STRIDNT or TOK_KEYW tokens.
+        private string _strValue = null;
 
         #endregion
     }
