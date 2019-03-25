@@ -45,7 +45,7 @@ namespace BasicBasicApp
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine(ex);
+                Console.Error.WriteLine(ex.Message);
 
                 return 1;
             }
@@ -53,22 +53,31 @@ namespace BasicBasicApp
             return 0;
         }
 
-//        static string _source = @"1
-//05 FOR I = 1. TO I = 10.01234 STEP .25
-//10 PRINT ""Hello""
-//15
-//20 NEXT I
-//25 asfdfgd dfg dfkg dsgjuldjg lsdkjgusldfjg duslfkgj sudlgkj
-//30
-//99 END
-//";
+        //        static string _source = @"1
+        //05 FOR I = 1. TO I = 10.01234 STEP .25
+        //10 PRINT ""Hello""
+        //15
+        //20 NEXT I
+        //25 asfdfgd dfg dfkg dsgjuldjg lsdkjgusldfjg duslfkgj sudlgkj
+        //30
+        //99 END
+        //";
 
-        static string _source = @"1
-10 PRINT a1
-11 print b$
-12 PRINT ""Hello, world!""
-15
-99 END
+        //        static string _source = @"1
+        //10 PRINT a1
+        //11 print b$
+        //12 PRINT ""Hello, world!""
+        //15
+        //99 END
+        //";
+
+        static string _source = @"10 PRINT 11
+11 PRINT ,;,;,;
+12 PRINT
+13 print 58, "" ""; 45; "" "", 78 
+14 PRINT ""Hello, world!""
+50 end
 ";
+
     }
 }

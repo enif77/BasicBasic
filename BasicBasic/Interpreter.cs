@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -45,7 +46,7 @@ namespace BasicBasic
 
         public int Interpret(string source)
         {
-            if (source == null) throw new InterpreterException("A source expected.");
+            if (source == null) Error("A source expected.");
 
             _source = source;
             _programLines = new ProgramLine[MaxLabel + 1];
@@ -64,10 +65,17 @@ namespace BasicBasic
         
         private void InterpretImpl()
         {
+            _wasEnd = false;
+
             var programLine = NextProgramLine(0);
             while (programLine != null)
             {
                 programLine = InterpretLine(programLine);
+            }
+
+            if (_wasEnd == false)
+            {
+                Error("Unexpected end of program.");
             }
         }
 
@@ -80,39 +88,155 @@ namespace BasicBasic
             _currentProgramLinePos = 0;
 
             var tok = NextToken();
+            if (tok != TOK_INT)
+            {
+                Error("A label expected at line {0}.", _currentProgramLine.Label);
+            }
+
+            // The label.
+            var label = _intValue;
+
+            // Eat the label.
+            tok = NextToken();
+
+            // The statement.
+            switch (tok)
+            {
+                case TOK_KEY_END:
+                    return EndStatement();
+
+                case TOK_KEY_LET:
+                    // let var = exp.
+                    // var = num-var or string-var
+                    // exp = number or "string"
+                    break;
+
+                case TOK_KEY_PRINT:
+                    return PrintStatement();
+                    
+                default:
+                    Error("Unexpected token {0} at line {1}.", tok, _currentProgramLine.Label);
+                    break;
+            }
+
+
+            //while (tok != TOK_EOLN)
+            //{
+            //    // Do something.
+            //    if (tok == TOK_INT)
+            //    {
+            //        Console.WriteLine("INT " + _intValue);
+            //    }
+            //    else if (tok == TOK_NUM)
+            //    {
+            //        Console.WriteLine("NUM " + _numValue);
+            //    }
+
+            //    else if (tok == TOK_VARIDNT)
+            //    {
+            //        Console.WriteLine("NUMVAR " + _strValue);
+            //    }
+            //    else if (tok == TOK_STRIDNT)
+            //    {
+            //        Console.WriteLine("STRVAR " + _strValue);
+            //    }
+            //    else if (tok == TOK_QSTR)
+            //    {
+            //        Console.WriteLine("QSTR '" + _strValue + "'");
+            //    }
+            //    else if (tok >= TOK_FIRST_KEY && tok <= TOK_LAST_KEY)
+            //    {
+            //        Console.WriteLine("KEY " + _strValue);
+            //    }
+
+            //    tok = NextToken();
+            //}
+
+            return NextProgramLine(programLine.Label);
+        }
+
+        // The end of execution.
+        // END EOLN
+        private ProgramLine EndStatement()
+        {
+            if (NextToken() != TOK_EOLN)
+            {
+                Error("Unexpected extra token at the end of the program at line {0}.", _currentProgramLine.Label);
+            }
+
+            var thisLine = _currentProgramLine;
+            var nextLine = NextProgramLine(_currentProgramLine.Label);
+            if (nextLine != null)
+            {
+                Error("Unexpected END statement at line {0}.", thisLine.Label);
+            }
+
+            _wasEnd = true;
+
+            return null;
+        }
+
+
+        // PRINT [ expr [ print-sep expr ] ] EOLN
+        // expr :: "string" | number
+        // print-sep :: ';' | ','
+        private ProgramLine PrintStatement()
+        {
+            bool atSep = true;
+            var tok = NextToken();
             while (tok != TOK_EOLN)
             {
-                // Do something.
-                if (tok == TOK_INT)
+                switch (tok)
                 {
-                    Console.WriteLine("INT " + _intValue);
-                }
-                else if (tok == TOK_NUM)
-                {
-                    Console.WriteLine("NUM " + _numValue);
-                }
+                    case TOK_INT:
+                        if (atSep == false)
+                        {
+                            Error("A list separator expected at line {0}.", _currentProgramLine.Label);
+                        }
+                        Console.Write(_intValue.ToString(CultureInfo.InvariantCulture));
+                        atSep = false;
+                        break;
 
-                else if (tok == TOK_VARIDNT)
-                {
-                    Console.WriteLine("NUMVAR " + _strValue);
-                }
-                else if (tok == TOK_STRIDNT)
-                {
-                    Console.WriteLine("STRVAR " + _strValue);
-                }
-                else if (tok == TOK_QSTR)
-                {
-                    Console.WriteLine("QSTR '" + _strValue + "'");
-                }
-                else if (tok >= TOK_FIRST_KEY && tok <= TOK_LAST_KEY)
-                {
-                    Console.WriteLine("KEY " + _strValue);
+                    case TOK_NUM:
+                        if (atSep == false)
+                        {
+                            Error("A list separator expected at line {0}.", _currentProgramLine.Label);
+                        }
+                        Console.Write(_numValue.ToString(CultureInfo.InvariantCulture));
+                        atSep = false;
+                        break;
+
+                    case TOK_QSTR:
+                        if (atSep == false)
+                        {
+                            Error("A list separator expected at line {0}.", _currentProgramLine.Label);
+                        }
+                        Console.Write(_strValue);
+                        atSep = false;
+                        break;
+
+                    case TOK_LSTSEP:
+                    case TOK_PLSTSEP:
+                        // Consume these.
+                        atSep = true;
+                        break;
+
+                    default:
+                        UnexpectedTokenError(tok);
+                        break;
                 }
 
                 tok = NextToken();
             }
 
-            return NextProgramLine(programLine.Label);
+            if (tok != TOK_EOLN)
+            {
+                UnexpectedTokenError(tok);
+            }
+
+            Console.WriteLine();
+
+            return NextProgramLine(_currentProgramLine.Label);
         }
 
 
@@ -120,7 +244,7 @@ namespace BasicBasic
         {
             if (_currentProgramLine.Start + _currentProgramLinePos > _currentProgramLine.End)
             {
-                throw new InterpreterException(string.Format("Read beyond the line end at line {0}.", _currentProgramLine.Label));
+                Error("Read beyond the line end at line {0}.", _currentProgramLine.Label);
             }
 
             var c = NextChar();
@@ -141,6 +265,16 @@ namespace BasicBasic
                 if (c == '"')
                 {
                     return ParseQuotedString(c);
+                }
+
+                if (c == ';')
+                {
+                    return TOK_PLSTSEP;
+                }
+
+                if (c == ',')
+                {
+                    return TOK_LSTSEP;
                 }
 
                 c = NextChar();
@@ -195,7 +329,7 @@ namespace BasicBasic
                 }
                 else
                 {
-                    throw new InterpreterException(string.Format("unknown token '{0}' at line {1}.", strValue, _currentProgramLine.Label));
+                    Error("unknown token '{0}' at line {1}.", strValue, _currentProgramLine.Label);
                 }
 
                 _strValue = strValue;
@@ -220,7 +354,7 @@ namespace BasicBasic
 
             if (c != '"')
             {
-                throw new InterpreterException(string.Format("Unexpected end of quoted string at line {0}.", _currentProgramLine.Label));
+                Error("Unexpected end of quoted string at line {0}.", _currentProgramLine.Label);
             }
 
             _strValue = strValue;
@@ -400,6 +534,18 @@ namespace BasicBasic
         }
 
 
+        private void UnexpectedTokenError(int tok)
+        {
+            Error("Unexpected token {0} at line {1}.", tok, _currentProgramLine.Label);
+        }
+
+
+        private void Error(string message, params object[] args)
+        {
+            throw new InterpreterException(string.Format(message, args));
+        }
+
+
         private class ProgramLine
         {
             public int Label { get; set; }
@@ -417,6 +563,7 @@ namespace BasicBasic
 
 
         private string _source;
+        private bool _wasEnd = false;
         private int _currentProgramLinePos;
         private ProgramLine _currentProgramLine;
         private ProgramLine[] _programLines;
@@ -429,6 +576,9 @@ namespace BasicBasic
         private const int TOK_INT = 10;
         private const int TOK_NUM = 11;
         private const int TOK_QSTR = 12;
+
+        private const int TOK_PLSTSEP = 20;  // ;
+        private const int TOK_LSTSEP = 21;  // ,
 
         private const int TOK_FIRST_KEY = 100;
         //private const int TOK_KEY_BASE = 100;
