@@ -54,11 +54,12 @@ namespace BasicBasicApp
         }
 
         static string _source = @"1
- 5 FOR I = 1 TO I = 10 DO
+05 FOR I = 1 TO I = 10 DO
 10 PRINT ""Hello""
 15
 20 NEXT I
-
-30";
+25 asfdfgd dfg dfkg dsgjuldjg lsdkjgusldfjg duslfkgj sudlgkj
+30
+99 END";
     }
 }

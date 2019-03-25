@@ -11,6 +11,7 @@ namespace BasicBasic
         #region constants
 
         public readonly int MaxLabel = 99;
+        public readonly int MaxProgramLineLength = 72;  // ECMA-55
 
         #endregion
 
@@ -110,16 +111,10 @@ namespace BasicBasic
                 {
                     programLine = new ProgramLine();
 
-                    // Skip white chars.
-                    if (c <= ' ' && c != '\n')
-                    {
-                        continue;
-                    }
-
                     // Label.
                     if (char.IsDigit(c))
                     {
-                        programLine.Start = i;
+                        var programLineStart = i;
                         var label = 0;
                         while (char.IsDigit(c))
                         {
@@ -144,8 +139,9 @@ namespace BasicBasic
                             throw new InterpreterException(string.Format("Label {0} redefinition at line {1}.", label, line));
                         }
 
-                        // Remember this line's label.
+                        // Remember this program line.
                         programLine.Label = label;
+                        programLine.Start = programLineStart;
 
                         // Remember this line.
                         _programLines[label - 1] = programLine;
@@ -155,12 +151,28 @@ namespace BasicBasic
 
                         atLineStart = false;
                     }
+                    else
+                    {
+                        throw new InterpreterException(string.Format("Label not found at line {0}.", line));
+                    }
                 }
+
+                //// Skip white chars.
+                //if (c <= ' ' && c != '\n')
+                //{
+                //    continue;
+                //}
 
                 if (c == '\n')
                 {
                     // The character before '\n'.
                     programLine.End = i - 1;
+
+                    // Max program line length check.
+                    if (programLine.Length > MaxProgramLineLength)
+                    {
+                        throw new InterpreterException(string.Format("The line {0} is longer than {1} characters.", line, MaxProgramLineLength));
+                    }
 
                     // We are done with this line.
                     programLine = null;
@@ -188,6 +200,8 @@ namespace BasicBasic
             public int Label { get; set; }
             public int Start { get; set; }
             public int End { get; set; }
+
+            public int Length { get { return (End - Start) + 1; } }
 
 
             public override string ToString()
