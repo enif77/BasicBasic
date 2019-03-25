@@ -21,7 +21,7 @@ namespace BasicBasic
         public Interpreter()
         {
             // label :: integer <1 .. 99>
-            _programLines = new ProgramLine[MaxLabel + 1];
+            
 
             // variable = float <'A' .. 'Z'>
             _vars = new float['Z' - 'A'];
@@ -52,8 +52,11 @@ namespace BasicBasic
         {
             if (source == null) throw new InterpreterException("A source expected.");
 
-            ScanForLabels(source);
-            InterpretImpl(source);
+            _source = source;
+            _programLines = new ProgramLine[MaxLabel + 1];
+
+            ScanForLabels();
+            InterpretImpl();
             
             return 0;
         }
@@ -64,24 +67,62 @@ namespace BasicBasic
 
         #region private
         
-        private void InterpretImpl(string source)
+        private void InterpretImpl()
         {
             var programLine = NextProgramLine(0);
             while (programLine != null)
             {
-                programLine = InterpretLine(source, programLine);
+                programLine = InterpretLine(programLine);
             }
         }
 
 
-        private ProgramLine InterpretLine(string source, ProgramLine programLine)
+        private ProgramLine InterpretLine(ProgramLine programLine)
         {
-            Console.WriteLine("{0:000} -> {1}", programLine.Label, source.Substring(programLine.Start, (programLine.End - programLine.Start) + 1));
+            Console.WriteLine("{0:000} -> {1}", programLine.Label, _source.Substring(programLine.Start, (programLine.End - programLine.Start) + 1));
+
+            _currentProgramLine = programLine;
+            _currentProgramLinePos = 0;
+
+            var tok = NextToken();
+            while (tok != TOK_EOLN)
+            {
+                // Do something.
+
+                tok = NextToken();
+            }
 
             return NextProgramLine(programLine.Label);
         }
 
 
+        private int NextToken()
+        {
+            if (_currentProgramLine.Start + _currentProgramLinePos > _currentProgramLine.End)
+            {
+                throw new InterpreterException(string.Format("Read beyond the line end at line {0}.", _currentProgramLine.Label));
+            }
+
+            var c = NextChar();
+            while (c != C_EOLN)
+            {
+                // Tokenize.
+
+                //Console.WriteLine("C[{0:00}]: {1}", _currentProgramLinePos, c);
+
+                c = NextChar();
+            }
+
+            return TOK_EOLN;
+        }
+
+
+        private char NextChar()
+        {
+            return _source[_currentProgramLine.Start + _currentProgramLinePos++];
+        }
+
+        
         private ProgramLine NextProgramLine(int fromLabel)
         {
             // Skip program lines without code.
@@ -97,15 +138,15 @@ namespace BasicBasic
         }
 
 
-        private void ScanForLabels(string source)
+        private void ScanForLabels()
         {
             ProgramLine programLine = null;
             var atLineStart = true;
             var line = 1;
             var i = 0;
-            for (; i < source.Length; i++)
+            for (; i < _source.Length; i++)
             {
-                var c = source[i];
+                var c = _source[i];
 
                 if (atLineStart)
                 {
@@ -121,12 +162,12 @@ namespace BasicBasic
                             label = label * 10 + (c - '0');
 
                             i++;
-                            if (i >= source.Length)
+                            if (i >= _source.Length)
                             {
                                 break;
                             }
 
-                            c = source[i];
+                            c = _source[i];
                         }
 
                         if (label < 1 || label > MaxLabel)
@@ -163,7 +204,7 @@ namespace BasicBasic
                 //    continue;
                 //}
 
-                if (c == '\n')
+                if (c == C_EOLN)
                 {
                     // The character before '\n'.
                     programLine.End = i - 1;
@@ -186,11 +227,7 @@ namespace BasicBasic
             // The last line does not ended with the '\n' character.
             if (programLine != null)
             {
-                programLine.End = source.Length - 1;
-                if (programLine.End < 0)
-                {
-                    programLine.End = 0;
-                }
+                throw new InterpreterException(string.Format("No line end at line {0}.", line));
             }
         }
 
@@ -211,9 +248,40 @@ namespace BasicBasic
         }
 
 
+        private string _source;
+        private int _currentProgramLinePos;
+        private ProgramLine _currentProgramLine;
         private ProgramLine[] _programLines;
+
+        private const char C_EOLN = '\n';
+
+        private const int TOK_EOLN = 0;
+
         private float[] _vars;
 
         #endregion
     }
 }
+
+/*
+
+5.2   _S_y_n_t_a_x
+
+1. program          = block* end-line
+2. block            = (line/for-block)*
+3. line             = line-number statement end-of-line
+4. line-number      = digit digit? digit? digit?
+5. end-of-line      = [implementation defined]
+6. end-line         = line-number end-statement end-of-line
+7. end-statement    = END
+8. statement        = data-statement / def-statement /
+                        dimension -statement / gosub-statement /
+                        goto-statement / if-then-statement /
+                        input-statement / let-statement /
+                        on-goto-statement / option-statement /
+                        print-statement / randomize-statement /
+                        read-statement / remark-statement /
+                        restore-statement / return-statement /
+                        stop statement 
+     
+*/

@@ -60,6 +60,7 @@ namespace BasicBasicApp
 20 NEXT I
 25 asfdfgd dfg dfkg dsgjuldjg lsdkjgusldfjg duslfkgj sudlgkj
 30
-99 END";
+99 END
+";
     }
 }
