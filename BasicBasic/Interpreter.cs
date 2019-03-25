@@ -66,6 +66,8 @@ namespace BasicBasic
         private void InterpretImpl()
         {
             _wasEnd = false;
+            _nvars = new Dictionary<string, float>();
+            _svars = new Dictionary<string, string>();
 
             var programLine = NextProgramLine(0);
             while (programLine != null)
@@ -90,7 +92,7 @@ namespace BasicBasic
             var tok = NextToken();
             if (tok != TOK_INT)
             {
-                Error("A label expected at line {0}.", _currentProgramLine.Label);
+                UnexpectedTokenError(tok);
             }
 
             // The label.
@@ -102,22 +104,16 @@ namespace BasicBasic
             // The statement.
             switch (tok)
             {
-                case TOK_KEY_END:
-                    return EndStatement();
-
-                case TOK_KEY_LET:
-                    // let var = exp.
-                    // var = num-var or string-var
-                    // exp = number or "string"
-                    break;
-
-                case TOK_KEY_PRINT:
-                    return PrintStatement();
+                case TOK_KEY_END: return EndStatement();
+                case TOK_KEY_LET: return LetStatement();
+                case TOK_KEY_PRINT: return PrintStatement();
                     
                 default:
-                    Error("Unexpected token {0} at line {1}.", tok, _currentProgramLine.Label);
+                    UnexpectedTokenError(tok);
                     break;
             }
+
+            return null;
 
 
             //while (tok != TOK_EOLN)
@@ -152,7 +148,7 @@ namespace BasicBasic
             //    tok = NextToken();
             //}
 
-            return NextProgramLine(programLine.Label);
+            //return NextProgramLine(programLine.Label);
         }
 
         // The end of execution.
@@ -174,6 +170,105 @@ namespace BasicBasic
             _wasEnd = true;
 
             return null;
+        }
+
+
+        // LET var = expr
+        // var :: num-var | string-var
+        // expr :: "string" | number
+        private ProgramLine LetStatement()
+        {
+            string varName = null;
+            bool isStr;
+
+            var tok = NextToken();
+
+            // var
+            if (tok == TOK_VARIDNT)
+            {
+                varName = _strValue;
+                isStr = false;
+            }
+            else if (tok == TOK_STRIDNT)
+            {
+                varName = _strValue;
+                isStr = true;
+            }
+            else
+            {
+                UnexpectedTokenError(tok);
+            }
+
+            // '=' 
+            tok = NextToken();
+            if (tok != TOK_EQL)
+            {
+                UnexpectedTokenError(tok);
+            }
+
+            // expr
+            tok = NextToken();
+
+            switch (tok)
+            {
+                case TOK_INT:
+                    SetVar(varName, _intValue);
+                    break;
+
+                case TOK_NUM:
+                    SetVar(varName, _numValue);
+                    break;
+
+                case TOK_QSTR:
+                    SetVar(varName, _strValue);
+                    break;
+
+                default:
+                    UnexpectedTokenError(tok);
+                    break;
+            }
+
+            tok = NextToken();
+            if (tok != TOK_EOLN)
+            {
+                UnexpectedTokenError(tok);
+            }
+
+            return NextProgramLine(_currentProgramLine.Label);
+        }
+
+
+        private float GetNVar(string varName)
+        {
+            return _nvars.ContainsKey(varName) ? _nvars[varName] : 0;
+        }
+
+
+        private void SetVar(string varName, float v)
+        {
+            if (_nvars.ContainsKey(varName))
+            {
+                _nvars.Remove(varName);
+            }
+
+            _nvars.Add(varName, v);
+        }
+
+
+        private string GetSVar(string varName)
+        {
+            return _svars.ContainsKey(varName) ? _svars[varName] : string.Empty;
+        }
+
+
+        private void SetVar(string varName, string v)
+        {
+            if (_svars.ContainsKey(varName))
+            {
+                _svars.Remove(varName);
+            }
+
+            _svars.Add(varName, v);
         }
 
 
@@ -212,6 +307,16 @@ namespace BasicBasic
                             Error("A list separator expected at line {0}.", _currentProgramLine.Label);
                         }
                         Console.Write(_strValue);
+                        atSep = false;
+                        break;
+
+                    case TOK_VARIDNT:
+                        Console.Write(GetNVar(_strValue));
+                        atSep = false;
+                        break;
+
+                    case TOK_STRIDNT:
+                        Console.Write(GetSVar(_strValue));
                         atSep = false;
                         break;
 
@@ -275,6 +380,11 @@ namespace BasicBasic
                 if (c == ',')
                 {
                     return TOK_LSTSEP;
+                }
+
+                if (c == '=')
+                {
+                    return TOK_EQL;
                 }
 
                 c = NextChar();
@@ -563,10 +673,13 @@ namespace BasicBasic
 
 
         private string _source;
-        private bool _wasEnd = false;
         private int _currentProgramLinePos;
         private ProgramLine _currentProgramLine;
         private ProgramLine[] _programLines;
+
+        private bool _wasEnd = false;
+        private Dictionary<string, float> _nvars;
+        private Dictionary<string, string> _svars;
 
         private const char C_EOLN = '\n';
 
@@ -579,6 +692,8 @@ namespace BasicBasic
 
         private const int TOK_PLSTSEP = 20;  // ;
         private const int TOK_LSTSEP = 21;  // ,
+
+        private const int TOK_EQL = 30;  // =
 
         private const int TOK_FIRST_KEY = 100;
         //private const int TOK_KEY_BASE = 100;

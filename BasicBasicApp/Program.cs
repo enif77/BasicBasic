@@ -72,9 +72,9 @@ namespace BasicBasicApp
         //";
 
         static string _source = @"10 PRINT 11
-11 PRINT ,;,;,;
+11 LET A3 = 66
 12 PRINT
-13 print 58, "" ""; 45; "" "", 78 
+13 print a3, "" ""; 45; "" "", 78 
 14 PRINT ""Hello, world!""
 50 end
 ";
