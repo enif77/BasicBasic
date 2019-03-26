@@ -90,16 +90,6 @@ namespace BasicBasic
             _currentProgramLinePos = 0;
 
             var tok = NextToken();
-            if (tok != TOK_INT)
-            {
-                UnexpectedTokenError(tok);
-            }
-
-            // The label.
-            var label = _intValue;
-
-            // Eat the label.
-            tok = NextToken();
 
             // The statement.
             switch (tok)
@@ -151,6 +141,8 @@ namespace BasicBasic
             //return NextProgramLine(programLine.Label);
         }
 
+        #region statements
+
         // The end of execution.
         // END EOLN
         private ProgramLine EndStatement()
@@ -173,13 +165,12 @@ namespace BasicBasic
         }
 
 
-        // LET var = expr
+        // LET var = expr EOLN
         // var :: num-var | string-var
-        // expr :: "string" | number
         private ProgramLine LetStatement()
         {
             string varName = null;
-            bool isStr;
+            bool isStringVar = false;
 
             var tok = NextToken();
 
@@ -187,12 +178,11 @@ namespace BasicBasic
             if (tok == TOK_VARIDNT)
             {
                 varName = _strValue;
-                isStr = false;
             }
             else if (tok == TOK_STRIDNT)
             {
                 varName = _strValue;
-                isStr = true;
+                isStringVar = true;
             }
             else
             {
@@ -207,26 +197,7 @@ namespace BasicBasic
             }
 
             // expr
-            tok = NextToken();
-
-            switch (tok)
-            {
-                case TOK_INT:
-                    SetVar(varName, _intValue);
-                    break;
-
-                case TOK_NUM:
-                    SetVar(varName, _numValue);
-                    break;
-
-                case TOK_QSTR:
-                    SetVar(varName, _strValue);
-                    break;
-
-                default:
-                    UnexpectedTokenError(tok);
-                    break;
-            }
+            SetVar(varName, isStringVar, Expression(NextToken()));
 
             tok = NextToken();
             if (tok != TOK_EOLN)
@@ -236,44 +207,9 @@ namespace BasicBasic
 
             return NextProgramLine(_currentProgramLine.Label);
         }
-
-
-        private float GetNVar(string varName)
-        {
-            return _nvars.ContainsKey(varName) ? _nvars[varName] : 0;
-        }
-
-
-        private void SetVar(string varName, float v)
-        {
-            if (_nvars.ContainsKey(varName))
-            {
-                _nvars.Remove(varName);
-            }
-
-            _nvars.Add(varName, v);
-        }
-
-
-        private string GetSVar(string varName)
-        {
-            return _svars.ContainsKey(varName) ? _svars[varName] : string.Empty;
-        }
-
-
-        private void SetVar(string varName, string v)
-        {
-            if (_svars.ContainsKey(varName))
-            {
-                _svars.Remove(varName);
-            }
-
-            _svars.Add(varName, v);
-        }
-
+                 
 
         // PRINT [ expr [ print-sep expr ] ] EOLN
-        // expr :: "string" | number
         // print-sep :: ';' | ','
         private ProgramLine PrintStatement()
         {
@@ -283,51 +219,19 @@ namespace BasicBasic
             {
                 switch (tok)
                 {
-                    case TOK_INT:
-                        if (atSep == false)
-                        {
-                            Error("A list separator expected at line {0}.", _currentProgramLine.Label);
-                        }
-                        Console.Write(_intValue.ToString(CultureInfo.InvariantCulture));
-                        atSep = false;
-                        break;
-
-                    case TOK_NUM:
-                        if (atSep == false)
-                        {
-                            Error("A list separator expected at line {0}.", _currentProgramLine.Label);
-                        }
-                        Console.Write(_numValue.ToString(CultureInfo.InvariantCulture));
-                        atSep = false;
-                        break;
-
-                    case TOK_QSTR:
-                        if (atSep == false)
-                        {
-                            Error("A list separator expected at line {0}.", _currentProgramLine.Label);
-                        }
-                        Console.Write(_strValue);
-                        atSep = false;
-                        break;
-
-                    case TOK_VARIDNT:
-                        Console.Write(GetNVar(_strValue));
-                        atSep = false;
-                        break;
-
-                    case TOK_STRIDNT:
-                        Console.Write(GetSVar(_strValue));
-                        atSep = false;
-                        break;
-
+                    // Consume these.
                     case TOK_LSTSEP:
                     case TOK_PLSTSEP:
-                        // Consume these.
                         atSep = true;
                         break;
 
                     default:
-                        UnexpectedTokenError(tok);
+                        if (atSep == false)
+                        {
+                            Error("A list separator expected at line {0}.", _currentProgramLine.Label);
+                        }
+                        Console.Write(Expression(tok));
+                        atSep = false;
                         break;
                 }
 
@@ -344,6 +248,60 @@ namespace BasicBasic
             return NextProgramLine(_currentProgramLine.Label);
         }
 
+
+        // expr :: "string" | number | var-ident
+        private Value Expression(int tok)
+        {
+            switch (tok)
+            {
+                case TOK_INT: return Value.Numeric(_intValue);
+                case TOK_NUM: return Value.Numeric(_numValue);
+                case TOK_QSTR: return Value.String(_strValue);
+                case TOK_VARIDNT: return Value.Numeric(GetNVar(_strValue));
+                case TOK_STRIDNT: return Value.String(GetSVar(_strValue));
+
+                default:
+                    UnexpectedTokenError(tok);
+                    break;
+            }
+
+            return null;
+        }
+
+        #endregion
+
+
+        private float GetNVar(string varName)
+        {
+            return _nvars.ContainsKey(varName) ? _nvars[varName] : 0;
+        }
+
+
+        private string GetSVar(string varName)
+        {
+            return _svars.ContainsKey(varName) ? _svars[varName] : string.Empty;
+        }
+
+
+        private void SetVar(string varName, bool isStringVar, Value v)
+        {
+            if (_nvars.ContainsKey(varName))
+            {
+                _nvars.Remove(varName);
+            }
+
+            if (isStringVar)
+            {
+                _svars.Add(varName, v.ToString());
+            }
+            else
+            {
+                _nvars.Add(varName, v.ToNumber());
+            }
+        }
+
+
+        #region tokenizer
 
         private int NextToken()
         {
@@ -395,7 +353,7 @@ namespace BasicBasic
 
         // A or A5 -> numeric var name
         // A$ -> string var name
-        // A(..) -> array var name
+        // A(...) -> array var name
         // PRINT -> a key word
         private int ParseIdent(char c)
         {
@@ -407,9 +365,7 @@ namespace BasicBasic
             if (IsDigit(c))
             {
                 // A numeric Ax variable.
-                strValue += c;
-
-                _strValue = strValue.ToUpperInvariant();
+                _strValue = (strValue + c).ToUpperInvariant();
             }
             else if (c == '$')
             {
@@ -443,6 +399,14 @@ namespace BasicBasic
                 }
 
                 _strValue = strValue;
+            }
+            else
+            {
+                // A simple variable A.
+                _strValue = strValue.ToUpperInvariant();
+
+                // Go one char back, so the next time we will read the character behind this identifier.
+                _currentProgramLinePos--;
             }
 
             return tok;
@@ -534,7 +498,9 @@ namespace BasicBasic
             return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
         }
 
-        
+        #endregion
+
+
         private ProgramLine NextProgramLine(int fromLabel)
         {
             // Skip program lines without code.
@@ -567,7 +533,6 @@ namespace BasicBasic
                     // Label.
                     if (IsDigit(c))
                     {
-                        var programLineStart = i;
                         var label = 0;
                         while (IsDigit(c))
                         {
@@ -594,7 +559,7 @@ namespace BasicBasic
 
                         // Remember this program line.
                         programLine.Label = label;
-                        programLine.Start = programLineStart;
+                        programLine.Start = i;
 
                         // Remember this line.
                         _programLines[label - 1] = programLine;
@@ -668,6 +633,64 @@ namespace BasicBasic
             public override string ToString()
             {
                 return string.Format("{0}: {1} - {2}", Label, Start, End);
+            }
+        }
+
+
+        private class Value
+        {
+            // 0 = number, 1 = string
+            public int Type { get; private set; }
+
+            public float NumValue { get; private set; }
+            public string StrValue { get; private set; }
+
+
+            private Value()
+            {
+            }
+
+
+            public override string ToString()
+            {
+                if (Type == 0)
+                {
+                    return NumValue.ToString(CultureInfo.InvariantCulture);
+                }
+                else
+                {
+                    return StrValue;
+                }
+            }
+
+
+            public float ToNumber()
+            {
+                if (Type == 0)
+                {
+                    return NumValue;
+                }
+                else
+                {
+                    if (float.TryParse(StrValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var n))
+                    {
+                        return n;
+                    }
+
+                    return 0;
+                }
+            }
+
+
+            public static Value Numeric(float n)
+            {
+                return new Value() { Type = 0, NumValue = n };
+            }
+
+
+            public static Value String(string s)
+            {
+                return new Value() { Type = 1, StrValue = s };
             }
         }
 
