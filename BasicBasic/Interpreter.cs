@@ -92,7 +92,7 @@ namespace BasicBasic
 
         private ProgramLine InterpretLine(ProgramLine programLine)
         {
-            Console.WriteLine("{0:000} -> {1}", programLine.Label, _source.Substring(programLine.Start, (programLine.End - programLine.Start) + 1));
+            //Console.WriteLine("{0:000} -> {1}", programLine.Label, _source.Substring(programLine.Start, (programLine.End - programLine.Start) + 1));
 
             _currentProgramLine = programLine;
             _currentProgramLinePos = 0;
@@ -103,9 +103,15 @@ namespace BasicBasic
             switch (tok)
             {
                 case TOK_KEY_END: return EndStatement();
+                case TOK_KEY_GO:
+                case TOK_KEY_GOTO:
+                    return GoToStatement(tok);
+                case TOK_KEY_IF: return IfStatement();
                 case TOK_KEY_LET: return LetStatement();
                 case TOK_KEY_PRINT: return PrintStatement();
-                    
+                case TOK_KEY_REM: return RemStatement();
+                case TOK_KEY_STOP: return StopStatement();
+
                 default:
                     UnexpectedTokenError(tok);
                     break;
@@ -150,15 +156,12 @@ namespace BasicBasic
         }
 
         #region statements
-
-        // The end of execution.
+        
+        // The end of program.
         // END EOLN
         private ProgramLine EndStatement()
         {
-            if (NextToken() != TOK_EOLN)
-            {
-                Error("Unexpected extra token at the end of the program at line {0}.", _currentProgramLine.Label);
-            }
+            ExpToken(NextToken(), TOK_EOLN);
 
             var thisLine = _currentProgramLine;
             var nextLine = NextProgramLine(_currentProgramLine.Label);
@@ -171,7 +174,111 @@ namespace BasicBasic
 
             return null;
         }
+               
 
+        // GO TO line-number EOLN
+        // GOTO line-number EOLN
+        private ProgramLine GoToStatement(int tok)
+        {
+            // GO TO ...
+            if (tok == TOK_KEY_GO)
+            {
+                // Eat TO.
+                ExpToken(NextToken(), TOK_KEY_TO);
+            }
+
+            // Get the label.
+            var label = ExpLabel();
+
+            // EOLN.
+            ExpToken(NextToken(), TOK_EOLN);
+
+            return _programLines[label - 1];
+        }
+
+
+        // IF exp1 rel exp2 THEN line-number
+        // rel-num :: = <> >= <=
+        // rel-str :: = <>
+        private ProgramLine IfStatement()
+        {
+            var v1 = Expression(NextToken());
+
+            var relTok = NextToken();
+
+            var v2 = Expression(NextToken());
+
+            ExpToken(NextToken(), TOK_KEY_THEN);
+            
+            // Get the label.
+            var label = ExpLabel();
+
+            // EOLN.
+            ExpToken(NextToken(), TOK_EOLN);
+
+            // Do not jump.
+            var jump = false;
+
+            // Numeric.
+            if (v1.Type == 0 && v2.Type == 0)
+            {
+                switch (relTok)
+                {
+                    case TOK_EQL:   // =
+                        jump = v1.NumValue == v2.NumValue;
+                        break;
+
+                    case TOK_NEQL:  // <>
+                        jump = v1.NumValue != v2.NumValue;
+                        break;
+
+                    case TOK_LT:    // <
+                        jump = v1.NumValue < v2.NumValue;
+                        break;
+
+                    case TOK_LTE:   // <=
+                        jump = v1.NumValue <= v2.NumValue;
+                        break;
+
+                    case TOK_GT:    // >
+                        jump = v1.NumValue > v2.NumValue;
+                        break;
+
+                    case TOK_GTE:   // >=
+                        jump = v1.NumValue >= v2.NumValue;
+                        break;
+
+                    default:
+                        UnexpectedTokenError(relTok);
+                        break;
+                }
+            }
+            else if (v1.Type == 0 && v2.Type == 0)
+            {
+                switch (relTok)
+                {
+                    case TOK_EQL:   // =
+                        jump = v1.StrValue == v2.StrValue;
+                        break;
+
+                    case TOK_NEQL:  // <>
+                        jump = v1.StrValue != v2.StrValue;
+                        break;
+
+                    default:
+                        UnexpectedTokenError(relTok);
+                        break;
+                }
+            }
+            else
+            {
+                Error("Incompatible types in comparison at line {0}.", _currentProgramLine.Label);
+            }
+
+            return jump
+                ? _programLines[label - 1] 
+                : NextProgramLine(_currentProgramLine.Label);
+        }
 
         // LET var = expr EOLN
         // var :: num-var | string-var
@@ -192,20 +299,13 @@ namespace BasicBasic
             }
 
             // '=' 
-            tok = NextToken();
-            if (tok != TOK_EQL)
-            {
-                UnexpectedTokenError(tok);
-            }
+            ExpToken(NextToken(), TOK_EQL);
 
             // expr
             SetVar(varName, Expression(NextToken()));
 
-            tok = NextToken();
-            if (tok != TOK_EOLN)
-            {
-                UnexpectedTokenError(tok);
-            }
+            // EOLN
+            ExpToken(NextToken(), TOK_EOLN);
 
             return NextProgramLine(_currentProgramLine.Label);
         }
@@ -240,16 +340,32 @@ namespace BasicBasic
                 tok = NextToken();
             }
 
-            if (tok != TOK_EOLN)
-            {
-                UnexpectedTokenError(tok);
-            }
+            ExpToken(tok, TOK_EOLN);
 
             Console.WriteLine();
 
             return NextProgramLine(_currentProgramLine.Label);
         }
 
+
+        // The comment.
+        // REM ...
+        private ProgramLine RemStatement()
+        {
+            return NextProgramLine(_currentProgramLine.Label);
+        }
+
+
+        // The end of execution.
+        // STOP EOLN
+        private ProgramLine StopStatement()
+        {
+            ExpToken(NextToken(), TOK_EOLN);
+
+            _wasEnd = true;
+
+            return null;
+        }
 
         // expr :: "string" | number | var-ident
         private Value Expression(int tok)
@@ -316,6 +432,37 @@ namespace BasicBasic
 
         #region tokenizer
 
+        private int ExpLabel()
+        {
+            ExpToken(NextToken(), TOK_NUM);
+            var label = (int)_numValue;
+
+            if (label < 1 || label > MaxLabel)
+            {
+                throw new InterpreterException(string.Format("The label {0} at line {1} out of <1 ... {2}> rangle.", label, _currentProgramLine.Label, MaxLabel));
+            }
+
+            var target = _programLines[label - 1];
+            if (target == null)
+            {
+                throw new InterpreterException(string.Format("Undefined label {0} at line {1}.", label, _currentProgramLine.Label));
+            }
+
+            return label;
+        }
+
+
+        private int ExpToken(int tok, int expTok)
+        {
+            if (tok != expTok)
+            {
+                UnexpectedTokenError(tok);
+            }
+
+            return tok;
+        }
+
+
         private int NextToken()
         {
             if (_currentProgramLine.Start + _currentProgramLinePos > _currentProgramLine.End)
@@ -356,6 +503,36 @@ namespace BasicBasic
                 if (c == '=')
                 {
                     return TOK_EQL;
+                }
+
+                if (c == '<')
+                {
+                    var cc = NextChar();
+                    if (cc == '>')
+                    {
+                        return TOK_NEQL;
+                    }
+                    else if (cc == '=')
+                    {
+                        return TOK_LTE;
+                    }
+
+                    _currentProgramLinePos--;
+
+                    return TOK_LT;
+                }
+
+                if (c == '>')
+                {
+                    var cc = NextChar();
+                    if (cc == '=')
+                    {
+                        return TOK_GTE;
+                    }
+
+                    _currentProgramLinePos--;
+
+                    return TOK_GT;
                 }
 
                 c = NextChar();
@@ -721,19 +898,23 @@ namespace BasicBasic
         private const int TOK_PLSTSEP = 20;  // ;
         private const int TOK_LSTSEP = 21;  // ,
 
-        private const int TOK_EQL = 30;  // =
+        private const int TOK_EQL = 30;   // =
+        private const int TOK_NEQL = 31;  // <>
+        private const int TOK_LT = 32;    // <
+        private const int TOK_LTE = 33;   // <=
+        private const int TOK_GT = 34;    // >
+        private const int TOK_GTE = 35;   // >=
 
-        private const int TOK_FIRST_KEY = 100;
         //private const int TOK_KEY_BASE = 100;
         //private const int TOK_KEY_DATA = 101;
         //private const int TOK_KEY_DEF = 102;
         //private const int TOK_KEY_DIM = 103;
         private const int TOK_KEY_END = 104;
         //private const int TOK_KEY_FOR = 105;
-        //private const int TOK_KEY_GO = 106;
+        private const int TOK_KEY_GO = 106;
         //private const int TOK_KEY_GOSUB = 107;
-        //private const int TOK_KEY_GOTO = 108;
-        //private const int TOK_KEY_IF = 109;
+        private const int TOK_KEY_GOTO = 108;
+        private const int TOK_KEY_IF = 109;
         //private const int TOK_KEY_INPUT = 110;
         private const int TOK_KEY_LET = 111;
         //private const int TOK_KEY_NEXT = 112;
@@ -742,20 +923,27 @@ namespace BasicBasic
         private const int TOK_KEY_PRINT = 115;
         //private const int TOK_KEY_RANDOMIZE = 116;
         //private const int TOK_KEY_READ = 117;
-        //private const int TOK_KEY_REM = 118;
+        private const int TOK_KEY_REM = 118;
         //private const int TOK_KEY_RESTORE = 119;
         //private const int TOK_KEY_RETURN = 120;
         //private const int TOK_KEY_STEP = 121;
-        //private const int TOK_KEY_STOP = 122;
+        private const int TOK_KEY_STOP = 122;
         //private const int TOK_KEY_SUB = 123;
-        //private const int TOK_KEY_THEN = 124;
-        private const int TOK_LAST_KEY = 124;
+        private const int TOK_KEY_THEN = 124;
+        private const int TOK_KEY_TO = 125;
 
         private readonly Dictionary<string, int> _keyWordsMap = new Dictionary<string, int>()
         {
             { "END", TOK_KEY_END },
+            { "GO", TOK_KEY_GO },
+            { "GOTO", TOK_KEY_GOTO },
+            { "IF", TOK_KEY_IF },
             { "LET", TOK_KEY_LET },
             { "PRINT", TOK_KEY_PRINT },
+            { "REM", TOK_KEY_REM },
+            { "STOP", TOK_KEY_STOP },
+            { "THEN", TOK_KEY_THEN },
+            { "TO", TOK_KEY_TO },
         };
 
         /// <summary>
