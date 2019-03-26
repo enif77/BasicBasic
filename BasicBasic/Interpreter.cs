@@ -66,9 +66,17 @@ namespace BasicBasic
         private void InterpretImpl()
         {
             _wasEnd = false;
-            _nvars = new Dictionary<string, float>();
-            _svars = new Dictionary<string, string>();
 
+            for (var i = 0; i < _nvars.Length; i++)
+            {
+                _nvars[i] = 0;
+            }
+
+            for (var i = 0; i < _svars.Length; i++)
+            {
+                _svars[i] = null;
+            }
+            
             var programLine = NextProgramLine(0);
             while (programLine != null)
             {
@@ -170,19 +178,13 @@ namespace BasicBasic
         private ProgramLine LetStatement()
         {
             string varName = null;
-            bool isStringVar = false;
 
             var tok = NextToken();
 
             // var
-            if (tok == TOK_VARIDNT)
+            if (tok == TOK_VARIDNT || tok == TOK_STRIDNT)
             {
                 varName = _strValue;
-            }
-            else if (tok == TOK_STRIDNT)
-            {
-                varName = _strValue;
-                isStringVar = true;
             }
             else
             {
@@ -197,7 +199,7 @@ namespace BasicBasic
             }
 
             // expr
-            SetVar(varName, isStringVar, Expression(NextToken()));
+            SetVar(varName, Expression(NextToken()));
 
             tok = NextToken();
             if (tok != TOK_EOLN)
@@ -254,7 +256,6 @@ namespace BasicBasic
         {
             switch (tok)
             {
-                case TOK_INT: return Value.Numeric(_intValue);
                 case TOK_NUM: return Value.Numeric(_numValue);
                 case TOK_QSTR: return Value.String(_strValue);
                 case TOK_VARIDNT: return Value.Numeric(GetNVar(_strValue));
@@ -271,32 +272,44 @@ namespace BasicBasic
         #endregion
 
 
+        // A or A5.
+        // A = A0
         private float GetNVar(string varName)
         {
-            return _nvars.ContainsKey(varName) ? _nvars[varName] : 0;
-        }
-
-
-        private string GetSVar(string varName)
-        {
-            return _svars.ContainsKey(varName) ? _svars[varName] : string.Empty;
-        }
-
-
-        private void SetVar(string varName, bool isStringVar, Value v)
-        {
-            if (_nvars.ContainsKey(varName))
+            var n = varName[0] - 'A';
+            var x = 0;
+            if (varName.Length == 2)
             {
-                _nvars.Remove(varName);
+                x = varName[1] - '0';
             }
 
-            if (isStringVar)
+            return _nvars[n * 10 + x];
+        }
+
+
+        // A$.
+        private string GetSVar(string varName)
+        {
+            return _svars[varName[0] - 'A'] ?? string.Empty;
+        }
+
+
+        private void SetVar(string varName, Value v)
+        {
+            if (varName.EndsWith("$"))
             {
-                _svars.Add(varName, v.ToString());
+                _svars[varName[0] - 'A'] = v.ToString();
             }
             else
             {
-                _nvars.Add(varName, v.ToNumber());
+                var n = varName[0] - 'A';
+                var x = 0;
+                if (varName.Length == 2)
+                {
+                    x = varName[1] - '0';
+                }
+
+                _nvars[n * 10 + x] = v.ToNumber();
             }
         }
 
@@ -372,7 +385,7 @@ namespace BasicBasic
                 // A string A$ variable.
                 tok = TOK_STRIDNT;
 
-                _strValue = strValue.ToUpperInvariant();
+                _strValue = (strValue + c).ToUpperInvariant();
             }
             else if (IsLetter(c))
             {
@@ -443,18 +456,16 @@ namespace BasicBasic
         // .12 -> number
         private int ParseNumber(char c)
         {
-            var tok = TOK_INT;
-            var intValue = 0;
+            var numValue = 0.0f;
             while (IsDigit(c))
             {
-                intValue = intValue * 10 + (c - '0');
+                numValue = numValue * 10.0f + (c - '0');
 
                 c = NextChar();
             }
 
             if (c == '.')
             {
-                var numValue = (float)intValue;
                 var exp = 0.1f;
 
                 c = NextChar();
@@ -465,19 +476,14 @@ namespace BasicBasic
 
                     c = NextChar();
                 }
+            }
 
-                _numValue = numValue;
-                tok = TOK_NUM;
-            }
-            else
-            {
-                _intValue = intValue;
-            }
-            
+            _numValue = numValue;
+
             // Go one char back, so the next time we will read the character behind this number.
             _currentProgramLinePos--;
 
-            return tok;
+            return TOK_NUM;
         }
 
 
@@ -701,17 +707,16 @@ namespace BasicBasic
         private ProgramLine[] _programLines;
 
         private bool _wasEnd = false;
-        private Dictionary<string, float> _nvars;
-        private Dictionary<string, string> _svars;
+        private float[] _nvars = new float[(('Z' - 'A') + 1) * 10]; // A or A0 .. A9
+        private string[] _svars = new string[('Z' - 'A') + 1];      // A$ .. Z$
 
         private const char C_EOLN = '\n';
 
         private const int TOK_EOLN = 0;
         private const int TOK_VARIDNT = 5;
         private const int TOK_STRIDNT = 6;
-        private const int TOK_INT = 10;
-        private const int TOK_NUM = 11;
-        private const int TOK_QSTR = 12;
+        private const int TOK_NUM = 10;
+        private const int TOK_QSTR = 11;
 
         private const int TOK_PLSTSEP = 20;  // ;
         private const int TOK_LSTSEP = 21;  // ,
@@ -752,11 +757,6 @@ namespace BasicBasic
             { "LET", TOK_KEY_LET },
             { "PRINT", TOK_KEY_PRINT },
         };
-
-        /// <summary>
-        /// A value of the TOK_INT.
-        /// </summary>
-        private int _intValue = 0;
 
         /// <summary>
         /// A value of the TOK_NUM.

@@ -72,15 +72,19 @@ namespace BasicBasicApp
         //";
 
         static string _source = @"10 PRINT 11
+8 let a = 5
+9 let a0 = 6
+7 let z9 = 666
 11 LET A3 = 66
 12 let b = a3
 13 let s$ = ""str""
 14 let s1 = ""123""
 15 let s2 = ""a123""
 20 PRINT
-23 print a3, "" ""; b; "" "", s$, "" "", 78 
+23 print a0, "" ""; a, "" "", a3, "" ""; "" ""; b; "" "", s$, "" "", 78.25 
 24 print ""s1 = ""; s1
 25 print ""s2 = ""; s2
+26 print ""z9 = ""; z9
 34 PRINT ""Hello, world!""
 50 end
 ";
