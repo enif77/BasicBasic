@@ -983,23 +983,83 @@ namespace BasicBasic
 
 /*
 
-5.2   _S_y_n_t_a_x
+Syntax
+-------
 
-1. program          = block* end-line
-2. block            = (line/for-block)*
-3. line             = line-number statement end-of-line
-4. line-number      = digit digit? digit? digit?
-5. end-of-line      = [implementation defined]
-6. end-line         = line-number end-statement end-of-line
-7. end-statement    = END
-8. statement        = data-statement / def-statement /
-                        dimension -statement / gosub-statement /
-                        goto-statement / if-then-statement /
-                        input-statement / let-statement /
-                        on-goto-statement / option-statement /
-                        print-statement / randomize-statement /
-                        read-statement / remark-statement /
-                        restore-statement / return-statement /
-                        stop statement 
-     
+{} - Repeat 0 or more.
+() - Groups things together.
+[] - An optional part.
+|  - Or.
+&  - And.
+!  - Not.
+:  - Definition name and definition separator.
+-  - No white spaces allowed.
+"" - A specific string (keyword etc.).
+'' - A specific character.
+.. - A range.
+.  - The end of a definition.
+
+
+program : { block } end-line .
+
+block : { line | for-block } .
+
+line : label statement end-of line .
+
+label : digit | digit-digit .
+
+end-of-line : '\n' .
+
+end-line : label end-statement end-of-line .
+
+end-statement : "END" .
+
+statement :
+  goto-statement | 
+  if-then-statement |
+  let-statement |
+  print-statement |
+  remark-statement |
+  stop statement .
+
+goto-statement : ( GO TO label ) | ( GOTO label ) .
+
+if-then-statement : "IF" expression "THEN" label .
+
+let-statement : "LET" variable '=' expression .
+
+print-statement : [ print-list ] .
+
+print-list : { print-item print-separator } print-item .
+
+print-item : expression .
+
+print-separator : ',' | ';' .
+
+remark-statement : "REM" { any-character } .
+
+stop-statement : "STOP" .
+
+variable : numeric-variable | string-variable .
+
+numeric-variable : leter [ - digit ] .
+
+string-variable : leter - '$' .
+
+leter : 'A' .. 'Z' .
+
+digit : '0' .. '9' .
+
+expression : number | quoted-string .
+
+number : ( decimal-part [ - fractional-part ] ) | ( '.' - digit { - digit } ) .
+    
+decimal-part : digit { - digit } .
+
+fractional-part : '.' { - digit } .
+
+quoted-string : '"' { string-character } '"' .
+
+string-character : ! '"' & ! end-of-line .
+
 */
