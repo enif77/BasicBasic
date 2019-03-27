@@ -142,15 +142,15 @@ namespace BasicBasic
             _currentProgramLine = programLine;
             _currentProgramLinePos = 0;
 
-            var tok = NextToken();
+            NextToken();
 
             // The statement.
-            switch (tok)
+            switch (_tok)
             {
                 case TOK_KEY_END: return EndStatement();
                 case TOK_KEY_GO:
                 case TOK_KEY_GOTO:
-                    return GoToStatement(tok);
+                    return GoToStatement();
                 case TOK_KEY_IF: return IfStatement();
                 case TOK_KEY_LET: return LetStatement();
                 case TOK_KEY_PRINT: return PrintStatement();
@@ -158,7 +158,7 @@ namespace BasicBasic
                 case TOK_KEY_STOP: return StopStatement();
 
                 default:
-                    UnexpectedTokenError(tok);
+                    UnexpectedTokenError(_tok);
                     break;
             }
 
@@ -172,7 +172,8 @@ namespace BasicBasic
         // END EOLN
         private ProgramLine EndStatement()
         {
-            ExpToken(NextToken(), TOK_EOLN);
+            NextToken();
+            ExpToken(TOK_EOLN);
 
             var thisLine = _currentProgramLine;
             var nextLine = NextProgramLine(_currentProgramLine.Label);
@@ -188,20 +189,23 @@ namespace BasicBasic
                
         // GO TO line-number EOLN
         // GOTO line-number EOLN
-        private ProgramLine GoToStatement(int tok)
+        private ProgramLine GoToStatement()
         {
             // GO TO ...
-            if (tok == TOK_KEY_GO)
+            if (_tok == TOK_KEY_GO)
             {
                 // Eat TO.
-                ExpToken(NextToken(), TOK_KEY_TO);
+                NextToken();
+                ExpToken(TOK_KEY_TO);
             }
 
             // Get the label.
+            NextToken();
             var label = ExpLabel();
 
             // EOLN.
-            ExpToken(NextToken(), TOK_EOLN);
+            NextToken();
+            ExpToken(TOK_EOLN);
 
             return _programLines[label - 1];
         }
@@ -211,19 +215,25 @@ namespace BasicBasic
         // rel-str :: = <>
         private ProgramLine IfStatement()
         {
-            var v1 = Expression(NextToken());
-
-            var relTok = NextToken();
-
-            var v2 = Expression(NextToken());
-
-            ExpToken(NextToken(), TOK_KEY_THEN);
+            // Eat IF.
+            NextToken();
             
+            var v1 = Expression();
+
+            var relTok = _tok;
+            NextToken();
+
+            var v2 = Expression();
+
+            ExpToken(TOK_KEY_THEN);
+            NextToken();
+
             // Get the label.
             var label = ExpLabel();
 
             // EOLN.
-            ExpToken(NextToken(), TOK_EOLN);
+            NextToken();
+            ExpToken(TOK_EOLN);
 
             // Do not jump.
             var jump = false;
@@ -295,26 +305,30 @@ namespace BasicBasic
         {
             string varName = null;
 
-            var tok = NextToken();
+            // Eat LET.
+            NextToken();
 
             // var
-            if (tok == TOK_VARIDNT || tok == TOK_STRIDNT)
+            if (_tok == TOK_VARIDNT || _tok == TOK_STRIDNT)
             {
                 varName = _strValue;
             }
             else
             {
-                UnexpectedTokenError(tok);
+                UnexpectedTokenError(_tok);
             }
 
             // '=' 
-            ExpToken(NextToken(), TOK_EQL);
+            NextToken();
+            ExpToken(TOK_EQL);
 
             // expr
-            SetVar(varName, Expression(NextToken()));
+            NextToken();
+            SetVar(varName, Expression());
 
             // EOLN
-            ExpToken(NextToken(), TOK_EOLN);
+            NextToken();
+            ExpToken(TOK_EOLN);
 
             return NextProgramLine(_currentProgramLine.Label);
         }
@@ -323,16 +337,19 @@ namespace BasicBasic
         // print-sep :: ';' | ','
         private ProgramLine PrintStatement()
         {
+            // Eat PRINT.
+            NextToken();
+
             bool atSep = true;
-            var tok = NextToken();
-            while (tok != TOK_EOLN)
+            while (_tok != TOK_EOLN)
             {
-                switch (tok)
+                switch (_tok)
                 {
                     // Consume these.
                     case TOK_LSTSEP:
                     case TOK_PLSTSEP:
                         atSep = true;
+                        NextToken();
                         break;
 
                     default:
@@ -340,15 +357,13 @@ namespace BasicBasic
                         {
                             Error("A list separator expected at line {0}.", _currentProgramLine.Label);
                         }
-                        Console.Write(Expression(tok));
+                        Console.Write(Expression());
                         atSep = false;
                         break;
                 }
-
-                tok = NextToken();
             }
 
-            ExpToken(tok, TOK_EOLN);
+            ExpToken(TOK_EOLN);
 
             Console.WriteLine();
 
@@ -366,7 +381,8 @@ namespace BasicBasic
         // STOP EOLN
         private ProgramLine StopStatement()
         {
-            ExpToken(NextToken(), TOK_EOLN);
+            NextToken();
+            ExpToken(TOK_EOLN);
 
             _wasEnd = true;
 
@@ -374,18 +390,94 @@ namespace BasicBasic
         }
         
 
-        // expr :: "string" | number | var-ident
-        private Value Expression(int tok)
+        // expr :: string-expression | numeric-expression
+        private Value Expression()
         {
-            switch (tok)
+            if (_tok == TOK_QSTR || _tok == TOK_STRIDNT)
             {
-                case TOK_NUM: return Value.Numeric(_numValue);
+                var s = StringExpression();
+
+                NextToken();
+
+                return s;
+            }
+
+            return NumericExpression();
+        }
+
+        // string-expression : string-variable | string-constant .
+        private Value StringExpression()
+        {
+            switch (_tok)
+            {
                 case TOK_QSTR: return Value.String(_strValue);
-                case TOK_VARIDNT: return Value.Numeric(GetNVar(_strValue));
                 case TOK_STRIDNT: return Value.String(GetSVar(_strValue));
 
                 default:
-                    UnexpectedTokenError(tok);
+                    UnexpectedTokenError(_tok);
+                    break;
+            }
+
+            return null;
+        }
+
+        // numeric-expression : [ sign ] term { sign term } .
+        // term : number | numeric-variable .
+        // sign : '+' | '-' .
+        private Value NumericExpression()
+        {
+            var negate = false;
+            if (_tok == TOK_PLUS)
+            {
+                NextToken();
+            }
+            else if (_tok == TOK_MINUS)
+            {
+                negate = true;
+                NextToken();
+            }
+
+            var v = Term();
+
+            while (true)
+            {
+                NextToken();
+
+                if (_tok == TOK_PLUS)
+                {
+                    NextToken();
+
+                    var n = Term();
+
+                    v = Value.Numeric(v.NumValue + n.NumValue);
+                }
+                else if (_tok == TOK_MINUS)
+                {
+                    NextToken();
+
+                    var n = Term();
+
+                    v = Value.Numeric(v.NumValue - n.NumValue);
+                }
+                else
+                {
+                    break;
+                }
+            }
+                     
+            return (negate) ? Value.Numeric(-v.NumValue) : v;
+        }
+
+        // term : number | numeric-variable .
+        private Value Term()
+        {
+            switch (_tok)
+            {
+                case TOK_NUM: return Value.Numeric(_numValue);
+                case TOK_VARIDNT: return Value.Numeric(GetNVar(_strValue));
+
+                default:
+                    UnexpectedTokenError(_tok);
                     break;
             }
 
@@ -459,13 +551,22 @@ namespace BasicBasic
 
         private const int TOK_PLSTSEP = 20;  // ;
         private const int TOK_LSTSEP = 21;  // ,
-
+        
         private const int TOK_EQL = 30;   // =
         private const int TOK_NEQL = 31;  // <>
         private const int TOK_LT = 32;    // <
         private const int TOK_LTE = 33;   // <=
         private const int TOK_GT = 34;    // >
         private const int TOK_GTE = 35;   // >=
+
+        // + - * / ^ ( )
+        private const int TOK_PLUS = 40;
+        private const int TOK_MINUS = 41;
+        private const int TOK_MULT = 42;
+        private const int TOK_DIV = 43;
+        private const int TOK_OVER = 44;
+        private const int TOK_LBRA = 45;
+        private const int TOK_RBRA = 46;
 
         //private const int TOK_KEY_BASE = 100;
         //private const int TOK_KEY_DATA = 101;
@@ -512,6 +613,11 @@ namespace BasicBasic
 
 
         /// <summary>
+        /// The last found token.
+        /// </summary>
+        private int _tok = 0;
+
+        /// <summary>
         /// A value of the TOK_NUM.
         /// </summary>
         private float _numValue = 0.0f;
@@ -522,7 +628,8 @@ namespace BasicBasic
 
         private int ExpLabel()
         {
-            ExpToken(NextToken(), TOK_NUM);
+            ExpToken(TOK_NUM);
+
             var label = (int)_numValue;
 
             if (label < 1 || label > MaxLabel)
@@ -540,22 +647,23 @@ namespace BasicBasic
         }
 
 
-        private int ExpToken(int tok, int expTok)
+        private void ExpToken(int expTok)
         {
-            if (tok != expTok)
+            if (_tok != expTok)
             {
-                UnexpectedTokenError(tok);
+                UnexpectedTokenError(_tok);
             }
-
-            return tok;
         }
 
 
-        private int NextToken()
+        private void NextToken()
         {
             if (_currentProgramLine.Start + _currentProgramLinePos > _currentProgramLine.End)
             {
-                Error("Read beyond the line end at line {0}.", _currentProgramLine.Label);
+                //Error("Read beyond the line end at line {0}.", _currentProgramLine.Label);
+                _tok = TOK_EOLN;
+
+                return;
             }
 
             var c = NextChar();
@@ -563,77 +671,95 @@ namespace BasicBasic
             {
                 //Console.WriteLine("C[{0:00}]: {1}", _currentProgramLinePos, c);
 
+                //// Skip white chars.
+                //if (c <= ' ' && c != '\n')
+                //{
+                //    c = NextChar();
+                //}
+
                 if (IsDigit(c) || c == '.')
                 {
-                    return ParseNumber(c);
+                    ParseNumber(c);
+
+                    return;
                 }
 
                 if (IsLetter(c))
                 {
-                    return ParseIdent(c);
+                    ParseIdent(c);
+
+                    return;
                 }
 
                 if (c == '"')
                 {
-                    return ParseQuotedString(c);
+                    ParseQuotedString(c);
+
+                    return;
                 }
 
-                if (c == ';')
+                switch (c)
                 {
-                    return TOK_PLSTSEP;
-                }
+                    case ';': _tok = TOK_PLSTSEP; return;
+                    case ',': _tok = TOK_LSTSEP; return;
+                    case '=': _tok = TOK_EQL; return;
 
-                if (c == ',')
-                {
-                    return TOK_LSTSEP;
-                }
-
-                if (c == '=')
-                {
-                    return TOK_EQL;
-                }
-
-                if (c == '<')
-                {
-                    var cc = NextChar();
-                    if (cc == '>')
+                    case '<':
                     {
-                        return TOK_NEQL;
-                    }
-                    else if (cc == '=')
-                    {
-                        return TOK_LTE;
-                    }
-
-                    _currentProgramLinePos--;
-
-                    return TOK_LT;
-                }
-
-                if (c == '>')
-                {
-                    var cc = NextChar();
-                    if (cc == '=')
-                    {
-                        return TOK_GTE;
+                        var cc = NextChar();
+                        if (cc == '>')
+                        {
+                            _tok = TOK_NEQL;
+                        }
+                        else if (cc == '=')
+                        {
+                            _tok = TOK_LTE;
+                        }
+                        else
+                        {
+                            _currentProgramLinePos--;
+                            _tok = TOK_LT;
+                        }
+                        
+                        return;
                     }
 
-                    _currentProgramLinePos--;
+                    case '>':
+                    {
+                        var cc = NextChar();
+                        if (cc == '=')
+                        {
+                            _tok = TOK_GTE;
+                        }
+                        else
+                        {
+                            _currentProgramLinePos--;
+                            _tok = TOK_GT;
+                        }
 
-                    return TOK_GT;
+                        return;
+                    }
+
+                    case '+': _tok = TOK_PLUS; return;
+                    case '-': _tok = TOK_MINUS; return;
+                    case '*': _tok = TOK_MULT; return;
+                    case '/': _tok = TOK_DIV; return;
+                    case '^': _tok = TOK_OVER; return;
+                    case '(': _tok = TOK_LBRA; return;
+                    case ')': _tok = TOK_RBRA; return;
                 }
 
                 c = NextChar();
             }
 
-            return TOK_EOLN;
+            _tok = TOK_EOLN;
         }
 
         // A or A5 -> numeric var name
         // A$ -> string var name
         // A(...) -> array var name
         // PRINT -> a key word
-        private int ParseIdent(char c)
+        private void ParseIdent(char c)
         {
             var tok = TOK_VARIDNT;
             var strValue = c.ToString();
@@ -687,12 +813,12 @@ namespace BasicBasic
                 _currentProgramLinePos--;
             }
 
-            return tok;
+            _tok = tok;
         }
 
 
         // '"' ... '"'
-        private int ParseQuotedString(char c)
+        private void ParseQuotedString(char c)
         {
             var strValue = string.Empty;
 
@@ -709,9 +835,8 @@ namespace BasicBasic
                 Error("Unexpected end of quoted string at line {0}.", _currentProgramLine.Label);
             }
 
+            _tok = TOK_QSTR;
             _strValue = strValue;
-
-            return TOK_QSTR;
         }
 
 
@@ -719,7 +844,7 @@ namespace BasicBasic
         // 12.3 -> number
         // 12. -> number
         // .12 -> number
-        private int ParseNumber(char c)
+        private void ParseNumber(char c)
         {
             var numValue = 0.0f;
             while (IsDigit(c))
@@ -743,12 +868,11 @@ namespace BasicBasic
                 }
             }
 
+            _tok = TOK_NUM;
             _numValue = numValue;
 
             // Go one char back, so the next time we will read the character behind this number.
             _currentProgramLinePos--;
-
-            return TOK_NUM;
         }
 
 
@@ -1027,13 +1151,23 @@ leter : 'A' .. 'Z' .
 
 digit : '0' .. '9' .
 
-expression : number | quoted-string .
+expression : numeric-expression | string-expression .
+
+numeric-expression : [ sign ] term { sign term } .
+
+term : number | numeric-variable .
+
+sign : '+' | '-' .
 
 number : ( decimal-part [ - fractional-part ] ) | ( '.' - digit { - digit } ) .
     
 decimal-part : digit { - digit } .
 
 fractional-part : '.' { - digit } .
+
+string-expression : string-variable | string-constant .
+
+string-constant : quoted-string .
 
 quoted-string : '"' { string-character } '"' .
 
