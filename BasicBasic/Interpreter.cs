@@ -388,7 +388,11 @@ namespace BasicBasic
 
             return null;
         }
-        
+
+        #endregion
+
+
+        #region expressions
 
         // expr :: string-expression | numeric-expression
         private Value Expression()
@@ -678,7 +682,7 @@ namespace BasicBasic
         /// </summary>
         private float _numValue = 0.0f;
 
-        // A value of TOK_VARIDNT, TOK_STRIDNT or TOK_KEYW tokens.
+        // A value of TOK_QSTR or TOK_STRIDNT tokens.
         private string _strValue = null;
 
 
