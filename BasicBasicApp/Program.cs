@@ -72,6 +72,8 @@ namespace BasicBasicApp
         //";
 
         static string _source = @"10 PRINT 11
+4 let d = -2
+5 let c = 10 ^ d
 7 REM A and A0 are the same variables.
 8 let a = 5
 9 let a0 = 6
@@ -87,6 +89,7 @@ namespace BasicBasicApp
 24 print ""s1 = ""; s1
 25 print ""s2 = ""; s2
 26 print ""z9 = ""; z9
+27 print ""c = ""; c
 30 go to 34
 31 stop
 34 PRINT ""Hello, world!""

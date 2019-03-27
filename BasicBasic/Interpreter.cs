@@ -495,8 +495,30 @@ namespace BasicBasic
             return v;
         }
 
-        // factor : number | numeric-variable .
+        // factor : primary { '^' primary } .
         private Value Factor()
+        {
+            var v = Primary();
+
+            while (true)
+            {
+                if (_tok == TOK_POW)
+                {
+                    NextToken();
+
+                    v = Value.Numeric((float)Math.Pow(v.NumValue, Primary().NumValue));
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return v;
+        }
+
+        // primary : number | numeric-variable .
+        private Value Primary()
         {
             switch (_tok)
             {
@@ -598,7 +620,7 @@ namespace BasicBasic
         private const int TOK_MINUS = 41;
         private const int TOK_MULT = 42;
         private const int TOK_DIV = 43;
-        private const int TOK_OVER = 44;
+        private const int TOK_POW = 44;
         private const int TOK_LBRA = 45;
         private const int TOK_RBRA = 46;
 
@@ -778,7 +800,7 @@ namespace BasicBasic
                     case '-': _tok = TOK_MINUS; return;
                     case '*': _tok = TOK_MULT; return;
                     case '/': _tok = TOK_DIV; return;
-                    case '^': _tok = TOK_OVER; return;
+                    case '^': _tok = TOK_POW; return;
                     case '(': _tok = TOK_LBRA; return;
                     case ')': _tok = TOK_RBRA; return;
                 }
@@ -1191,7 +1213,9 @@ numeric-expression : [ sign ] term { sign term } .
 
 term : factor { multiplier factor } .
 
-factor : number | numeric-variable .
+factor : primary { '^' primary } .
+
+primary : number | numeric-variable .
 
 multiplier : '*' | '/' .
 
