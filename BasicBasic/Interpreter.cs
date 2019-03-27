@@ -85,7 +85,29 @@ namespace BasicBasic
 
 
         #region private
-        
+
+        private string _source;
+        private int _currentProgramLinePos;
+        private ProgramLine _currentProgramLine;
+        private ProgramLine[] _programLines;
+        private bool _wasEnd = false;
+
+
+        private ProgramLine NextProgramLine(int fromLabel)
+        {
+            // Skip program lines without code.
+            for (var label = fromLabel; label < _programLines.Length; label++)
+            {
+                if (_programLines[label] != null)
+                {
+                    return _programLines[label];
+                }
+            }
+
+            return null;
+        }
+
+
         private void InterpretImpl()
         {
             _wasEnd = false;
@@ -141,45 +163,11 @@ namespace BasicBasic
             }
 
             return null;
-
-
-            //while (tok != TOK_EOLN)
-            //{
-            //    // Do something.
-            //    if (tok == TOK_INT)
-            //    {
-            //        Console.WriteLine("INT " + _intValue);
-            //    }
-            //    else if (tok == TOK_NUM)
-            //    {
-            //        Console.WriteLine("NUM " + _numValue);
-            //    }
-
-            //    else if (tok == TOK_VARIDNT)
-            //    {
-            //        Console.WriteLine("NUMVAR " + _strValue);
-            //    }
-            //    else if (tok == TOK_STRIDNT)
-            //    {
-            //        Console.WriteLine("STRVAR " + _strValue);
-            //    }
-            //    else if (tok == TOK_QSTR)
-            //    {
-            //        Console.WriteLine("QSTR '" + _strValue + "'");
-            //    }
-            //    else if (tok >= TOK_FIRST_KEY && tok <= TOK_LAST_KEY)
-            //    {
-            //        Console.WriteLine("KEY " + _strValue);
-            //    }
-
-            //    tok = NextToken();
-            //}
-
-            //return NextProgramLine(programLine.Label);
         }
+               
 
         #region statements
-        
+
         // The end of program.
         // END EOLN
         private ProgramLine EndStatement()
@@ -198,7 +186,6 @@ namespace BasicBasic
             return null;
         }
                
-
         // GO TO line-number EOLN
         // GOTO line-number EOLN
         private ProgramLine GoToStatement(int tok)
@@ -218,8 +205,7 @@ namespace BasicBasic
 
             return _programLines[label - 1];
         }
-
-
+        
         // IF exp1 rel exp2 THEN line-number
         // rel-num :: = <> >= <=
         // rel-str :: = <>
@@ -332,9 +318,8 @@ namespace BasicBasic
 
             return NextProgramLine(_currentProgramLine.Label);
         }
-                 
-
-        // PRINT [ expr [ print-sep expr ] ] EOLN
+        
+        // PRINT [ expr { print-sep expr } ] EOLN
         // print-sep :: ';' | ','
         private ProgramLine PrintStatement()
         {
@@ -369,16 +354,14 @@ namespace BasicBasic
 
             return NextProgramLine(_currentProgramLine.Label);
         }
-
-
+        
         // The comment.
         // REM ...
         private ProgramLine RemStatement()
         {
             return NextProgramLine(_currentProgramLine.Label);
         }
-
-
+        
         // The end of execution.
         // STOP EOLN
         private ProgramLine StopStatement()
@@ -389,6 +372,7 @@ namespace BasicBasic
 
             return null;
         }
+        
 
         // expr :: "string" | number | var-ident
         private Value Expression(int tok)
@@ -409,6 +393,12 @@ namespace BasicBasic
         }
 
         #endregion
+
+
+        #region variables
+
+        private float[] _nvars = new float[(('Z' - 'A') + 1) * 10]; // A or A0 .. A9
+        private string[] _svars = new string[('Z' - 'A') + 1];      // A$ .. Z$
 
 
         // A or A5.
@@ -452,8 +442,83 @@ namespace BasicBasic
             }
         }
 
+        #endregion
+
 
         #region tokenizer
+
+        #region tokens
+
+        private const char C_EOLN = '\n';
+
+        private const int TOK_EOLN = 0;
+        private const int TOK_VARIDNT = 5;
+        private const int TOK_STRIDNT = 6;
+        private const int TOK_NUM = 10;
+        private const int TOK_QSTR = 11;
+
+        private const int TOK_PLSTSEP = 20;  // ;
+        private const int TOK_LSTSEP = 21;  // ,
+
+        private const int TOK_EQL = 30;   // =
+        private const int TOK_NEQL = 31;  // <>
+        private const int TOK_LT = 32;    // <
+        private const int TOK_LTE = 33;   // <=
+        private const int TOK_GT = 34;    // >
+        private const int TOK_GTE = 35;   // >=
+
+        //private const int TOK_KEY_BASE = 100;
+        //private const int TOK_KEY_DATA = 101;
+        //private const int TOK_KEY_DEF = 102;
+        //private const int TOK_KEY_DIM = 103;
+        private const int TOK_KEY_END = 104;
+        //private const int TOK_KEY_FOR = 105;
+        private const int TOK_KEY_GO = 106;
+        //private const int TOK_KEY_GOSUB = 107;
+        private const int TOK_KEY_GOTO = 108;
+        private const int TOK_KEY_IF = 109;
+        //private const int TOK_KEY_INPUT = 110;
+        private const int TOK_KEY_LET = 111;
+        //private const int TOK_KEY_NEXT = 112;
+        //private const int TOK_KEY_ON = 113;
+        //private const int TOK_KEY_OPTION = 114;
+        private const int TOK_KEY_PRINT = 115;
+        //private const int TOK_KEY_RANDOMIZE = 116;
+        //private const int TOK_KEY_READ = 117;
+        private const int TOK_KEY_REM = 118;
+        //private const int TOK_KEY_RESTORE = 119;
+        //private const int TOK_KEY_RETURN = 120;
+        //private const int TOK_KEY_STEP = 121;
+        private const int TOK_KEY_STOP = 122;
+        //private const int TOK_KEY_SUB = 123;
+        private const int TOK_KEY_THEN = 124;
+        private const int TOK_KEY_TO = 125;
+
+        private readonly Dictionary<string, int> _keyWordsMap = new Dictionary<string, int>()
+        {
+            { "END", TOK_KEY_END },
+            { "GO", TOK_KEY_GO },
+            { "GOTO", TOK_KEY_GOTO },
+            { "IF", TOK_KEY_IF },
+            { "LET", TOK_KEY_LET },
+            { "PRINT", TOK_KEY_PRINT },
+            { "REM", TOK_KEY_REM },
+            { "STOP", TOK_KEY_STOP },
+            { "THEN", TOK_KEY_THEN },
+            { "TO", TOK_KEY_TO },
+        };
+
+        #endregion
+
+
+        /// <summary>
+        /// A value of the TOK_NUM.
+        /// </summary>
+        private float _numValue = 0.0f;
+
+        // A value of TOK_VARIDNT, TOK_STRIDNT or TOK_KEYW tokens.
+        private string _strValue = null;
+
 
         private int ExpLabel()
         {
@@ -707,21 +772,6 @@ namespace BasicBasic
         #endregion
 
 
-        private ProgramLine NextProgramLine(int fromLabel)
-        {
-            // Skip program lines without code.
-            for (var label = fromLabel; label < _programLines.Length; label++)
-            {
-                if (_programLines[label] != null)
-                {
-                    return _programLines[label];
-                }
-            }
-
-            return null;
-        }
-
-
         private void ScanSource()
         {
             ProgramLine programLine = null;
@@ -827,6 +877,8 @@ namespace BasicBasic
         }
 
 
+        #region classes
+
         private class ProgramLine
         {
             public int Label { get; set; }
@@ -900,83 +952,8 @@ namespace BasicBasic
             }
         }
 
-
-        private string _source;
-        private int _currentProgramLinePos;
-        private ProgramLine _currentProgramLine;
-        private ProgramLine[] _programLines;
-
-        private bool _wasEnd = false;
-        private float[] _nvars = new float[(('Z' - 'A') + 1) * 10]; // A or A0 .. A9
-        private string[] _svars = new string[('Z' - 'A') + 1];      // A$ .. Z$
-
-        private const char C_EOLN = '\n';
-
-        private const int TOK_EOLN = 0;
-        private const int TOK_VARIDNT = 5;
-        private const int TOK_STRIDNT = 6;
-        private const int TOK_NUM = 10;
-        private const int TOK_QSTR = 11;
-
-        private const int TOK_PLSTSEP = 20;  // ;
-        private const int TOK_LSTSEP = 21;  // ,
-
-        private const int TOK_EQL = 30;   // =
-        private const int TOK_NEQL = 31;  // <>
-        private const int TOK_LT = 32;    // <
-        private const int TOK_LTE = 33;   // <=
-        private const int TOK_GT = 34;    // >
-        private const int TOK_GTE = 35;   // >=
-
-        //private const int TOK_KEY_BASE = 100;
-        //private const int TOK_KEY_DATA = 101;
-        //private const int TOK_KEY_DEF = 102;
-        //private const int TOK_KEY_DIM = 103;
-        private const int TOK_KEY_END = 104;
-        //private const int TOK_KEY_FOR = 105;
-        private const int TOK_KEY_GO = 106;
-        //private const int TOK_KEY_GOSUB = 107;
-        private const int TOK_KEY_GOTO = 108;
-        private const int TOK_KEY_IF = 109;
-        //private const int TOK_KEY_INPUT = 110;
-        private const int TOK_KEY_LET = 111;
-        //private const int TOK_KEY_NEXT = 112;
-        //private const int TOK_KEY_ON = 113;
-        //private const int TOK_KEY_OPTION = 114;
-        private const int TOK_KEY_PRINT = 115;
-        //private const int TOK_KEY_RANDOMIZE = 116;
-        //private const int TOK_KEY_READ = 117;
-        private const int TOK_KEY_REM = 118;
-        //private const int TOK_KEY_RESTORE = 119;
-        //private const int TOK_KEY_RETURN = 120;
-        //private const int TOK_KEY_STEP = 121;
-        private const int TOK_KEY_STOP = 122;
-        //private const int TOK_KEY_SUB = 123;
-        private const int TOK_KEY_THEN = 124;
-        private const int TOK_KEY_TO = 125;
-
-        private readonly Dictionary<string, int> _keyWordsMap = new Dictionary<string, int>()
-        {
-            { "END", TOK_KEY_END },
-            { "GO", TOK_KEY_GO },
-            { "GOTO", TOK_KEY_GOTO },
-            { "IF", TOK_KEY_IF },
-            { "LET", TOK_KEY_LET },
-            { "PRINT", TOK_KEY_PRINT },
-            { "REM", TOK_KEY_REM },
-            { "STOP", TOK_KEY_STOP },
-            { "THEN", TOK_KEY_THEN },
-            { "TO", TOK_KEY_TO },
-        };
-
-        /// <summary>
-        /// A value of the TOK_NUM.
-        /// </summary>
-        private float _numValue = 0.0f;
-
-        // A value of TOK_VARIDNT, TOK_STRIDNT or TOK_KEYW tokens.
-        private string _strValue = null;
-
+        #endregion
+                
         #endregion
     }
 }
@@ -1061,5 +1038,29 @@ fractional-part : '.' { - digit } .
 quoted-string : '"' { string-character } '"' .
 
 string-character : ! '"' & ! end-of-line .
+
+---
+
+expression : numeric-expression | string-expression .
+
+numeric-expression : [ sign ] term { sign term } .
+
+term : factor { multiplier factor } .
+
+factor : primary { '^' primary } .
+
+sign : '+' | '-' .
+
+multiplier : '*' | '/' .
+
+primary :
+  numeric-variable | 
+  number | 
+  '(' numeric-expression ')' .
+
+string-expression : string-variable | string-constant .
+
+string-constant : quoted-string .
+
 
 */
