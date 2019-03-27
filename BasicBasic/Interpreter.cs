@@ -441,23 +441,17 @@ namespace BasicBasic
 
             while (true)
             {
-                NextToken();
-
                 if (_tok == TOK_PLUS)
                 {
                     NextToken();
 
-                    var n = Term();
-
-                    v = Value.Numeric(v.NumValue + n.NumValue);
+                    v = Value.Numeric(v.NumValue + Term().NumValue);
                 }
                 else if (_tok == TOK_MINUS)
                 {
                     NextToken();
 
-                    var n = Term();
-
-                    v = Value.Numeric(v.NumValue - n.NumValue);
+                    v = Value.Numeric(v.NumValue - Term().NumValue);
                 }
                 else
                 {
@@ -468,13 +462,53 @@ namespace BasicBasic
             return (negate) ? Value.Numeric(-v.NumValue) : v;
         }
 
-        // term : number | numeric-variable .
+        // term : factor { multiplier factor } .
+        // multiplier : '*' | '/' .
         private Value Term()
+        {
+            var v = Factor();
+
+            while (true)
+            {
+                if (_tok == TOK_MULT)
+                {
+                    NextToken();
+
+                    v = Value.Numeric(v.NumValue * Factor().NumValue);
+                }
+                else if (_tok == TOK_DIV)
+                {
+                    NextToken();
+
+                    var n = Factor();
+
+                    // TODO: Division by zero, if n = 0.
+
+                    v = Value.Numeric(v.NumValue / n.NumValue);
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return v;
+        }
+
+        // factor : number | numeric-variable .
+        private Value Factor()
         {
             switch (_tok)
             {
-                case TOK_NUM: return Value.Numeric(_numValue);
-                case TOK_VARIDNT: return Value.Numeric(GetNVar(_strValue));
+                case TOK_NUM:
+                    var s = Value.Numeric(_numValue);
+                    NextToken();
+                    return s;
+
+                case TOK_VARIDNT:
+                    var v = Value.Numeric(GetNVar(_strValue));
+                    NextToken();
+                    return v;
 
                 default:
                     UnexpectedTokenError(_tok);
@@ -1155,7 +1189,11 @@ expression : numeric-expression | string-expression .
 
 numeric-expression : [ sign ] term { sign term } .
 
-term : number | numeric-variable .
+term : factor { multiplier factor } .
+
+factor : number | numeric-variable .
+
+multiplier : '*' | '/' .
 
 sign : '+' | '-' .
 

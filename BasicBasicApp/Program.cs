@@ -75,7 +75,7 @@ namespace BasicBasicApp
 7 REM A and A0 are the same variables.
 8 let a = 5
 9 let a0 = 6
-6 let z9 = 666
+6 let z9 = 666 / 6 * 3
 11 LET A3 = 66
 12 let b = -a3
 13 let s$ = ""str""
