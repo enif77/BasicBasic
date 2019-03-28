@@ -96,7 +96,7 @@ namespace BasicBasicApp
 34 PRINT ""Hello, world!""
 40 let c = 5 * (3 + 2)
 41 print ""c = ""; c
-42 print ""d = ""; d
+42 print ""d = ""; abs(d * sin(100))
 43 print ""c2 = ""; c2
 50 end
 ";

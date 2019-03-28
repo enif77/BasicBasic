@@ -573,7 +573,7 @@ namespace BasicBasic
             return v;
         }
 
-        // primary : number | numeric-variable | '(' numeric-expression ')' .
+        // primary : number | numeric-variable | numeric-function | '(' numeric-expression ')' .
         private float Primary()
         {
             switch (_tok)
@@ -595,6 +595,69 @@ namespace BasicBasic
                     NextToken();
                     return v;
 
+                case TOK_FN:
+                    {
+                        var fnName = _strValue;
+                        NextToken();
+                        v = NumericExpression();
+                        ExpToken(TOK_RBRA);
+                        NextToken();
+
+                        switch (fnName)
+                        {
+                            case "ABS":
+                                v = Math.Abs(v);
+                                break;
+
+                            case "ATN":
+                                v = (float)Math.Atan(v);
+                                break;
+
+                            case "COS":
+                                v = (float)Math.Cos(v);
+                                break;
+
+                            case "EXP":
+                                v = (float)Math.Exp(v);
+                                break;
+
+                            case "INT":
+                                v = (float)Math.Floor(v);
+                                break;
+
+                            case "LOG":
+                                // TODO: X must be greater than zero.
+                                v = (float)Math.Log(v);
+                                break;
+
+                            case "RND":
+                                break;
+
+                            case "SGN":
+                                v = Math.Sign(v);
+                                break;
+
+                            case "SIN":
+                                v = (float)Math.Sin(v);
+                                break;
+
+                            case "SQR":
+                                // TODO: X must be nonnegative.
+                                v = (float)Math.Sqrt(v);
+                                break;
+
+                            case "TAN":
+                                v = (float)Math.Tan(v);
+                                break;
+
+                            default:
+                                Error("Unknown function nabe '{0}'.", fnName);
+                                break;
+                        }
+
+                        return v;
+                    }
+                    
                 default:
                     UnexpectedTokenError(_tok);
                     break;
@@ -667,6 +730,8 @@ namespace BasicBasic
         private const int TOK_STRIDNT = 6;
         private const int TOK_NUM = 10;
         private const int TOK_QSTR = 11;
+        private const int TOK_FN = 12;
+        private const int TOK_UFN = 12;
 
         private const int TOK_PLSTSEP = 20;  // ;
         private const int TOK_LSTSEP = 21;  // ,
@@ -744,7 +809,7 @@ namespace BasicBasic
         /// </summary>
         private float _numValue = 0.0f;
 
-        // A value of TOK_QSTR or TOK_STRIDNT tokens.
+        // A value of TOK_QSTR, TOK_STRIDNT, TOK_FN and TOK_UFN tokens.
         private string _strValue = null;
 
 
@@ -913,6 +978,8 @@ namespace BasicBasic
         // A$ -> string var name
         // A(...) -> array var name
         // PRINT -> a key word
+        // ABS, ATN, COS, EXP, INT, LOG, RND, SGN, SIN, SQR, TAN -> TOK_FN
+        // FNx -> TOK_UFN
         private void ParseIdent(char c)
         {
             var tok = TOK_VARIDNT;
@@ -953,7 +1020,14 @@ namespace BasicBasic
                 }
                 else
                 {
-                    Error("unknown token '{0}' at line {1}.", strValue, _currentProgramLine.Label);
+                    if (strValue.Length != 3)
+                    {
+                        Error("Unknown token '{0}' at line {1}.", strValue, _currentProgramLine.Label);
+                    }
+
+                    tok = strValue.StartsWith("FN") 
+                        ? TOK_UFN 
+                        : TOK_FN;
                 }
 
                 _strValue = strValue;
@@ -1363,7 +1437,7 @@ term : factor { multiplier factor } .
 
 factor : primary { '^' primary } .
 
-primary : number | numeric-variable | '(' numeric-expression ')' .
+primary : number | numeric-variable | numeric-function | '(' numeric-expression ')' .
 
 multiplier : '*' | '/' .
 
