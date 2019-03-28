@@ -71,53 +71,56 @@ namespace BasicBasicApp
         //99 END
         //";
 
-//        static string _source = @"10 PRINT 11
-//4 let d = -2
-//5 let c = 10 ^ d
-//7 REM A and A0 are the same variables.
-//8 let a = 5
-//9 let a0 = 6
-//6 let z9 = 666 / 6 * 3
-//11 LET A3 = 66
-//12 let b = -a3
-//13 let s$ = ""str""
-//14 let s1 = ""123""
-//15 let s2 = ""a123""
-//19 if a = 5 then 26
-//20 PRINT
-//23 print a0 + 100 - b, "" ""; a, "" "", a3, "" ""; b; "" "", s$, "" "", 78.25 
-//24 print ""s1 = ""; s1
-//25 print ""s2 = ""; s2
-//26 print ""z9 = ""; z9
-//27 print ""c = ""; c
-//30 go to 34
-//31 stop
-//34 PRINT ""Hello, world!""
-//40 let c = 5 * (3 + 2)
-//41 print ""c = ""; c
-//50 end
-//";
-
-//static string _source = @"1 REM While loop test.
-//10 let a = 5
-//11 if a < 1 then 99
-//12 PRINT ""Hello, world!""
-//15 let a = a - 1
-//20 goto 11
-//99 END
-//";
-
-static string _source = @"1 REM GO SUB test.
-10 let a = 5
-11 go sub 60
-12 if a < 0 then 50
-13 go to 11
-50 STOP
-60 print a
-61 let a = a - 1
-62 return
-99 END
+        static string _source = @"1 rem Various tests.
+10 PRINT 11
+4 let d = +5.3E-4 * -2
+5 let c2 = 10 ^ -2
+7 REM A and A0 are the same variables.
+8 let a = 5
+9 let a0 = 6
+6 let z9 = 666 / 6 * 3
+11 LET A3 = 66
+12 let b = -a3
+13 let s$ = ""str""
+14 let s1 = ""123""
+15 let s2 = ""a123""
+19 if a = 5 then 26
+20 PRINT
+23 print a0 + 100 - b, "" ""; a, "" "", a3, "" ""; b; "" "", s$, "" "", 78.25 
+24 print ""s1 = ""; s1
+25 print ""s2 = ""; s2
+26 print ""z9 = ""; z9
+27 print ""c = ""; c
+30 go to 34
+31 stop
+34 PRINT ""Hello, world!""
+40 let c = 5 * (3 + 2)
+41 print ""c = ""; c
+42 print ""d = ""; d
+43 print ""c2 = ""; c2
+50 end
 ";
+
+        //static string _source = @"1 REM While loop test.
+        //10 let a = 5
+        //11 if a < 1 then 99
+        //12 PRINT ""Hello, world!""
+        //15 let a = a - 1
+        //20 goto 11
+        //99 END
+        //";
+
+        //static string _source = @"1 REM GO SUB test.
+        //10 let a = 5
+        //11 go sub 60
+        //12 if a < 0 then 50
+        //13 go to 11
+        //50 STOP
+        //60 print a
+        //61 let a = a - 1
+        //62 return
+        //99 END
+        //";
 
     }
 }

@@ -862,8 +862,40 @@ namespace BasicBasic
                         return;
                     }
 
-                    case '+': _tok = TOK_PLUS; return;
-                    case '-': _tok = TOK_MINUS; return;
+                    case '+':
+                    {
+                        var cc = NextChar();
+                        _currentProgramLinePos--;
+
+                        if (IsDigit(cc) || cc == '.')
+                        {
+                            ParseNumber(c);
+                        }
+                        else
+                        {
+                            _tok = TOK_PLUS;
+                        }
+
+                        return;
+                    }
+
+                    case '-':
+                    {
+                        var cc = NextChar();
+                        _currentProgramLinePos--;
+
+                        if (IsDigit(cc) || cc == '.')
+                        {
+                            ParseNumber(c);
+                        }
+                        else
+                        {
+                            _tok = TOK_MINUS;
+                        }
+                            
+                        return;
+                    }
+
                     case '*': _tok = TOK_MULT; return;
                     case '/': _tok = TOK_DIV; return;
                     case '^': _tok = TOK_POW; return;
@@ -962,12 +994,28 @@ namespace BasicBasic
         }
 
 
-        // 123 -> integer
-        // 12.3 -> number
-        // 12. -> number
-        // .12 -> number
+        //number : 
+        //    ( [ sign - ] decimal-part [ - fractional-part ] [ - exponent-part ] ) | 
+        //    ( [ sign - ] '.' - digit { - digit } [ - exponent-part ] ) .
+        //
+        //decimal-part : digit { - digit } .
+        //
+        //fractional-part : '.' { - digit } .
+        //
+        //exponent.part : 'E' [ - sign ] - digit { - digit } .
         private void ParseNumber(char c)
         {
+            var negate = false;
+            if (c == '+')
+            {
+                c = NextChar();
+            }
+            else if (c == '-')
+            {
+                negate = true;
+                c = NextChar();
+            }
+
             var numValue = 0.0f;
             while (IsDigit(c))
             {
@@ -990,8 +1038,36 @@ namespace BasicBasic
                 }
             }
 
+            if (c == 'E')
+            {
+                c = NextChar();
+
+                var negateExp = false;
+                if (c == '+')
+                {
+                    c = NextChar();
+                }
+                else if (c == '-')
+                {
+                    negateExp = true;
+                    c = NextChar();
+                }
+
+                var exp = 0f;
+                while (IsDigit(c))
+                {
+                    exp = exp * 10.0f + (c - '0');
+
+                    c = NextChar();
+                }
+
+                exp = negateExp ? -exp : exp;
+
+                numValue = (float)(numValue * Math.Pow(10.0, exp));
+            }
+
             _tok = TOK_NUM;
-            _numValue = numValue;
+            _numValue = negate ? -numValue : numValue;
 
             // Go one char back, so the next time we will read the character behind this number.
             _currentProgramLinePos--;
@@ -1293,11 +1369,15 @@ multiplier : '*' | '/' .
 
 sign : '+' | '-' .
 
-number : ( decimal-part [ - fractional-part ] ) | ( '.' - digit { - digit } ) .
-    
+number : 
+    ( [ sign - ] decimal-part [ - fractional-part ] [ - exponent-part ] ) | 
+    ( [ sign - ] '.' - digit { - digit } [ - exponent-part ] ) .
+
 decimal-part : digit { - digit } .
 
 fractional-part : '.' { - digit } .
+
+exponent.part : 'E' [ - sign ] - digit { - digit } .
 
 string-expression : string-variable | string-constant .
 
