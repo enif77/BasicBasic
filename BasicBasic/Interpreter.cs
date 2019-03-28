@@ -36,6 +36,7 @@ namespace BasicBasic
 
         public readonly int MaxLabel = 99;
         public readonly int MaxProgramLineLength = 72;  // ECMA-55
+        public readonly int ReturnStackSize = 32;
 
         #endregion
 
@@ -91,6 +92,8 @@ namespace BasicBasic
         private ProgramLine _currentProgramLine;
         private ProgramLine[] _programLines;
         private bool _wasEnd = false;
+        private int[] _returnStack;
+        private int _returnStackTop;
 
 
         private ProgramLine NextProgramLine(int fromLabel)
@@ -111,6 +114,8 @@ namespace BasicBasic
         private void InterpretImpl()
         {
             _wasEnd = false;
+            _returnStack = new int[ReturnStackSize];
+            _returnStackTop = -1;
 
             for (var i = 0; i < _nvars.Length; i++)
             {
@@ -149,12 +154,14 @@ namespace BasicBasic
             {
                 case TOK_KEY_END: return EndStatement();
                 case TOK_KEY_GO:
+                case TOK_KEY_GOSUB:
                 case TOK_KEY_GOTO:
                     return GoToStatement();
                 case TOK_KEY_IF: return IfStatement();
                 case TOK_KEY_LET: return LetStatement();
                 case TOK_KEY_PRINT: return PrintStatement();
                 case TOK_KEY_REM: return RemStatement();
+                case TOK_KEY_RETURN: return ReturnStatement();
                 case TOK_KEY_STOP: return StopStatement();
 
                 default:
@@ -186,26 +193,56 @@ namespace BasicBasic
 
             return null;
         }
-               
+
         // GO TO line-number EOLN
         // GOTO line-number EOLN
+        // GO SUB line-number EOLN
+        // GOSUB line-number EOLN
         private ProgramLine GoToStatement()
         {
-            // GO TO ...
+            var gosub = false;
+
+            // GO TO or GO SUB ...
             if (_tok == TOK_KEY_GO)
             {
                 // Eat TO.
                 NextToken();
-                ExpToken(TOK_KEY_TO);
+
+                // GO SUB?
+                if (_tok == TOK_KEY_SUB)
+                {
+                    gosub = true;
+                }
+                else
+                {
+                    ExpToken(TOK_KEY_TO);
+                }
+            }
+            else if (_tok == TOK_KEY_GOSUB)
+            {
+                gosub = true;
             }
 
-            // Get the label.
+            // Eat the statement.
             NextToken();
+
+            // Get the label.
             var label = ExpLabel();
+            NextToken();
 
             // EOLN.
-            NextToken();
             ExpToken(TOK_EOLN);
+
+            if (gosub)
+            {
+                _returnStackTop++;
+                if (_returnStackTop >= _returnStack.Length)
+                {
+                    Error("Return stack overflow.");
+                }
+
+                _returnStack[_returnStackTop] = _currentProgramLine.Label;
+            }
 
             return _programLines[label - 1];
         }
@@ -376,7 +413,22 @@ namespace BasicBasic
         {
             return NextProgramLine(_currentProgramLine.Label);
         }
-        
+
+        // Returns from a subroutine.
+        // RETURN EOLN
+        private ProgramLine ReturnStatement()
+        {
+            NextToken();
+            ExpToken(TOK_EOLN);
+
+            if (_returnStackTop < 0)
+            {
+                Error("Return stack underflow.");
+            }
+
+            return NextProgramLine(_returnStack[_returnStackTop--]);
+        }
+
         // The end of execution.
         // STOP EOLN
         private ProgramLine StopStatement()
@@ -642,7 +694,7 @@ namespace BasicBasic
         private const int TOK_KEY_END = 104;
         //private const int TOK_KEY_FOR = 105;
         private const int TOK_KEY_GO = 106;
-        //private const int TOK_KEY_GOSUB = 107;
+        private const int TOK_KEY_GOSUB = 107;
         private const int TOK_KEY_GOTO = 108;
         private const int TOK_KEY_IF = 109;
         //private const int TOK_KEY_INPUT = 110;
@@ -655,10 +707,10 @@ namespace BasicBasic
         //private const int TOK_KEY_READ = 117;
         private const int TOK_KEY_REM = 118;
         //private const int TOK_KEY_RESTORE = 119;
-        //private const int TOK_KEY_RETURN = 120;
+        private const int TOK_KEY_RETURN = 120;
         //private const int TOK_KEY_STEP = 121;
         private const int TOK_KEY_STOP = 122;
-        //private const int TOK_KEY_SUB = 123;
+        private const int TOK_KEY_SUB = 123;
         private const int TOK_KEY_THEN = 124;
         private const int TOK_KEY_TO = 125;
 
@@ -666,12 +718,15 @@ namespace BasicBasic
         {
             { "END", TOK_KEY_END },
             { "GO", TOK_KEY_GO },
+            { "GOSUB", TOK_KEY_GOSUB },
             { "GOTO", TOK_KEY_GOTO },
             { "IF", TOK_KEY_IF },
             { "LET", TOK_KEY_LET },
             { "PRINT", TOK_KEY_PRINT },
             { "REM", TOK_KEY_REM },
+            { "RETURN", TOK_KEY_RETURN },
             { "STOP", TOK_KEY_STOP },
+            { "SUB", TOK_KEY_SUB },
             { "THEN", TOK_KEY_THEN },
             { "TO", TOK_KEY_TO },
         };
