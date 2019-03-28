@@ -93,6 +93,8 @@ namespace BasicBasicApp
 30 go to 34
 31 stop
 34 PRINT ""Hello, world!""
+40 let c = 5 * (3 + 2)
+41 print ""c = ""; c
 50 end
 ";
 

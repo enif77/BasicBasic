@@ -403,19 +403,19 @@ namespace BasicBasic
 
                 NextToken();
 
-                return s;
+                return Value.String(s);
             }
 
-            return NumericExpression();
+            return Value.Numeric(NumericExpression());
         }
 
         // string-expression : string-variable | string-constant .
-        private Value StringExpression()
+        private string StringExpression()
         {
             switch (_tok)
             {
-                case TOK_QSTR: return Value.String(_strValue);
-                case TOK_STRIDNT: return Value.String(GetSVar(_strValue));
+                case TOK_QSTR: return _strValue;
+                case TOK_STRIDNT: return GetSVar(_strValue);
 
                 default:
                     UnexpectedTokenError(_tok);
@@ -428,7 +428,7 @@ namespace BasicBasic
         // numeric-expression : [ sign ] term { sign term } .
         // term : number | numeric-variable .
         // sign : '+' | '-' .
-        private Value NumericExpression()
+        private float NumericExpression()
         {
             var negate = false;
             if (_tok == TOK_PLUS)
@@ -449,13 +449,13 @@ namespace BasicBasic
                 {
                     NextToken();
 
-                    v = Value.Numeric(v.NumValue + Term().NumValue);
+                    v += Term();
                 }
                 else if (_tok == TOK_MINUS)
                 {
                     NextToken();
 
-                    v = Value.Numeric(v.NumValue - Term().NumValue);
+                    v -= Term();
                 }
                 else
                 {
@@ -463,12 +463,12 @@ namespace BasicBasic
                 }
             }
                      
-            return (negate) ? Value.Numeric(-v.NumValue) : v;
+            return (negate) ? -v : v;
         }
 
         // term : factor { multiplier factor } .
         // multiplier : '*' | '/' .
-        private Value Term()
+        private float Term()
         {
             var v = Factor();
 
@@ -478,7 +478,7 @@ namespace BasicBasic
                 {
                     NextToken();
 
-                    v = Value.Numeric(v.NumValue * Factor().NumValue);
+                    v *= Factor();
                 }
                 else if (_tok == TOK_DIV)
                 {
@@ -488,7 +488,7 @@ namespace BasicBasic
 
                     // TODO: Division by zero, if n = 0.
 
-                    v = Value.Numeric(v.NumValue / n.NumValue);
+                    v /= n;
                 }
                 else
                 {
@@ -500,7 +500,7 @@ namespace BasicBasic
         }
 
         // factor : primary { '^' primary } .
-        private Value Factor()
+        private float Factor()
         {
             var v = Primary();
 
@@ -510,7 +510,7 @@ namespace BasicBasic
                 {
                     NextToken();
 
-                    v = Value.Numeric((float)Math.Pow(v.NumValue, Primary().NumValue));
+                    v = (float)Math.Pow(v, Primary());
                 }
                 else
                 {
@@ -521,18 +521,25 @@ namespace BasicBasic
             return v;
         }
 
-        // primary : number | numeric-variable .
-        private Value Primary()
+        // primary : number | numeric-variable | '(' numeric-expression ')' .
+        private float Primary()
         {
             switch (_tok)
             {
                 case TOK_NUM:
-                    var s = Value.Numeric(_numValue);
+                    var s = _numValue;
                     NextToken();
                     return s;
 
                 case TOK_VARIDNT:
-                    var v = Value.Numeric(GetNVar(_strValue));
+                    var v = GetNVar(_strValue);
+                    NextToken();
+                    return v;
+
+                case TOK_LBRA:
+                    NextToken();
+                    v = NumericExpression();
+                    ExpToken(TOK_RBRA);
                     NextToken();
                     return v;
 
@@ -541,7 +548,7 @@ namespace BasicBasic
                     break;
             }
 
-            return null;
+            return float.NaN;
         }
 
         #endregion
@@ -1219,7 +1226,7 @@ term : factor { multiplier factor } .
 
 factor : primary { '^' primary } .
 
-primary : number | numeric-variable .
+primary : number | numeric-variable | '(' numeric-expression ')' .
 
 multiplier : '*' | '/' .
 
@@ -1238,29 +1245,5 @@ string-constant : quoted-string .
 quoted-string : '"' { string-character } '"' .
 
 string-character : ! '"' & ! end-of-line .
-
----
-
-expression : numeric-expression | string-expression .
-
-numeric-expression : [ sign ] term { sign term } .
-
-term : factor { multiplier factor } .
-
-factor : primary { '^' primary } .
-
-sign : '+' | '-' .
-
-multiplier : '*' | '/' .
-
-primary :
-  numeric-variable | 
-  number | 
-  '(' numeric-expression ')' .
-
-string-expression : string-variable | string-constant .
-
-string-constant : quoted-string .
-
 
 */
