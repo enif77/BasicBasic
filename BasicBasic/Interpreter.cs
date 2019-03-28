@@ -1239,13 +1239,17 @@ end-statement : "END" .
 
 statement :
   goto-statement | 
+  gosub-statement | 
   if-then-statement |
   let-statement |
   print-statement |
   remark-statement |
+  return-statement |
   stop statement .
 
 goto-statement : ( GO TO label ) | ( GOTO label ) .
+
+gosub-statement : ( GO SUB label ) | ( GOSUB label ) .
 
 if-then-statement : "IF" expression "THEN" label .
 
@@ -1260,6 +1264,8 @@ print-item : expression .
 print-separator : ',' | ';' .
 
 remark-statement : "REM" { any-character } .
+
+return-statement : "RETURN" .
 
 stop-statement : "STOP" .
 
