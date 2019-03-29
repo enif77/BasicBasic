@@ -95,6 +95,7 @@ namespace BasicBasic
         private int[] _returnStack;
         private int _returnStackTop;
         private int[] _userFns;
+        private Random _random;
 
 
         private ProgramLine NextProgramLine(int fromLabel)
@@ -118,6 +119,8 @@ namespace BasicBasic
             _returnStack = new int[ReturnStackSize];
             _returnStackTop = -1;
             _userFns = new int['Z' - 'A'];
+            _random = new Random(20170327);
+            
 
             for (var i = 0; i < _nvars.Length; i++)
             {
@@ -163,6 +166,7 @@ namespace BasicBasic
                 case TOK_KEY_IF: return IfStatement();
                 case TOK_KEY_LET: return LetStatement();
                 case TOK_KEY_PRINT: return PrintStatement();
+                case TOK_KEY_RANDOMIZE: return RandomizeStatement();
                 case TOK_KEY_REM: return RemStatement();
                 case TOK_KEY_RETURN: return ReturnStatement();
                 case TOK_KEY_STOP: return StopStatement();
@@ -182,8 +186,7 @@ namespace BasicBasic
         // DEF FNx = numeric-expression EOLN
         private ProgramLine DefStatement()
         {
-            // Eat DEF.
-            NextToken();
+            EatToken(TOK_KEY_DEF);
 
             // Get the function name.
             ExpToken(TOK_UFN);
@@ -205,7 +208,7 @@ namespace BasicBasic
         // END EOLN
         private ProgramLine EndStatement()
         {
-            NextToken();
+            EatToken(TOK_KEY_END);
             ExpToken(TOK_EOLN);
 
             var thisLine = _currentProgramLine;
@@ -278,8 +281,7 @@ namespace BasicBasic
         // rel-str :: = <>
         private ProgramLine IfStatement()
         {
-            // Eat IF.
-            NextToken();
+            EatToken(TOK_KEY_IF);
             
             var v1 = Expression();
 
@@ -288,8 +290,7 @@ namespace BasicBasic
 
             var v2 = Expression();
 
-            ExpToken(TOK_KEY_THEN);
-            NextToken();
+            EatToken(TOK_KEY_THEN);
 
             // Get the label.
             var label = ExpLabel();
@@ -366,12 +367,10 @@ namespace BasicBasic
         // var :: num-var | string-var
         private ProgramLine LetStatement()
         {
-            string varName = null;
-
-            // Eat LET.
-            NextToken();
+            EatToken(TOK_KEY_LET);
 
             // var
+            string varName = null;
             if (_tok == TOK_VARIDNT || _tok == TOK_STRIDNT)
             {
                 varName = _strValue;
@@ -381,16 +380,15 @@ namespace BasicBasic
                 UnexpectedTokenError(_tok);
             }
 
-            // '=' 
+            // Eat the variable identifier.
             NextToken();
-            ExpToken(TOK_EQL);
+
+            EatToken(TOK_EQL);
 
             // expr
-            NextToken();
             SetVar(varName, Expression());
-
+            
             // EOLN
-            NextToken();
             ExpToken(TOK_EOLN);
 
             return NextProgramLine(_currentProgramLine.Label);
@@ -432,7 +430,19 @@ namespace BasicBasic
 
             return NextProgramLine(_currentProgramLine.Label);
         }
-        
+
+        // Reseeds the random number generator.
+        // RANDOMIZE EOLN
+        private ProgramLine RandomizeStatement()
+        {
+            NextToken();
+            ExpToken(TOK_EOLN);
+            
+            _random = new Random((int)DateTime.Now.Ticks);
+
+            return NextProgramLine(_currentProgramLine.Label);
+        }
+
         // The comment.
         // REM ...
         private ProgramLine RemStatement()
@@ -617,18 +627,29 @@ namespace BasicBasic
                 case TOK_LBRA:
                     NextToken();
                     v = NumericExpression();
-                    ExpToken(TOK_RBRA);
-                    NextToken();
+                    EatToken(TOK_RBRA);
                     return v;
 
                 case TOK_FN:
                     {
                         var fnName = _strValue;
-                        NextToken();
-                        v = NumericExpression();
-                        ExpToken(TOK_RBRA);
-                        NextToken();
+                        if (fnName == "RND")
+                        {
+                            NextToken();
 
+                            return (float)_random.NextDouble();
+                        }
+                        else
+                        {
+                            NextToken();
+
+                            EatToken(TOK_LBRA);
+
+                            v = NumericExpression();
+
+                            EatToken(TOK_RBRA);
+                        }
+                        
                         switch (fnName)
                         {
                             case "ABS":
@@ -654,9 +675,6 @@ namespace BasicBasic
                             case "LOG":
                                 // TODO: X must be greater than zero.
                                 v = (float)Math.Log(v);
-                                break;
-
-                            case "RND":
                                 break;
 
                             case "SGN":
@@ -845,7 +863,7 @@ namespace BasicBasic
         //private const int TOK_KEY_ON = 113;
         //private const int TOK_KEY_OPTION = 114;
         private const int TOK_KEY_PRINT = 115;
-        //private const int TOK_KEY_RANDOMIZE = 116;
+        private const int TOK_KEY_RANDOMIZE = 116;
         //private const int TOK_KEY_READ = 117;
         private const int TOK_KEY_REM = 118;
         //private const int TOK_KEY_RESTORE = 119;
@@ -866,6 +884,7 @@ namespace BasicBasic
             { "IF", TOK_KEY_IF },
             { "LET", TOK_KEY_LET },
             { "PRINT", TOK_KEY_PRINT },
+            { "RANDOMIZE", TOK_KEY_RANDOMIZE },
             { "REM", TOK_KEY_REM },
             { "RETURN", TOK_KEY_RETURN },
             { "STOP", TOK_KEY_STOP },
@@ -912,6 +931,13 @@ namespace BasicBasic
         }
 
 
+        private void EatToken(int expTok)
+        {
+            ExpToken(expTok);
+            NextToken();
+        }
+
+
         private void ExpToken(int expTok)
         {
             if (_tok != expTok)
@@ -925,10 +951,10 @@ namespace BasicBasic
         {
             if (_currentProgramLine.Start + _currentProgramLinePos > _currentProgramLine.End)
             {
-                //Error("Read beyond the line end at line {0}.", _currentProgramLine.Label);
-                _tok = TOK_EOLN;
+                Error("Read beyond the line end at line {0}.", _currentProgramLine.Label);
+                //_tok = TOK_EOLN;
 
-                return;
+                //return;
             }
 
             var c = NextChar();
@@ -1087,14 +1113,14 @@ namespace BasicBasic
                     c = NextChar();
                 }
 
-                strValue = strValue.ToUpperInvariant();
+                // Go one char back, so the next time we will read the character behind this identifier.
+                _currentProgramLinePos--;
 
+                strValue = strValue.ToUpperInvariant();
+                               
                 if (_keyWordsMap.ContainsKey(strValue))
                 {
                     tok = _keyWordsMap[strValue];
-
-                    // Go one char back, so the next time we will read the character behind this identifier.
-                    _currentProgramLinePos--;
                 }
                 else
                 {
@@ -1472,6 +1498,7 @@ statement :
   if-then-statement |
   let-statement |
   print-statement |
+  randomize-statement |
   remark-statement |
   return-statement |
   stop statement .
@@ -1495,6 +1522,8 @@ print-list : { print-item print-separator } print-item .
 print-item : expression .
 
 print-separator : ',' | ';' .
+
+randomize-statement : "RANDOMIZE" .
 
 remark-statement : "REM" { any-character } .
 
@@ -1551,7 +1580,6 @@ quoted-string : '"' { string-character } '"' .
 string-character : ! '"' & ! end-of-line .
 
 ---
-
 
 10.  _U_S_E_R_ _D_E_F_I_N_E_D_ _F_U_N_C_T_I_O_N_S
 
