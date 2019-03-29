@@ -94,6 +94,7 @@ namespace BasicBasic
         private bool _wasEnd = false;
         private int[] _returnStack;
         private int _returnStackTop;
+        private int[] _userFns;
 
 
         private ProgramLine NextProgramLine(int fromLabel)
@@ -116,6 +117,7 @@ namespace BasicBasic
             _wasEnd = false;
             _returnStack = new int[ReturnStackSize];
             _returnStackTop = -1;
+            _userFns = new int['Z' - 'A'];
 
             for (var i = 0; i < _nvars.Length; i++)
             {
@@ -152,6 +154,7 @@ namespace BasicBasic
             // The statement.
             switch (_tok)
             {
+                case TOK_KEY_DEF: return DefStatement();
                 case TOK_KEY_END: return EndStatement();
                 case TOK_KEY_GO:
                 case TOK_KEY_GOSUB:
@@ -171,9 +174,32 @@ namespace BasicBasic
 
             return null;
         }
-               
+
 
         #region statements
+
+        // An user defined function.
+        // DEF FNx = numeric-expression EOLN
+        private ProgramLine DefStatement()
+        {
+            // Eat DEF.
+            NextToken();
+
+            // Get the function name.
+            ExpToken(TOK_UFN);
+            var fname = _strValue;
+
+            // Do not redefine user functions.
+            if (_userFns[fname[2] - 'A'] != 0)
+            {
+                Error("{0} function redefinition at line {1}.", fname, _currentProgramLine.Label);
+            }
+
+            // Save this function definition.
+            _userFns[fname[2] - 'A'] = _currentProgramLine.Label;
+
+            return NextProgramLine(_currentProgramLine.Label);
+        }
 
         // The end of program.
         // END EOLN
@@ -573,7 +599,7 @@ namespace BasicBasic
             return v;
         }
 
-        // primary : number | numeric-variable | numeric-function | '(' numeric-expression ')' .
+        // primary : number | numeric-variable | numeric-function | '(' numeric-expression ')' | user-function .
         private float Primary()
         {
             switch (_tok)
@@ -657,6 +683,57 @@ namespace BasicBasic
 
                         return v;
                     }
+
+                case TOK_UFN:
+                    {
+                        var fname = _strValue;
+                        var flabel = _userFns[fname[2] - 'A'];
+                        if (flabel == 0)
+                        {
+                            Error("Undefined user function {0}.", fname);
+                        }
+
+                        // Eat the function name.
+                        NextToken();
+                        
+                        // Remember, where we are.
+                        var cpl = _currentProgramLine;
+                        var cplp = _currentProgramLinePos;
+
+                        // Go to the user function definition.
+                        _currentProgramLine = _programLines[flabel - 1];
+                        _currentProgramLinePos = 0;
+
+                        // DEF
+                        NextToken();
+                        ExpToken(TOK_KEY_DEF);
+
+                        // Function name.
+                        NextToken();
+                        ExpToken(TOK_UFN);
+
+                        if (fname != _strValue)
+                        {
+                            Error("Unexpected function definition ({0}) at line {1}.", _strValue, _currentProgramLine.Label);
+                        }
+
+                        // '='
+                        NextToken();
+                        ExpToken(TOK_EQL);
+
+                        // Eat '='.
+                        NextToken();
+
+                        v = NumericExpression();
+
+                        ExpToken(TOK_EOLN);
+
+                        // Restore the previous position.
+                        _currentProgramLine = cpl;
+                        _currentProgramLinePos = cplp;
+
+                        return v;
+                    }
                     
                 default:
                     UnexpectedTokenError(_tok);
@@ -731,7 +808,7 @@ namespace BasicBasic
         private const int TOK_NUM = 10;
         private const int TOK_QSTR = 11;
         private const int TOK_FN = 12;
-        private const int TOK_UFN = 12;
+        private const int TOK_UFN = 13;
 
         private const int TOK_PLSTSEP = 20;  // ;
         private const int TOK_LSTSEP = 21;  // ,
@@ -754,7 +831,7 @@ namespace BasicBasic
 
         //private const int TOK_KEY_BASE = 100;
         //private const int TOK_KEY_DATA = 101;
-        //private const int TOK_KEY_DEF = 102;
+        private const int TOK_KEY_DEF = 102;
         //private const int TOK_KEY_DIM = 103;
         private const int TOK_KEY_END = 104;
         //private const int TOK_KEY_FOR = 105;
@@ -781,6 +858,7 @@ namespace BasicBasic
 
         private readonly Dictionary<string, int> _keyWordsMap = new Dictionary<string, int>()
         {
+            { "DEF", TOK_KEY_DEF },
             { "END", TOK_KEY_END },
             { "GO", TOK_KEY_GO },
             { "GOSUB", TOK_KEY_GOSUB },
@@ -1388,6 +1466,7 @@ end-line : label end-statement end-of-line .
 end-statement : "END" .
 
 statement :
+  def-statement |
   goto-statement | 
   gosub-statement | 
   if-then-statement |
@@ -1396,6 +1475,10 @@ statement :
   remark-statement |
   return-statement |
   stop statement .
+
+def-statement : "DEF" user-function-name '=' numeric-expression EOLN
+
+user-function-name : "FNA" .. 'FNZ' .
 
 goto-statement : ( GO TO label ) | ( GOTO label ) .
 
@@ -1433,15 +1516,21 @@ expression : numeric-expression | string-expression .
 
 numeric-expression : [ sign ] term { sign term } .
 
+sign : '+' | '-' .
+
 term : factor { multiplier factor } .
-
-factor : primary { '^' primary } .
-
-primary : number | numeric-variable | numeric-function | '(' numeric-expression ')' .
 
 multiplier : '*' | '/' .
 
-sign : '+' | '-' .
+factor : primary { '^' primary } .
+
+primary : number | numeric-variable | numeric-function | '(' numeric-expression ')' | user-function .
+
+numeric-function : numeric-function-name '(' numeric-expression ')' .
+
+numeric-function-name : "ABS" | "ATN" | "COS" | "EXP" | "INT" | "LOG" | "RND" | "SGN" | "SIN" | "SQR" | "TAN" .
+
+user-function : user-function-name .
 
 number : 
     ( [ sign - ] decimal-part [ - fractional-part ] [ - exponent-part ] ) | 
@@ -1460,5 +1549,76 @@ string-constant : quoted-string .
 quoted-string : '"' { string-character } '"' .
 
 string-character : ! '"' & ! end-of-line .
+
+---
+
+
+10.  _U_S_E_R_ _D_E_F_I_N_E_D_ _F_U_N_C_T_I_O_N_S
+
+ 10.1  _G_e_n_e_r_a_l_ _D_e_s_c_r_i_p_t_i_o_n
+
+       In addition to the implementation supplied functions provided
+       for the convenience of the programmer (see 9), BASIC allows
+       the programmer to define new functions within a program.
+
+       The general form of statements for defining functions is
+
+                    DEF FNx = expression
+       or           DEF FNx (parameter) = expression
+
+       where x is a single letter and a parameter is a simple numeric-
+       variable.
+
+ 10.2  _S_y_n_t_a_x
+
+       1. def-statement      = DEF numeric-defined-function
+                               parameter-list? equals-sign
+                               numeric-expression
+       2. numeric-defined-
+          function           = FN letter
+       3. parameter-list     = left-parenthesis parameter
+                               right-parenthesis
+       4. parameter          = simple-numeric-variable
+
+ 10.3  _E_x_a_m_p_l_e_s
+
+       DEF FNF(X) = X^4 - 1    DEF FNP = 3.14159
+       DEF FNA(X) = A*X + B
+
+ 10.4  _S_e_m_a_n_t_i_c_s
+
+       A function definition specifies the means of evaluation the
+       function in terms of the value of an expression involving the
+       parameter appearing in the parameter-list and possibly other
+       variables or constants. When the function is referenced, i.e.
+       when an expression involving the function is evaluated, then
+       the expression in the argument list for the function reference,
+       if any, is evaluated and its value is assigned to the parameter
+       in the parameter-list for the function definition (the number
+       of arguments shall correspond exactly to the number of para-
+       meters). The expression in the function definition is then eva-
+       luated, and this value is assigned as the value of the function.
+
+                                 - 14 -
+
+       The parameter appearing in the parameter-list of a function
+       definition is local to that definition, i.e. it is distinct
+       from any variable with the same name outside of the function
+       definition. Variables which do not appear in the parameter-
+       list are the variables of the same name outside the function
+       definition.
+
+       A function definition shall occur in a lower numbered line
+       than that of the first reference to the function. The expres-
+       sion in a def-statement is not evaluated unless the defined
+       function is referenced.
+
+       If the execution of a program reaches a line containing a
+       def-statement, then it shall proceed to the next line with no
+       other effect.
+
+       A function definition may refer to other defined functions,
+       but not to the function being defined. A function shall be de-
+       fined at most once in a program.
 
 */
