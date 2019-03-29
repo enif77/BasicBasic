@@ -713,7 +713,16 @@ namespace BasicBasic
 
                         // Eat the function name.
                         NextToken();
-                        
+
+                        // FNA(X)
+                        var p = (float?)null;
+                        if (_tok == TOK_LBRA)
+                        {
+                            NextToken();
+                            p = NumericExpression();
+                            EatToken(TOK_RBRA);
+                        }
+
                         // Remember, where we are.
                         var cpl = _currentProgramLine;
                         var cplp = _currentProgramLinePos;
@@ -724,10 +733,9 @@ namespace BasicBasic
 
                         // DEF
                         NextToken();
-                        ExpToken(TOK_KEY_DEF);
+                        EatToken(TOK_KEY_DEF);
 
                         // Function name.
-                        NextToken();
                         ExpToken(TOK_UFN);
 
                         if (fname != _strValue)
@@ -735,12 +743,42 @@ namespace BasicBasic
                             Error("Unexpected function definition ({0}) at line {1}.", _strValue, _currentProgramLine.Label);
                         }
 
-                        // '='
+                        // Eat the function name.
                         NextToken();
-                        ExpToken(TOK_EQL);
 
-                        // Eat '='.
-                        NextToken();
+                        // FNx(X)
+                        var paramName = (string)null;
+                        if (_tok == TOK_LBRA)
+                        {
+                            if (p.HasValue == false)
+                            {
+                                Error("The {0} function expects a parameter.", fname);
+                            }
+
+                            // Eat '(';
+                            NextToken();
+
+                            // A siple variable name (A .. Z) expected.
+                            if (_tok != TOK_VARIDNT || _strValue.Length > 1)
+                            {
+                                Error("A siple variable name (A .. Z) expected.");
+                            }
+
+                            paramName = _strValue;
+
+                            NextToken();
+                            EatToken(TOK_RBRA);
+                        }
+                        else
+                        {
+                            if (p.HasValue)
+                            {
+                                Error("The {0} function does not expect a parameter.", fname);
+                            }
+                        }
+                                               
+                        // '='
+                        EatToken(TOK_EQL);
 
                         v = NumericExpression();
 

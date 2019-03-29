@@ -71,35 +71,35 @@ namespace BasicBasicApp
         //99 END
         //";
 
-//        static string _source = @"1 rem Various tests.
-//10 PRINT 11
-//4 let d = +5.3E-4 * -2
-//5 let c2 = 10 ^ -2
-//7 REM A and A0 are the same variables.
-//8 let a = 5
-//9 let a0 = 6
-//6 let z9 = 666 / 6 * 3
-//11 LET A3 = 66
-//12 let b = -a3
-//13 let s$ = ""str""
-//14 let s1 = ""123""
-//15 let s2 = ""a123""
-//19 if a = 5 then 26
-//20 PRINT
-//23 print a0 + 100 - b, "" ""; a, "" "", a3, "" ""; b; "" "", s$, "" "", 78.25 
-//24 print ""s1 = ""; s1
-//25 print ""s2 = ""; s2
-//26 print ""z9 = ""; z9
-//27 print ""c = ""; c
-//30 go to 34
-//31 stop
-//34 PRINT ""Hello, world!""
-//40 let c = 5 * (3 + 2)
-//41 print ""c = ""; c
-//42 print ""d = ""; abs(d * sin(100))
-//43 print ""c2 = ""; c2
-//50 end
-//";
+        //        static string _source = @"1 rem Various tests.
+        //10 PRINT 11
+        //4 let d = +5.3E-4 * -2
+        //5 let c2 = 10 ^ -2
+        //7 REM A and A0 are the same variables.
+        //8 let a = 5
+        //9 let a0 = 6
+        //6 let z9 = 666 / 6 * 3
+        //11 LET A3 = 66
+        //12 let b = -a3
+        //13 let s$ = ""str""
+        //14 let s1 = ""123""
+        //15 let s2 = ""a123""
+        //19 if a = 5 then 26
+        //20 PRINT
+        //23 print a0 + 100 - b, "" ""; a, "" "", a3, "" ""; b; "" "", s$, "" "", 78.25 
+        //24 print ""s1 = ""; s1
+        //25 print ""s2 = ""; s2
+        //26 print ""z9 = ""; z9
+        //27 print ""c = ""; c
+        //30 go to 34
+        //31 stop
+        //34 PRINT ""Hello, world!""
+        //40 let c = 5 * (3 + 2)
+        //41 print ""c = ""; c
+        //42 print ""d = ""; abs(d * sin(100))
+        //43 print ""c2 = ""; c2
+        //50 end
+        //";
 
         //static string _source = @"1 REM While loop test.
         //10 let a = 5
@@ -122,15 +122,16 @@ namespace BasicBasicApp
         //99 END
         //";
 
-        //        static string _source = @"1 REM User functions test.
-        //09 let a = 10
-        //10 def fna = 5
-        //11 def fnb = a + fna
-        //12 PRINT ""x = "", fnb
-        //99 END
-        //";
+        static string _source = @"1 REM User functions test.
+08 let x = 3
+09 let a = 10
+10 def fna(x) = 5 + x
+11 def fnb = a + fna(5)
+12 PRINT ""x = "", fnb
+99 END
+";
 
-        static string _source = @"1 REM RND test.
+        static string _source5 = @"1 REM RND test.
 10 PRINT RND, "" "", RND
 20 RANDOMIZE
 30 PRINT RND, "" "", RND
