@@ -516,7 +516,7 @@ namespace BasicBasic
         // numeric-expression : [ sign ] term { sign term } .
         // term : number | numeric-variable .
         // sign : '+' | '-' .
-        private float NumericExpression()
+        private float NumericExpression(string paramName = null, float? paramValue = null)
         {
             var negate = false;
             if (_tok == TOK_PLUS)
@@ -529,7 +529,7 @@ namespace BasicBasic
                 NextToken();
             }
 
-            var v = Term();
+            var v = Term(paramName, paramValue);
 
             while (true)
             {
@@ -537,13 +537,13 @@ namespace BasicBasic
                 {
                     NextToken();
 
-                    v += Term();
+                    v += Term(paramName, paramValue);
                 }
                 else if (_tok == TOK_MINUS)
                 {
                     NextToken();
 
-                    v -= Term();
+                    v -= Term(paramName, paramValue);
                 }
                 else
                 {
@@ -556,9 +556,9 @@ namespace BasicBasic
 
         // term : factor { multiplier factor } .
         // multiplier : '*' | '/' .
-        private float Term()
+        private float Term(string paramName = null, float? paramValue = null)
         {
-            var v = Factor();
+            var v = Factor(paramName, paramValue);
 
             while (true)
             {
@@ -566,13 +566,13 @@ namespace BasicBasic
                 {
                     NextToken();
 
-                    v *= Factor();
+                    v *= Factor(paramName, paramValue);
                 }
                 else if (_tok == TOK_DIV)
                 {
                     NextToken();
 
-                    var n = Factor();
+                    var n = Factor(paramName, paramValue);
 
                     // TODO: Division by zero, if n = 0.
 
@@ -588,9 +588,9 @@ namespace BasicBasic
         }
 
         // factor : primary { '^' primary } .
-        private float Factor()
+        private float Factor(string paramName = null, float? paramValue = null)
         {
-            var v = Primary();
+            var v = Primary(paramName, paramValue);
 
             while (true)
             {
@@ -598,7 +598,7 @@ namespace BasicBasic
                 {
                     NextToken();
 
-                    v = (float)Math.Pow(v, Primary());
+                    v = (float)Math.Pow(v, Primary(paramName, paramValue));
                 }
                 else
                 {
@@ -610,7 +610,7 @@ namespace BasicBasic
         }
 
         // primary : number | numeric-variable | numeric-function | '(' numeric-expression ')' | user-function .
-        private float Primary()
+        private float Primary(string pName = null, float? pValue = null)
         {
             switch (_tok)
             {
@@ -620,6 +620,11 @@ namespace BasicBasic
                     return s;
 
                 case TOK_VARIDNT:
+                    if (_strValue == pName)
+                    {
+                        NextToken();
+                        return pValue.Value;
+                    }
                     var v = GetNVar(_strValue);
                     NextToken();
                     return v;
@@ -780,7 +785,7 @@ namespace BasicBasic
                         // '='
                         EatToken(TOK_EQL);
 
-                        v = NumericExpression();
+                        v = NumericExpression(paramName, p);
 
                         ExpToken(TOK_EOLN);
 
