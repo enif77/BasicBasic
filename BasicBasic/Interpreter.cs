@@ -1546,9 +1546,11 @@ statement :
   return-statement |
   stop statement .
 
-def-statement : "DEF" user-function-name '=' numeric-expression EOLN
+def-statement : "DEF" user-function-name [ '(' parameter-name ')' ] '=' numeric-expression EOLN
 
 user-function-name : "FNA" .. 'FNZ' .
+
+parameter-name : 'A' .. 'Z' .
 
 goto-statement : ( GO TO label ) | ( GOTO label ) .
 
@@ -1602,7 +1604,7 @@ numeric-function : numeric-function-name '(' numeric-expression ')' .
 
 numeric-function-name : "ABS" | "ATN" | "COS" | "EXP" | "INT" | "LOG" | "RND" | "SGN" | "SIN" | "SQR" | "TAN" .
 
-user-function : user-function-name .
+user-function : user-function-name [ '(' numeric-function ')' ] .
 
 number : 
     ( [ sign - ] decimal-part [ - fractional-part ] [ - exponent-part ] ) | 
