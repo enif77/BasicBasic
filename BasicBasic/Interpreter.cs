@@ -96,22 +96,7 @@ namespace BasicBasic
         private int _returnStackTop;
         private int[] _userFns;
         private Random _random;
-
-
-        private ProgramLine NextProgramLine(int fromLabel)
-        {
-            // Skip program lines without code.
-            for (var label = fromLabel; label < _programLines.Length; label++)
-            {
-                if (_programLines[label] != null)
-                {
-                    return _programLines[label];
-                }
-            }
-
-            return null;
-        }
-
+               
 
         private void InterpretImpl()
         {
@@ -120,8 +105,7 @@ namespace BasicBasic
             _returnStackTop = -1;
             _userFns = new int['Z' - 'A'];
             _random = new Random(20170327);
-            
-
+        
             for (var i = 0; i < _nvars.Length; i++)
             {
                 _nvars[i] = 0;
@@ -174,6 +158,21 @@ namespace BasicBasic
                 default:
                     UnexpectedTokenError(_tok);
                     break;
+            }
+
+            return null;
+        }
+
+
+        private ProgramLine NextProgramLine(int fromLabel)
+        {
+            // Skip program lines without code.
+            for (var label = fromLabel; label < _programLines.Length; label++)
+            {
+                if (_programLines[label] != null)
+                {
+                    return _programLines[label];
+                }
             }
 
             return null;
@@ -1626,72 +1625,115 @@ string-character : ! '"' & ! end-of-line .
 
 ---
 
-10.  _U_S_E_R_ _D_E_F_I_N_E_D_ _F_U_N_C_T_I_O_N_S
+7.2  _S_y_n_t_a_x
 
- 10.1  _G_e_n_e_r_a_l_ _D_e_s_c_r_i_p_t_i_o_n
+       1. variable               = numeric-variable / string-variable
+       2. numeric-variable       = simple-numeric-variable /
+                                   numeric-array-element
+       3. simple-numeric-        = letter digit?
+          variable
+       4. numeric-array-element  = numeric-array-name subscript
+       5. numeric-array-name     = letter
+       6. subscript              = left-parenthesis numeric-expression
+                                   (comma numeric-expression)? right-
+                                   parenthesis
+       7. string-variable        = letter dollar-sign
 
-       In addition to the implementation supplied functions provided
-       for the convenience of the programmer (see 9), BASIC allows
-       the programmer to define new functions within a program.
+       V(3)        W(X,X+Y/2)
 
-       The general form of statements for defining functions is
+Subscripted numeric variables shall be named by a letter fol-
+lowed by one or two numeric expressions enclosed within pa-
+rentheses.
 
-                    DEF FNx = expression
-       or           DEF FNx (parameter) = expression
+A subscripted variable refers to the element in the one or two
+dimensional array selected by the value(s) of the subscript(s).
+The value of each subscript is rounded to the nearest integer.
+Unless explicitly declared in a dimension statement, subscript-
+ed variables are implicitly declared by their first appearance
+in a program. In this case the range of each subscript is from
+zero to ten inclusive, unless the presence of an option-state-
+ment indicates that the range is from one to ten inclusive. Sub-
+script expressions shall have values within the appropriate range
+(see 18).
 
-       where x is a single letter and a parameter is a simple numeric-
-       variable.
+The same letter shall not be the name of both a simple variable
+and an array, nor the name of both a one-dimensional and a two-
+dimensional array.
 
- 10.2  _S_y_n_t_a_x
+---
 
-       1. def-statement      = DEF numeric-defined-function
-                               parameter-list? equals-sign
-                               numeric-expression
-       2. numeric-defined-
-          function           = FN letter
-       3. parameter-list     = left-parenthesis parameter
-                               right-parenthesis
-       4. parameter          = simple-numeric-variable
+18.  _A_R_R_A_Y_ _D_E_C_L_A_R_A_T_I_O_N_S
 
- 10.3  _E_x_a_m_p_l_e_s
+ 18.1  _G_e_n_e_r_a_l_ _D_e_s_c_r_i_p_t_i_o_n
 
-       DEF FNF(X) = X^4 - 1    DEF FNP = 3.14159
-       DEF FNA(X) = A*X + B
+       The dimension-statement is used to reserve space for arrays.
+       Unless declared otherwise, all array subscripts shall have a
+       lower bound of zero and an upper bound of ten. Thus the default
+       space allocation reserves space for 11 elements in one-dimen-
+       sional arrays and 121 elements in two-dimensional arrays. By
+       use of a dimension-statement, the subscript(s) of an array may
+       be declared to have an upper bound other than ten. By use of
+       an option-statement, the subscripts of all arrays may be de-
+       clared to have a lower bound of one.
 
- 10.4  _S_e_m_a_n_t_i_c_s
+       The general syntactic form of the dimension-statement is
 
-       A function definition specifies the means of evaluation the
-       function in terms of the value of an expression involving the
-       parameter appearing in the parameter-list and possibly other
-       variables or constants. When the function is referenced, i.e.
-       when an expression involving the function is evaluated, then
-       the expression in the argument list for the function reference,
-       if any, is evaluated and its value is assigned to the parameter
-       in the parameter-list for the function definition (the number
-       of arguments shall correspond exactly to the number of para-
-       meters). The expression in the function definition is then eva-
-       luated, and this value is assigned as the value of the function.
+               DIM declaration, ..., declaration
+
+       where each declaration has the form
+
+               letter (integer)
+       or      letter (integer , integer)
+
+       The general syntactic form of the option-statement is
+
+               OPTION BASE n
+
+       where n is either 0 or 1.
+
+ 18.2  _S_y_n_t_a_x
+
+       1. dimension-statement   = DIM array declaration
+                                  (comma array-declaration)*
+       2. array-declaration     = numeric-array-name left-parenthesis
+                                  bounds right-parenthesis
+       3. bounds                = integer (comma integer)?
+       4. option-statement      = OPTION BASE (0/1)
+
+ 18.3  _E_x_a_m_p_l_e_s
+
+       DIM A (6), B(10,10)
+
+ 18.4  _S_e_m_a_n_t_i_c_s
+
+       Each array-declaration occurring in a dimension-statement de-
+       clares the array named to be either one or two dimensional ac-
+       cording to whether one or two bounds are listed for the array.
+       In addition, the bounds specify the maximum values that sub-
+       script expressions for the array can have.
+
+       The declaration for an array, if present at all, shall occur in
+       a lower numbered line than any reference to an element of that
 
-                                 - 14 -
+                                 - 26 -
+       array. Arrays that are not declared in any dimension-statement
+       are declared implicitly to be one or two dimensional according
+       to their use in the program, and to have subscripts with a
+       maximum value of ten (see 7).
 
-       The parameter appearing in the parameter-list of a function
-       definition is local to that definition, i.e. it is distinct
-       from any variable with the same name outside of the function
-       definition. Variables which do not appear in the parameter-
-       list are the variables of the same name outside the function
-       definition.
+       The option-statement declares the minimum value for all array
+       subscripts; if no option-statement occurs in a program, this
+       minimum is zero. An option-statement, if present at all, must
+       occur in a lower numbered line than any dimension-statement or
+       any reference to an element of an array. If an option-statement
+       specifies that the lower bound for array subscripts is one, then
+       no dimension-statement in the program may specify an upper bound
+       of zero. A program may contain at most one option-statement.
 
-       A function definition shall occur in a lower numbered line
-       than that of the first reference to the function. The expres-
-       sion in a def-statement is not evaluated unless the defined
-       function is referenced.
+       If the execution of a program reaches a line containing a di-
+       mension-statement or an option-statement, then it shall pro-
+       ceed to the next line with no other effect.
 
-       If the execution of a program reaches a line containing a
-       def-statement, then it shall proceed to the next line with no
-       other effect.
-
-       A function definition may refer to other defined functions,
-       but not to the function being defined. A function shall be de-
-       fined at most once in a program.
+       An array can be explicitly dimensioned only once.
 
 */
