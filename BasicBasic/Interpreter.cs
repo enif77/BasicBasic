@@ -95,7 +95,7 @@ namespace BasicBasic
         private int[] _returnStack;
         private int _returnStackTop;
         private int[] _userFns;
-        private int[][] _arrays;
+        private float[][] _arrays;
         private int _arrayBase;
         private Random _random;
                
@@ -106,7 +106,7 @@ namespace BasicBasic
             _returnStack = new int[ReturnStackSize];
             _returnStackTop = -1;
             _userFns = new int['Z' - 'A'];
-            _arrays = new int['Z' - 'A'][];
+            _arrays = new float['Z' - 'A'][];
             _arrayBase = -1;                  // -1 = not yet user defined = 0.
             _random = new Random(20170327);
             
@@ -247,7 +247,7 @@ namespace BasicBasic
                 Error("Array top bound ({0}) is less than the defined array bottom bound ({1}) at line {3}.", topBound, _arrayBase, _currentProgramLine.Label);
             }
 
-            _arrays[aname[0] - 'A'] = new int[(topBound - bottomBound) + 1];
+            _arrays[aname[0] - 'A'] = new float[(topBound - bottomBound) + 1];
 
             // Eat array upper bound.
             NextToken();
@@ -466,24 +466,72 @@ namespace BasicBasic
             EatToken(TOK_KEY_LET);
 
             // var
+            var isSubscription = false;
+            var arrayIndex = 0;
+            var index = 0;
             string varName = null;
-            if (_tok == TOK_SVARIDNT || _tok == TOK_VARIDNT || _tok == TOK_STRIDNT)
+            if (_tok == TOK_SVARIDNT)
             {
                 varName = _strValue;
+
+                // Eat the variable identifier.
+                NextToken();
+
+                // Array subscript.
+                if (_tok == TOK_LBRA)
+                {
+                    NextToken();
+
+                    var bottomBound = (_arrayBase < 0) ? 0 : _arrayBase;
+                    index = (int)NumericExpression() - bottomBound;
+                    arrayIndex = varName[0] - 'A';
+
+                    EatToken(TOK_RBRA);
+
+                    // Undefined array?
+                    if (_arrays[arrayIndex] == null)
+                    {
+                        _arrays[arrayIndex] = new float[10 - bottomBound + 1];
+                    }
+
+                    if (index < 0 || index >= _arrays[arrayIndex].Length)
+                    {
+                        Error("Index {0} out of array bounds at line {1}.", index + bottomBound, _currentProgramLine.Label);
+                    }
+
+                    isSubscription = true;
+
+                    //return _arrays[arrayIndex][index - bottomBound];
+                }
+            }
+            else if (_tok == TOK_VARIDNT || _tok == TOK_STRIDNT)
+            {
+                varName = _strValue;
+
+                // Eat the variable identifier.
+                NextToken();
             }
             else
             {
                 UnexpectedTokenError(_tok);
             }
-
-            // Eat the variable identifier.
-            NextToken();
-
+            
             EatToken(TOK_EQL);
 
             // expr
-            SetVar(varName, Expression());
-            
+            var v = Expression();
+
+            if (isSubscription)
+            {
+                //var bottomBound = (_arrayBase < 0) ? 0 : _arrayBase;
+
+                _arrays[arrayIndex][index] = v.NumValue;
+            }
+            else
+            {
+                SetVar(varName, v);
+            }
+                        
             // EOLN
             ExpToken(TOK_EOLN);
 
@@ -717,14 +765,45 @@ namespace BasicBasic
 
                 case TOK_SVARIDNT:
                     {
-                        if (_strValue == pName)
+                        var name = _strValue;
+                        NextToken();
+
+                        // Array subscript.
+                        if (_tok == TOK_LBRA)
                         {
                             NextToken();
+
+                            var bottomBound = (_arrayBase < 0) ? 0 : _arrayBase;
+                            var index = (int)NumericExpression() - bottomBound;
+                            var arrayIndex = name[0] - 'A';
+
+                            EatToken(TOK_RBRA);
+
+                            // Undefined array?
+                            if (_arrays[arrayIndex] == null)
+                            {
+                                _arrays[arrayIndex] = new float[10 - bottomBound + 1];
+                            }
+
+                            if (index < 0 || index >= _arrays[arrayIndex].Length)
+                            {
+                                Error("Index {0} out of array bounds at line {1}.", index + bottomBound, _currentProgramLine.Label);
+                            }
+                            
+                            return _arrays[arrayIndex][index];
+                        }
+                        else if (name == pName)
+                        {
                             return pValue.Value;
                         }
-                        var v = GetNVar(_strValue);
-                        NextToken();
-                        return v;
+
+                        // Variable used as array.
+                        if (_arrays[name[0] - 'A'] != null)
+                        {
+                            Error("Array {0} subsciption expected at line {1}", name, _currentProgramLine.Label);
+                        }
+
+                        return GetNVar(name);
                     }
                     
                 case TOK_VARIDNT:
@@ -873,7 +952,7 @@ namespace BasicBasic
                             NextToken();
 
                             // A siple variable name (A .. Z) expected.
-                            if (_tok != TOK_VARIDNT || _strValue.Length > 1)
+                            if (_tok != TOK_SVARIDNT)
                             {
                                 Error("A siple variable name (A .. Z) expected.");
                             }
@@ -1722,7 +1801,7 @@ multiplier : '*' | '/' .
 
 factor : primary { '^' primary } .
 
-primary : number | numeric-variable | numeric-function | '(' numeric-expression ')' | user-function .
+primary : number | numeric-variable | numeric-function | '(' numeric-expression ')' | user-function | array-subscription .
 
 numeric-function : numeric-function-name '(' numeric-expression ')' .
 
@@ -1739,6 +1818,8 @@ decimal-part : digit { - digit } .
 fractional-part : '.' { - digit } .
 
 exponent.part : 'E' [ - sign ] - digit { - digit } .
+
+array-subscription : array-name '(' numeric-expression ')' .
 
 string-expression : string-variable | string-constant .
 
