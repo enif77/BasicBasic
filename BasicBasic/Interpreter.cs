@@ -405,7 +405,7 @@ namespace BasicBasic
 
             // var
             string varName = null;
-            if (_tok == TOK_VARIDNT || _tok == TOK_STRIDNT)
+            if (_tok == TOK_SVARIDNT || _tok == TOK_VARIDNT || _tok == TOK_STRIDNT)
             {
                 varName = _strValue;
             }
@@ -653,24 +653,36 @@ namespace BasicBasic
                     NextToken();
                     return s;
 
+                case TOK_SVARIDNT:
+                    {
+                        if (_strValue == pName)
+                        {
+                            NextToken();
+                            return pValue.Value;
+                        }
+                        var v = GetNVar(_strValue);
+                        NextToken();
+                        return v;
+                    }
+                    
                 case TOK_VARIDNT:
-                    if (_strValue == pName)
+                    {
+                        var v = GetNVar(_strValue);
+                        NextToken();
+                        return v;
+                    }
+                    
+                case TOK_LBRA:
                     {
                         NextToken();
-                        return pValue.Value;
+                        var v = NumericExpression();
+                        EatToken(TOK_RBRA);
+                        return v;
                     }
-                    var v = GetNVar(_strValue);
-                    NextToken();
-                    return v;
-
-                case TOK_LBRA:
-                    NextToken();
-                    v = NumericExpression();
-                    EatToken(TOK_RBRA);
-                    return v;
-
+                    
                 case TOK_FN:
                     {
+                        float v;
                         var fnName = _strValue;
                         if (fnName == "RND")
                         {
@@ -743,6 +755,7 @@ namespace BasicBasic
 
                 case TOK_UFN:
                     {
+                        float v;
                         var fname = _strValue;
                         var flabel = _userFns[fname[2] - 'A'];
                         if (flabel == 0)
@@ -898,7 +911,8 @@ namespace BasicBasic
         private const char C_EOLN = '\n';
 
         private const int TOK_EOLN = 0;
-        private const int TOK_VARIDNT = 5;
+        private const int TOK_SVARIDNT = 4;  // 'A' .. 'Z'
+        private const int TOK_VARIDNT = 5; // "A0" .. "Z9"
         private const int TOK_STRIDNT = 6;
         private const int TOK_NUM = 10;
         private const int TOK_QSTR = 11;
@@ -1165,7 +1179,7 @@ namespace BasicBasic
         // FNx -> TOK_UFN
         private void ParseIdent(char c)
         {
-            var tok = TOK_VARIDNT;
+            var tok = TOK_SVARIDNT;
             var strValue = c.ToString();
 
             c = NextChar();
@@ -1174,6 +1188,7 @@ namespace BasicBasic
             {
                 // A numeric Ax variable.
                 _strValue = (strValue + c).ToUpperInvariant();
+                _tok = TOK_VARIDNT;
             }
             else if (c == '$')
             {
