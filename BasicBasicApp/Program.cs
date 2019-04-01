@@ -145,6 +145,9 @@ namespace BasicBasicApp
 
         static string _source = @"1 PRINT ""Arrays test""
 10 option base 1
+20 rem option base 0
+50 dim a(5), b(10)
+60 dim c(50), b(10)
 98 print ""OK""
 99 END
 ";

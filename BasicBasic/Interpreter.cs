@@ -95,7 +95,7 @@ namespace BasicBasic
         private int[] _returnStack;
         private int _returnStackTop;
         private int[] _userFns;
-        private int[] _arrays;
+        private int[][] _arrays;
         private int _arrayBase;
         private Random _random;
                
@@ -106,8 +106,8 @@ namespace BasicBasic
             _returnStack = new int[ReturnStackSize];
             _returnStackTop = -1;
             _userFns = new int['Z' - 'A'];
-            _arrays = new int['Z' - 'A'];
-            _arrayBase = 0;
+            _arrays = new int['Z' - 'A'][];
+            _arrayBase = -1;                  // -1 = not yet user defined = 0.
             _random = new Random(20170327);
             
             var programLine = NextProgramLine(0);
@@ -136,6 +136,7 @@ namespace BasicBasic
             switch (_tok)
             {
                 case TOK_KEY_DEF: return DefStatement();
+                case TOK_KEY_DIM: return DimStatement();
                 case TOK_KEY_END: return EndStatement();
                 case TOK_KEY_GO:
                 case TOK_KEY_GOSUB:
@@ -196,6 +197,62 @@ namespace BasicBasic
             _userFns[fname[2] - 'A'] = _currentProgramLine.Label;
 
             return NextProgramLine(_currentProgramLine.Label);
+        }
+
+        // An array definition.
+        // DIM array-declaration { ',' array-declaration } EOLN
+        private ProgramLine DimStatement()
+        {
+            EatToken(TOK_KEY_DIM);
+
+            ArrayDeclaration();
+
+            // ','
+            while (_tok == TOK_LSTSEP)
+            {
+                EatToken(TOK_LSTSEP);
+
+                ArrayDeclaration();
+            }
+
+            ExpToken(TOK_EOLN);
+
+            return NextProgramLine(_currentProgramLine.Label);
+        }
+
+        // array-declaration : letter '(' integer ')' .
+        private void ArrayDeclaration()
+        {
+            // Get the function name.
+            ExpToken(TOK_SVARIDNT);
+            var aname = _strValue;
+
+            // Do not redefine array.
+            if (_arrays[aname[0] - 'A'] != null)
+            {
+                Error("Array {0} redefinition at line {1}.", aname, _currentProgramLine.Label);
+            }
+
+            // Eat array name.
+            NextToken();
+
+            EatToken(TOK_LBRA);
+
+            ExpToken(TOK_NUM);
+
+            var bottomBound = (_arrayBase < 0) ? 0 : _arrayBase;
+            var topBound = (int)_numValue;
+            if (topBound < bottomBound)
+            {
+                Error("Array top bound ({0}) is less than the defined array bottom bound ({1}) at line {3}.", topBound, _arrayBase, _currentProgramLine.Label);
+            }
+
+            _arrays[aname[0] - 'A'] = new int[(topBound - bottomBound) + 1];
+
+            // Eat array upper bound.
+            NextToken();
+
+            EatToken(TOK_RBRA);
         }
 
         // The end of program.
@@ -361,6 +418,11 @@ namespace BasicBasic
         // OPTION BASE 1
         private ProgramLine OptionStatement()
         {
+            if (_arrayBase >= 0)
+            {
+                Error("The OPTION BASE command already executed. Can not change the arrays lower bound at line {0}.", _currentProgramLine.Label);
+            }
+
             // Eat "OPTION".
             NextToken();
 
@@ -370,7 +432,7 @@ namespace BasicBasic
             var arrayDefined = false;
             for (var i = 0; i < _arrays.Length; i++)
             {
-                if (_arrays[i] > 0)
+                if (_arrays[i] != null)
                 {
                     arrayDefined = true;
 
@@ -941,7 +1003,7 @@ namespace BasicBasic
         private const int TOK_KEY_BASE = 100;
         //private const int TOK_KEY_DATA = 101;
         private const int TOK_KEY_DEF = 102;
-        //private const int TOK_KEY_DIM = 103;
+        private const int TOK_KEY_DIM = 103;
         private const int TOK_KEY_END = 104;
         //private const int TOK_KEY_FOR = 105;
         private const int TOK_KEY_GO = 106;
@@ -969,6 +1031,7 @@ namespace BasicBasic
         {
             { "BASE", TOK_KEY_BASE },
             { "DEF", TOK_KEY_DEF },
+            { "DIM", TOK_KEY_DIM },
             { "END", TOK_KEY_END },
             { "GO", TOK_KEY_GO },
             { "GOSUB", TOK_KEY_GOSUB },
