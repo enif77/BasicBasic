@@ -1650,6 +1650,7 @@ end-statement : "END" .
 
 statement :
   def-statement |
+  dim-statement |
   goto-statement | 
   gosub-statement | 
   if-then-statement |
@@ -1661,11 +1662,17 @@ statement :
   return-statement |
   stop statement .
 
-def-statement : "DEF" user-function-name [ '(' parameter-name ')' ] '=' numeric-expression EOLN
+def-statement : "DEF" user-function-name [ '(' parameter-name ')' ] '=' numeric-expression
 
 user-function-name : "FNA" .. 'FNZ' .
 
 parameter-name : 'A' .. 'Z' .
+
+dim-statement : "DIM" array-declaration { ',' array-declaration } .
+
+array-declaration : array-name '(' number ')' . 
+
+array-name : 'A' .. 'Z' .
 
 goto-statement : ( GO TO label ) | ( GOTO label ) .
 
