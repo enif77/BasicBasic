@@ -122,7 +122,7 @@ namespace BasicBasicApp
         //99 END
         //";
 
-        static string _source = @"1 REM User functions test.
+        static string _source4 = @"1 REM User functions test.
 08 let x = 3
 09 let a = 10
 10 def fna(x) = 5 + x
@@ -141,6 +141,13 @@ namespace BasicBasicApp
 37 print a
 40 END
 ";
+
+        static string _source = @"1 PRINT ""Arrays test""
+10 option base 1
+98 print ""OK""
+99 END
+";
+
 
     }
 }

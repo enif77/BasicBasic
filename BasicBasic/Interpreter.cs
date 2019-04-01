@@ -95,6 +95,8 @@ namespace BasicBasic
         private int[] _returnStack;
         private int _returnStackTop;
         private int[] _userFns;
+        private int[] _arrays;
+        private int _arrayBase;
         private Random _random;
                
 
@@ -104,17 +106,9 @@ namespace BasicBasic
             _returnStack = new int[ReturnStackSize];
             _returnStackTop = -1;
             _userFns = new int['Z' - 'A'];
+            _arrays = new int['Z' - 'A'];
+            _arrayBase = 0;
             _random = new Random(20170327);
-        
-            for (var i = 0; i < _nvars.Length; i++)
-            {
-                _nvars[i] = 0;
-            }
-
-            for (var i = 0; i < _svars.Length; i++)
-            {
-                _svars[i] = null;
-            }
             
             var programLine = NextProgramLine(0);
             while (programLine != null)
@@ -149,6 +143,7 @@ namespace BasicBasic
                     return GoToStatement();
                 case TOK_KEY_IF: return IfStatement();
                 case TOK_KEY_LET: return LetStatement();
+                case TOK_KEY_OPTION: return OptionStatement();
                 case TOK_KEY_PRINT: return PrintStatement();
                 case TOK_KEY_RANDOMIZE: return RandomizeStatement();
                 case TOK_KEY_REM: return RemStatement();
@@ -360,6 +355,46 @@ namespace BasicBasic
             return jump
                 ? _programLines[label - 1] 
                 : NextProgramLine(_currentProgramLine.Label);
+        }
+
+        // Sets the array bottom dimension.
+        // OPTION BASE 1
+        private ProgramLine OptionStatement()
+        {
+            // Eat "OPTION".
+            NextToken();
+
+            EatToken(TOK_KEY_BASE);
+
+            // Array lower bound can not be changed, when an array is already defined.
+            var arrayDefined = false;
+            for (var i = 0; i < _arrays.Length; i++)
+            {
+                if (_arrays[i] > 0)
+                {
+                    arrayDefined = true;
+
+                    break;
+                }
+            }
+
+            if (arrayDefined)
+            {
+                Error("An array is already defined. Can not change the arrays lower bound at line {0}.", _currentProgramLine.Label);
+            }
+
+            // 0 or 1.
+            ExpToken(TOK_NUM);
+
+            var option = (int)_numValue;
+            if (option < 0 || option > 1)
+            {
+                Error("Array base out of allowed range 0 .. 1 at line {0}.", _currentProgramLine.Label);
+            }
+            
+            _arrayBase = option;
+
+            return NextProgramLine(_currentProgramLine.Label);
         }
 
         // LET var = expr EOLN
@@ -889,7 +924,7 @@ namespace BasicBasic
         private const int TOK_LBRA = 45;
         private const int TOK_RBRA = 46;
 
-        //private const int TOK_KEY_BASE = 100;
+        private const int TOK_KEY_BASE = 100;
         //private const int TOK_KEY_DATA = 101;
         private const int TOK_KEY_DEF = 102;
         //private const int TOK_KEY_DIM = 103;
@@ -903,7 +938,7 @@ namespace BasicBasic
         private const int TOK_KEY_LET = 111;
         //private const int TOK_KEY_NEXT = 112;
         //private const int TOK_KEY_ON = 113;
-        //private const int TOK_KEY_OPTION = 114;
+        private const int TOK_KEY_OPTION = 114;
         private const int TOK_KEY_PRINT = 115;
         private const int TOK_KEY_RANDOMIZE = 116;
         //private const int TOK_KEY_READ = 117;
@@ -918,6 +953,7 @@ namespace BasicBasic
 
         private readonly Dictionary<string, int> _keyWordsMap = new Dictionary<string, int>()
         {
+            { "BASE", TOK_KEY_BASE },
             { "DEF", TOK_KEY_DEF },
             { "END", TOK_KEY_END },
             { "GO", TOK_KEY_GO },
@@ -925,6 +961,7 @@ namespace BasicBasic
             { "GOTO", TOK_KEY_GOTO },
             { "IF", TOK_KEY_IF },
             { "LET", TOK_KEY_LET },
+            { "OPTION", TOK_KEY_OPTION },
             { "PRINT", TOK_KEY_PRINT },
             { "RANDOMIZE", TOK_KEY_RANDOMIZE },
             { "REM", TOK_KEY_REM },
@@ -1539,6 +1576,7 @@ statement :
   gosub-statement | 
   if-then-statement |
   let-statement |
+  option-statement |
   print-statement |
   randomize-statement |
   remark-statement |
@@ -1558,6 +1596,8 @@ gosub-statement : ( GO SUB label ) | ( GOSUB label ) .
 if-then-statement : "IF" expression "THEN" label .
 
 let-statement : "LET" variable '=' expression .
+
+option-statement : "OPTION" "BASE" ( '0' | '1' ) .
 
 print-statement : [ print-list ] .
 
