@@ -55,5 +55,14 @@
       <Name>BasicBasic</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="Tests\arrays.bas" />
+    <Content Include="Tests\fn.bas" />
+    <Content Include="Tests\gosub.bas" />
+    <Content Include="Tests\hello.bas" />
+    <Content Include="Tests\rnd.bas" />
+    <Content Include="Tests\various.bas" />
+    <Content Include="Tests\while.bas" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -25,7 +25,23 @@ namespace BasicBasic
     using System;
     using System.Collections.Generic;
     using System.Globalization;
-    
+
+
+    public class InterpreterException : Exception
+    {
+        public InterpreterException() : base()
+        {
+        }
+
+        public InterpreterException(string message) : base(message)
+        {
+        }
+
+        public InterpreterException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+    }
+
 
     /// <summary>
     /// The basic Basic interpreter.
@@ -52,35 +68,46 @@ namespace BasicBasic
 
         #region public
 
-        public class InterpreterException : Exception
+        public void Initialize()
         {
-            public InterpreterException() : base()
-            {
-            }
-
-            public InterpreterException(string message) : base(message)
-            {
-            }
-
-            public InterpreterException(string message, Exception innerException) : base(message, innerException)
-            {
-            }
+            _source = null;
+            _programLines = new ProgramLine[MaxLabel + 1];
+            _wasEnd = false;
+            _returnStack = new int[ReturnStackSize];
+            _returnStackTop = -1;
+            _userFns = new int['Z' - 'A'];
+            _arrays = new float['Z' - 'A'][];
+            _arrayBase = -1;                  // -1 = not yet user defined = 0.
+            _random = new Random(20170327);
         }
 
 
-        public int Interpret(string source)
+        public void Interpret(string source)
         {
             if (source == null) Error("A source expected.");
 
             _source = source;
-            _programLines = new ProgramLine[MaxLabel + 1];
 
             ScanSource();
             InterpretImpl();
-            
-            return 0;
         }
 
+
+        public void InterpretLine(string source)
+        {
+            if (source == null) Error("A source expected.");
+
+            _source = source;
+
+            var programLine = new ProgramLine()
+            {
+                Label = -1,
+                Start = 0,
+                End = _source.Length - 1
+            };
+
+            InterpretLine(programLine);
+        }
 
         #endregion
 
@@ -102,14 +129,6 @@ namespace BasicBasic
 
         private void InterpretImpl()
         {
-            _wasEnd = false;
-            _returnStack = new int[ReturnStackSize];
-            _returnStackTop = -1;
-            _userFns = new int['Z' - 'A'];
-            _arrays = new float['Z' - 'A'][];
-            _arrayBase = -1;                  // -1 = not yet user defined = 0.
-            _random = new Random(20170327);
-            
             var programLine = NextProgramLine(0);
             while (programLine != null)
             {
@@ -162,6 +181,12 @@ namespace BasicBasic
 
         private ProgramLine NextProgramLine(int fromLabel)
         {
+            // Interactive mode line.
+            if (fromLabel < 0)
+            {
+                return null;
+            }
+
             // Skip program lines without code.
             for (var label = fromLabel; label < _programLines.Length; label++)
             {
