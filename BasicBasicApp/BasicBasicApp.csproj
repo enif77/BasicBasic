@@ -56,13 +56,13 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Tests\arrays.bas" />
-    <Content Include="Tests\fn.bas" />
-    <Content Include="Tests\gosub.bas" />
-    <Content Include="Tests\hello.bas" />
-    <Content Include="Tests\rnd.bas" />
-    <Content Include="Tests\various.bas" />
-    <Content Include="Tests\while.bas" />
+    <None Include="Tests\arrays.bb" />
+    <None Include="Tests\fn.bb" />
+    <None Include="Tests\gosub.bb" />
+    <None Include="Tests\hello.bb" />
+    <None Include="Tests\rnd.bb" />
+    <None Include="Tests\various.bb" />
+    <None Include="Tests\while.bb" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

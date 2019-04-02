@@ -122,8 +122,6 @@ namespace BasicBasic
         private int[] _returnStack;
         private int _returnStackTop;
         private int[] _userFns;
-        private float[][] _arrays;
-        private int _arrayBase;
         private Random _random;
                
 
@@ -215,7 +213,7 @@ namespace BasicBasic
             // Do not redefine user functions.
             if (_userFns[fname[2] - 'A'] != 0)
             {
-                Error("{0} function redefinition at line {1}.", fname, _currentProgramLine.Label);
+                ErrorAtLine("{0} function redefinition", fname);
             }
 
             // Save this function definition.
@@ -250,29 +248,18 @@ namespace BasicBasic
         {
             // Get the function name.
             ExpToken(TOK_SVARIDNT);
-            var aname = _strValue;
 
-            // Do not redefine array.
-            if (_arrays[aname[0] - 'A'] != null)
-            {
-                Error("Array {0} redefinition at line {1}.", aname, _currentProgramLine.Label);
-            }
+            var arrayName = _strValue;
 
             // Eat array name.
             NextToken();
 
             EatToken(TOK_LBRA);
-
             ExpToken(TOK_NUM);
 
-            var bottomBound = (_arrayBase < 0) ? 0 : _arrayBase;
             var topBound = (int)_numValue;
-            if (topBound < bottomBound)
-            {
-                Error("Array top bound ({0}) is less than the defined array bottom bound ({1}) at line {3}.", topBound, _arrayBase, _currentProgramLine.Label);
-            }
 
-            _arrays[aname[0] - 'A'] = new float[(topBound - bottomBound) + 1];
+            CheckArray(arrayName, topBound, topBound, false);
 
             // Eat array upper bound.
             NextToken();
@@ -291,7 +278,7 @@ namespace BasicBasic
             var nextLine = NextProgramLine(_currentProgramLine.Label);
             if (nextLine != null)
             {
-                Error("Unexpected END statement at line {0}.", thisLine.Label);
+                ErrorAtLine("Unexpected END statement");
             }
 
             _wasEnd = true;
@@ -343,7 +330,7 @@ namespace BasicBasic
                 _returnStackTop++;
                 if (_returnStackTop >= _returnStack.Length)
                 {
-                    Error("Return stack overflow.");
+                    ErrorAtLine("Return stack overflow");
                 }
 
                 _returnStack[_returnStackTop] = _currentProgramLine.Label;
@@ -431,7 +418,7 @@ namespace BasicBasic
             }
             else
             {
-                Error("Incompatible types in comparison at line {0}.", _currentProgramLine.Label);
+                ErrorAtLine("Incompatible types in comparison");
             }
 
             return jump
@@ -445,7 +432,7 @@ namespace BasicBasic
         {
             if (_arrayBase >= 0)
             {
-                Error("The OPTION BASE command already executed. Can not change the arrays lower bound at line {0}.", _currentProgramLine.Label);
+                ErrorAtLine("The OPTION BASE command already executed. Can not change the arrays lower bound");
             }
 
             // Eat "OPTION".
@@ -467,7 +454,7 @@ namespace BasicBasic
 
             if (arrayDefined)
             {
-                Error("An array is already defined. Can not change the arrays lower bound at line {0}.", _currentProgramLine.Label);
+                ErrorAtLine("An array is already defined. Can not change the arrays lower bound");
             }
 
             // 0 or 1.
@@ -476,7 +463,7 @@ namespace BasicBasic
             var option = (int)_numValue;
             if (option < 0 || option > 1)
             {
-                Error("Array base out of allowed range 0 .. 1 at line {0}.", _currentProgramLine.Label);
+                ErrorAtLine("Array base out of allowed range 0 .. 1");
             }
             
             _arrayBase = option;
@@ -492,7 +479,7 @@ namespace BasicBasic
 
             // var
             var isSubscription = false;
-            var arrayIndex = 0;
+            //var arrayIndex = 0;
             var index = 0;
             string varName = null;
             if (_tok == TOK_SVARIDNT)
@@ -507,26 +494,13 @@ namespace BasicBasic
                 {
                     NextToken();
 
-                    var bottomBound = (_arrayBase < 0) ? 0 : _arrayBase;
-                    index = (int)NumericExpression() - bottomBound;
-                    arrayIndex = varName[0] - 'A';
+                    index = (int)NumericExpression();
 
                     EatToken(TOK_RBRA);
 
-                    // Undefined array?
-                    if (_arrays[arrayIndex] == null)
-                    {
-                        _arrays[arrayIndex] = new float[10 - bottomBound + 1];
-                    }
-
-                    if (index < 0 || index >= _arrays[arrayIndex].Length)
-                    {
-                        Error("Index {0} out of array bounds at line {1}.", index + bottomBound, _currentProgramLine.Label);
-                    }
+                    CheckArray(varName, 10, index, true);
 
                     isSubscription = true;
-
-                    //return _arrays[arrayIndex][index - bottomBound];
                 }
             }
             else if (_tok == TOK_VARIDNT || _tok == TOK_STRIDNT)
@@ -548,12 +522,11 @@ namespace BasicBasic
 
             if (isSubscription)
             {
-                //var bottomBound = (_arrayBase < 0) ? 0 : _arrayBase;
-
-                _arrays[arrayIndex][index] = v.NumValue;
+                SetArray(varName, index, v.NumValue);
             }
             else
             {
+                CheckSubsription(varName);
                 SetVar(varName, v);
             }
                         
@@ -585,7 +558,7 @@ namespace BasicBasic
                     default:
                         if (atSep == false)
                         {
-                            Error("A list separator expected at line {0}.", _currentProgramLine.Label);
+                            ErrorAtLine("A list separator expected");
                         }
                         Console.Write(Expression());
                         atSep = false;
@@ -628,7 +601,7 @@ namespace BasicBasic
 
             if (_returnStackTop < 0)
             {
-                Error("Return stack underflow.");
+                ErrorAtLine("Return stack underflow");
             }
 
             return NextProgramLine(_returnStack[_returnStackTop--]);
@@ -790,7 +763,7 @@ namespace BasicBasic
 
                 case TOK_SVARIDNT:
                     {
-                        var name = _strValue;
+                        var varName = _strValue;
                         NextToken();
 
                         // Array subscript.
@@ -798,37 +771,21 @@ namespace BasicBasic
                         {
                             NextToken();
 
-                            var bottomBound = (_arrayBase < 0) ? 0 : _arrayBase;
-                            var index = (int)NumericExpression() - bottomBound;
-                            var arrayIndex = name[0] - 'A';
+                            var index = (int)NumericExpression();
 
                             EatToken(TOK_RBRA);
 
-                            // Undefined array?
-                            if (_arrays[arrayIndex] == null)
-                            {
-                                _arrays[arrayIndex] = new float[10 - bottomBound + 1];
-                            }
-
-                            if (index < 0 || index >= _arrays[arrayIndex].Length)
-                            {
-                                Error("Index {0} out of array bounds at line {1}.", index + bottomBound, _currentProgramLine.Label);
-                            }
-                            
-                            return _arrays[arrayIndex][index];
+                            return CheckArray(varName, 10, index, true);
                         }
-                        else if (name == pName)
+                        else if (varName == pName)
                         {
                             return pValue.Value;
                         }
 
-                        // Variable used as array.
-                        if (_arrays[name[0] - 'A'] != null)
-                        {
-                            Error("Array {0} subsciption expected at line {1}", name, _currentProgramLine.Label);
-                        }
+                        // Variable used as an array?
+                        CheckSubsription(varName);
 
-                        return GetNVar(name);
+                        return GetNVar(varName);
                     }
                     
                 case TOK_VARIDNT:
@@ -912,7 +869,7 @@ namespace BasicBasic
                                 break;
 
                             default:
-                                Error("Unknown function nabe '{0}'.", fnName);
+                                ErrorAtLine("Unknown function '{0}'", fnName);
                                 break;
                         }
 
@@ -926,7 +883,7 @@ namespace BasicBasic
                         var flabel = _userFns[fname[2] - 'A'];
                         if (flabel == 0)
                         {
-                            Error("Undefined user function {0}.", fname);
+                            ErrorAtLine("Undefined user function {0}", fname);
                         }
 
                         // Eat the function name.
@@ -958,7 +915,7 @@ namespace BasicBasic
 
                         if (fname != _strValue)
                         {
-                            Error("Unexpected function definition ({0}) at line {1}.", _strValue, _currentProgramLine.Label);
+                            ErrorAtLine("Unexpected {0} function definition", _strValue);
                         }
 
                         // Eat the function name.
@@ -970,17 +927,14 @@ namespace BasicBasic
                         {
                             if (p.HasValue == false)
                             {
-                                Error("The {0} function expects a parameter.", fname);
+                                ErrorAtLine("The {0} function expects a parameter", fname);
                             }
 
                             // Eat '(';
                             NextToken();
 
                             // A siple variable name (A .. Z) expected.
-                            if (_tok != TOK_SVARIDNT)
-                            {
-                                Error("A siple variable name (A .. Z) expected.");
-                            }
+                            ExpToken(TOK_SVARIDNT);
 
                             paramName = _strValue;
 
@@ -991,7 +945,7 @@ namespace BasicBasic
                         {
                             if (p.HasValue)
                             {
-                                Error("The {0} function does not expect a parameter.", fname);
+                                ErrorAtLine("The {0} function does not expect a parameter", fname);
                             }
                         }
                                                
@@ -1015,6 +969,81 @@ namespace BasicBasic
             }
 
             return float.NaN;
+        }
+
+        #endregion
+
+
+        #region arrays
+
+        private float[][] _arrays;
+        private int _arrayBase;
+
+
+        /// <summary>
+        /// Checks the current state of an array and validate the acces to it.
+        /// Can create a new array on demand.
+        /// </summary>
+        /// <param name="arrayName">An array name.</param>
+        /// <param name="topBound">The top alowed array index.</param>
+        /// <param name="index">The index of a value stored in the array we are interested in.</param>
+        /// <param name="canExist">If true, the checked array can actually exist.</param>
+        /// <returns>A value found in the array at the specific index.</returns>
+        private float CheckArray(string arrayName, int topBound, int index, bool canExist)
+        {
+            var arrayIndex = arrayName[0] - 'A';
+
+            // Do not redefine array.
+            if (canExist == false && _arrays[arrayIndex] != null)
+            {
+                ErrorAtLine("Array {0} redefinition", arrayName);
+            }
+
+            var bottomBound = (_arrayBase < 0) ? 0 : _arrayBase;
+            if (topBound < bottomBound)
+            {
+                ErrorAtLine("Array top bound ({0}) is less than the defined array bottom bound ({1})", topBound, _arrayBase);
+            }
+
+            index -= bottomBound;
+
+            // Undefined array?
+            if (_arrays[arrayIndex] == null)
+            {
+                _arrays[arrayIndex] = new float[topBound - bottomBound + 1];
+            }
+
+            if (index < 0 || index >= _arrays[arrayIndex].Length)
+            {
+                ErrorAtLine("Index {0} out of array bounds", index + bottomBound);
+            }
+
+            return _arrays[arrayIndex][index];
+        }
+
+        /// <summary>
+        /// Checks, if an array is used as a variable.
+        /// </summary>
+        /// <param name="varName"></param>
+        private void CheckSubsription(string varName)
+        {
+            if (_arrays[varName[0] - 'A'] != null)
+            {
+                ErrorAtLine("Array {0} subsciption expected", varName);
+            }
+        }
+
+        /// <summary>
+        /// Sets a value to a specific cell in an array.
+        /// </summary>
+        /// <param name="arrayName">An array name.</param>
+        /// <param name="index">An index.</param>
+        /// <param name="v">A value.</param>
+        private void SetArray(string arrayName, int index, float v)
+        {
+            var bottomBound = (_arrayBase < 0) ? 0 : _arrayBase;
+
+            _arrays[arrayName[0] - 'A'][index - bottomBound] = v;
         }
 
         #endregion
@@ -1178,13 +1207,13 @@ namespace BasicBasic
 
             if (label < 1 || label > MaxLabel)
             {
-                throw new InterpreterException(string.Format("The label {0} at line {1} out of <1 ... {2}> rangle.", label, _currentProgramLine.Label, MaxLabel));
+                Error("The label {0} at line {1} is out of <1 ... {2}> rangle.", label, _currentProgramLine.Label, MaxLabel);
             }
 
             var target = _programLines[label - 1];
             if (target == null)
             {
-                throw new InterpreterException(string.Format("Undefined label {0} at line {1}.", label, _currentProgramLine.Label));
+                ErrorAtLine("Undefined label {0}", label);
             }
 
             return label;
@@ -1211,7 +1240,7 @@ namespace BasicBasic
         {
             if (_currentProgramLine.Start + _currentProgramLinePos > _currentProgramLine.End)
             {
-                Error("Read beyond the line end at line {0}.", _currentProgramLine.Label);
+                ErrorAtLine("Read beyond the line end");
                 //_tok = TOK_EOLN;
 
                 //return;
@@ -1387,7 +1416,7 @@ namespace BasicBasic
                 {
                     if (strValue.Length != 3)
                     {
-                        Error("Unknown token '{0}' at line {1}.", strValue, _currentProgramLine.Label);
+                        ErrorAtLine("Unknown token '{0}'", strValue);
                     }
 
                     tok = strValue.StartsWith("FN") 
@@ -1425,7 +1454,7 @@ namespace BasicBasic
 
             if (c != '"')
             {
-                Error("Unexpected end of quoted string at line {0}.", _currentProgramLine.Label);
+                ErrorAtLine("Unexpected end of quoted string");
             }
 
             _tok = TOK_QSTR;
@@ -1533,6 +1562,8 @@ namespace BasicBasic
         #endregion
 
 
+        #region scanner
+
         private void ScanSource()
         {
             ProgramLine programLine = null;
@@ -1566,12 +1597,12 @@ namespace BasicBasic
 
                         if (label < 1 || label > MaxLabel)
                         {
-                            throw new InterpreterException(string.Format("Label {0} at line {1} out of <1 ... {2}> rangle.", label, line, MaxLabel));
+                            Error("Label {0} at line {1} out of <1 ... {2}> rangle.", label, line, MaxLabel);
                         }
 
                         if (_programLines[label - 1] != null)
                         {
-                            throw new InterpreterException(string.Format("Label {0} redefinition at line {1}.", label, line));
+                            Error("Label {0} redefinition at line {1}.", label, line);
                         }
 
                         // Remember this program line.
@@ -1588,7 +1619,7 @@ namespace BasicBasic
                     }
                     else
                     {
-                        throw new InterpreterException(string.Format("Label not found at line {0}.", line));
+                        Error("Label not found at line {0}.", line);
                     }
                 }
 
@@ -1606,7 +1637,7 @@ namespace BasicBasic
                     // Max program line length check.
                     if (programLine.Length > MaxProgramLineLength)
                     {
-                        throw new InterpreterException(string.Format("The line {0} is longer than {1} characters.", line, MaxProgramLineLength));
+                        Error("The line {0} is longer than {1} characters.", line, MaxProgramLineLength);
                     }
 
                     // We are done with this line.
@@ -1621,14 +1652,31 @@ namespace BasicBasic
             // The last line does not ended with the '\n' character.
             if (programLine != null)
             {
-                throw new InterpreterException(string.Format("No line end at line {0}.", line));
+                Error("No line end at line {0}.", line);
             }
         }
 
+        #endregion
+
+
+        #region errors
 
         private void UnexpectedTokenError(int tok)
         {
-            Error("Unexpected token {0} at line {1}.", tok, _currentProgramLine.Label);
+            ErrorAtLine("Unexpected token {0}", tok);
+        }
+
+
+        private void ErrorAtLine(string message, params object[] args)
+        {
+            if (args == null || args.Length == 0)
+            {
+                Error("{0} at line {1}.", message, _currentProgramLine.Label);
+            }
+            else
+            {
+                Error("{0} at line {1}.", string.Format(message, args), _currentProgramLine.Label);
+            }
         }
 
 
@@ -1636,6 +1684,8 @@ namespace BasicBasic
         {
             throw new InterpreterException(string.Format(message, args));
         }
+
+        #endregion
 
 
         #region classes
