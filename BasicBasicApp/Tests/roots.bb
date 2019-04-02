@@ -1,0 +1,13 @@
+﻿10 LET A=4
+20 LET B=7
+30 LET C=1
+40 LET R0=(-B + SQR(B^2 - 4*A*C))/2*A
+50 LET R1=(-B - SQR(B^2 - 4*A*C))/2*A
+60 PRINT R0, " ", R1
+70 LET A=16
+80 LET B=25
+90 LET C=2
+91 LET R0=(-B + SQR(B^2 - 4*A*C))/2*A
+92 LET R1=(-B - SQR(B^2 - 4*A*C))/2*A
+93 PRINT R0, " ", R1
+99 END

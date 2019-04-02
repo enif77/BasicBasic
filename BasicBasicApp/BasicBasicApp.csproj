@@ -61,6 +61,8 @@
     <None Include="Tests\gosub.bb" />
     <None Include="Tests\hello.bb" />
     <None Include="Tests\rnd.bb" />
+    <None Include="Tests\roots.bb" />
+    <None Include="Tests\roots_sub.bb" />
     <None Include="Tests\various.bb" />
     <None Include="Tests\while.bb" />
   </ItemGroup>
