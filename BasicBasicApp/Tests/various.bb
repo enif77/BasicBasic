@@ -13,7 +13,7 @@
 15 let s2 = "a123"
 19 if a = 5 then 26
 20 PRINT
-23 print a0 + 100 - b, " "; a, " ", a3, " "; b; " ", s$, " ", 78.25 
+23 print a0 + 100 - b; a, a3; b, s$, 78.25 
 24 print "s1 = "; s1
 25 print "s2 = "; s2
 26 print "z9 = "; z9

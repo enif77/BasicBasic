@@ -46,10 +46,11 @@ namespace BasicBasicApp
                 {
                     while (true)
                     {
-                        Console.WriteLine("Ready.");
+                        Console.Write("> ");
                         var input = Console.ReadLine().Trim();
 
-                        if (input.StartsWith("QUIT", StringComparison.InvariantCultureIgnoreCase))
+                        if (input.StartsWith("BY", StringComparison.InvariantCultureIgnoreCase) ||
+                            input.StartsWith("QUIT", StringComparison.InvariantCultureIgnoreCase))
                         {
                             break;
                         }
@@ -90,6 +91,6 @@ If the first argument starts with the exclamation character ('!'), it is ignored
 
 Without any argument, interactive mode starts.
 
-All lines are passed to the interpreter for execution. If the line contains the "quit" command, this program ends.
+All lines are passed to the interpreter for execution. If the line contains the "quit" or the "by" commands, this program ends.
      
 */

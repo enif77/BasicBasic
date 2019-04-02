@@ -479,7 +479,6 @@ namespace BasicBasic
 
             // var
             var isSubscription = false;
-            //var arrayIndex = 0;
             var index = 0;
             string varName = null;
             if (_tok == TOK_SVARIDNT)
@@ -501,6 +500,10 @@ namespace BasicBasic
                     CheckArray(varName, 10, index, true);
 
                     isSubscription = true;
+                }
+                else
+                {
+                    CheckSubsription(varName);
                 }
             }
             else if (_tok == TOK_VARIDNT || _tok == TOK_STRIDNT)
@@ -526,7 +529,6 @@ namespace BasicBasic
             }
             else
             {
-                CheckSubsription(varName);
                 SetVar(varName, v);
             }
                         
@@ -560,7 +562,7 @@ namespace BasicBasic
                         {
                             ErrorAtLine("A list separator expected");
                         }
-                        Console.Write(Expression());
+                        Console.Write(FormatValue(Expression()));
                         atSep = false;
                         break;
                 }
@@ -1099,6 +1101,34 @@ namespace BasicBasic
         #endregion
 
 
+        #region formatters
+
+        private string FormatValue(Value v)
+        {
+            if (v.Type == 0)
+            {
+                return FormatNumber(v.NumValue);
+            }
+
+            return v.StrValue;
+        }
+
+
+        private string FormatNumber(float n)
+        {
+            var ns = n.ToString(CultureInfo.InvariantCulture);
+
+            if (n < 0)
+            {
+                return string.Format("{0} ", ns);
+            }
+
+            return string.Format(" {0} ", ns);
+        }
+
+        #endregion
+
+
         #region tokenizer
 
         #region tokens
@@ -1384,7 +1414,7 @@ namespace BasicBasic
             {
                 // A numeric Ax variable.
                 _strValue = (strValue + c).ToUpperInvariant();
-                _tok = TOK_VARIDNT;
+                tok = TOK_VARIDNT;
             }
             else if (c == '$')
             {
