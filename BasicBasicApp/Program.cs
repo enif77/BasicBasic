@@ -54,11 +54,44 @@ namespace BasicBasicApp
                         {
                             break;
                         }
+                        else if (input.StartsWith("RUN", StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            try
+                            {
+                                interpreter.Interpret();
+                            }
+                            catch (InterpreterException ex)
+                            {
+                                Console.WriteLine();
+                                Console.WriteLine(ex.Message);
+                            }
+                        }
+                        else if (input.StartsWith("NEW", StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            interpreter.RemoveAllProgramLines();
+                        }
+                        else if (input.StartsWith("LIST", StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            foreach (var line in interpreter.ListProgramLines())
+                            {
+                                Console.WriteLine(line);
+                            }
+                        }
                         else
                         {
                             try
                             {
-                                interpreter.InterpretLine(input + "\n");
+                                if (interpreter.IsDigit(input[0]))
+                                {
+                                    // TODO: Pokud je řádka jen label, tak smazat řádku s příslušným návěštím.
+                                    // TODO: Pokud již řádka s daným návěštím existuje, smazat a nadefinovat novou.
+
+                                    interpreter.AddProgramLine(input + "\n");
+                                }
+                                else
+                                {
+                                    interpreter.InterpretLine(input + "\n");
+                                }
                             }
                             catch (InterpreterException ex)
                             {
@@ -91,6 +124,16 @@ If the first argument starts with the exclamation character ('!'), it is ignored
 
 Without any argument, interactive mode starts.
 
-All lines are passed to the interpreter for execution. If the line contains the "quit" or the "by" commands, this program ends.
+All lines are passed to the interpreter for execution. 
+
+If a line contains the "quit" or the "by" commands, this program ends.
+If a line starts with a label (integer 1 .. 99) it defines a new program line.
+
+Commands:
+
+BY or QUIT - Ends this app.
+NEW - Clears all defined program lines.
+LIST - Lists all currently defined program lines.
+RUN - Executes the entered program.
      
 */

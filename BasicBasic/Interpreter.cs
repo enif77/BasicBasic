@@ -81,6 +81,12 @@ namespace BasicBasic
         }
 
 
+        public void Interpret()
+        {
+            InterpretImpl();
+        }
+
+
         public void Interpret(string source)
         {
             if (source == null) Error("A source expected.");
@@ -103,6 +109,51 @@ namespace BasicBasic
             };
 
             InterpretLine(programLine);
+        }
+
+
+        public IEnumerable<string> ListProgramLines()
+        {
+            var list = new List<string>();
+
+            for (var i = 0; i < _programLines.Length; i++)
+            {
+                if (_programLines[i] == null)
+                {
+                    continue;
+                }
+
+                var pl = _programLines[i];
+
+                list.Add(string.Format("{0} {1}",
+                    pl.Label,
+                    pl.Source.Substring(pl.Start, pl.End - pl.Start)));
+            }
+
+            return list;
+        }
+
+
+        public void AddProgramLine(string source)
+        {
+            if (source == null) Error("A source expected.");
+
+            ScanSource(source);
+        }
+
+
+        public void RemoveProgramLine(int label)
+        {
+            _programLines[label - 1] = null;
+        }
+
+
+        public void RemoveAllProgramLines()
+        {
+            for (var i = 0; i < _programLines.Length; i++)
+            {
+                _programLines[i] = null;
+            }
         }
 
         #endregion
@@ -269,7 +320,6 @@ namespace BasicBasic
             EatToken(TOK_KEY_END);
             ExpToken(TOK_EOLN);
 
-            var thisLine = _currentProgramLine;
             var nextLine = NextProgramLine(_currentProgramLine.Label);
             if (nextLine != null)
             {
@@ -1573,7 +1623,7 @@ namespace BasicBasic
         }
 
 
-        private bool IsDigit(char c)
+        public bool IsDigit(char c)
         {
             return c >= '0' && c <= '9';
         }
@@ -1657,8 +1707,9 @@ namespace BasicBasic
 
                 if (c == C_EOLN)
                 {
-                    // The character before '\n'.
-                    programLine.End = i - 1;
+                    // The '\n' character.
+                    //programLine.End = i - 1;
+                    programLine.End = i;
 
                     // Max program line length check.
                     if (programLine.Length > MaxProgramLineLength)
