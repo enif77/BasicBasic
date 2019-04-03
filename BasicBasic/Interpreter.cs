@@ -70,7 +70,6 @@ namespace BasicBasic
 
         public void Initialize()
         {
-            _source = null;
             _programLines = new ProgramLine[MaxLabel + 1];
             _wasEnd = false;
             _returnStack = new int[ReturnStackSize];
@@ -86,9 +85,7 @@ namespace BasicBasic
         {
             if (source == null) Error("A source expected.");
 
-            _source = source;
-
-            ScanSource();
+            ScanSource(source);
             InterpretImpl();
         }
 
@@ -97,13 +94,12 @@ namespace BasicBasic
         {
             if (source == null) Error("A source expected.");
 
-            _source = source;
-
             var programLine = new ProgramLine()
             {
+                Source = source,
                 Label = -1,
                 Start = 0,
-                End = _source.Length - 1
+                End = source.Length - 1
             };
 
             InterpretLine(programLine);
@@ -114,7 +110,6 @@ namespace BasicBasic
 
         #region private
 
-        private string _source;
         private int _currentProgramLinePos;
         private ProgramLine _currentProgramLine;
         private ProgramLine[] _programLines;
@@ -1574,7 +1569,7 @@ namespace BasicBasic
 
         private char NextChar()
         {
-            return _source[_currentProgramLine.Start + _currentProgramLinePos++];
+            return _currentProgramLine.Source[_currentProgramLine.Start + _currentProgramLinePos++];
         }
 
 
@@ -1594,15 +1589,15 @@ namespace BasicBasic
 
         #region scanner
 
-        private void ScanSource()
+        private void ScanSource(string source)
         {
             ProgramLine programLine = null;
             var atLineStart = true;
             var line = 1;
             var i = 0;
-            for (; i < _source.Length; i++)
+            for (; i < source.Length; i++)
             {
-                var c = _source[i];
+                var c = source[i];
 
                 if (atLineStart)
                 {
@@ -1617,12 +1612,12 @@ namespace BasicBasic
                             label = label * 10 + (c - '0');
 
                             i++;
-                            if (i >= _source.Length)
+                            if (i >= source.Length)
                             {
                                 break;
                             }
 
-                            c = _source[i];
+                            c = source[i];
                         }
 
                         if (label < 1 || label > MaxLabel)
@@ -1636,6 +1631,7 @@ namespace BasicBasic
                         }
 
                         // Remember this program line.
+                        programLine.Source = source;
                         programLine.Label = label;
                         programLine.Start = i;
 
@@ -1722,6 +1718,7 @@ namespace BasicBasic
 
         private class ProgramLine
         {
+            public string Source { get; set; }
             public int Label { get; set; }
             public int Start { get; set; }
             public int End { get; set; }
