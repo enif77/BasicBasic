@@ -83,9 +83,6 @@ namespace BasicBasicApp
                             {
                                 if (interpreter.IsDigit(input[0]))
                                 {
-                                    // TODO: Pokud je řádka jen label, tak smazat řádku s příslušným návěštím.
-                                    // TODO: Pokud již řádka s daným návěštím existuje, smazat a nadefinovat novou.
-
                                     interpreter.AddProgramLine(input + "\n");
                                 }
                                 else
@@ -128,6 +125,8 @@ All lines are passed to the interpreter for execution.
 
 If a line contains the "quit" or the "by" commands, this program ends.
 If a line starts with a label (integer 1 .. 99) it defines a new program line.
+A program line can be redefined by a program line starting with the same label.
+If a program line contains a label only, it deletes an existing program line with the same label.
 
 Commands:
 

@@ -138,7 +138,7 @@ namespace BasicBasic
         {
             if (source == null) Error("A source expected.");
 
-            ScanSource(source);
+            ScanSource(source, true, true);
         }
 
 
@@ -1639,7 +1639,7 @@ namespace BasicBasic
 
         #region scanner
 
-        private void ScanSource(string source)
+        private void ScanSource(string source, bool canExist = false, bool interactiveMode = false)
         {
             ProgramLine programLine = null;
             var atLineStart = true;
@@ -1675,7 +1675,7 @@ namespace BasicBasic
                             Error("Label {0} at line {1} out of <1 ... {2}> rangle.", label, line, MaxLabel);
                         }
 
-                        if (_programLines[label - 1] != null)
+                        if (canExist == false && _programLines[label - 1] != null)
                         {
                             Error("Label {0} redefinition at line {1}.", label, line);
                         }
@@ -1687,9 +1687,6 @@ namespace BasicBasic
 
                         // Remember this line.
                         _programLines[label - 1] = programLine;
-
-                        // Re read the char behind the label.
-                        i--;
 
                         atLineStart = false;
                     }
@@ -1708,13 +1705,19 @@ namespace BasicBasic
                 if (c == C_EOLN)
                 {
                     // The '\n' character.
-                    //programLine.End = i - 1;
                     programLine.End = i;
 
                     // Max program line length check.
                     if (programLine.Length > MaxProgramLineLength)
                     {
                         Error("The line {0} is longer than {1} characters.", line, MaxProgramLineLength);
+                    }
+
+                    // An empty line?
+                    if (interactiveMode && string.IsNullOrWhiteSpace(programLine.Source.Substring(programLine.Start, programLine.End - programLine.Start)))
+                    {
+                        // Remove the existing program line.
+                        _programLines[programLine.Label - 1] = null;
                     }
 
                     // We are done with this line.
