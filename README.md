@@ -59,6 +59,140 @@ Lists all currently defined program lines.
 
 Executes the entered program.
 
+## Syntax
+
+<pre>
+{} - Repeat 0 or more.
+() - Groups things together.
+[] - An optional part.
+|  - Or.
+&  - And.
+!  - Not.
+:  - A definition name and its definition separator.
+-  - No white spaces allowed.
+"" - A specific string (keyword etc.).
+'' - A specific character.
+.. - A range.
+.  - The end of a definition.
+
+
+program : { block } end-line .
+
+block : { line | for-block } .
+
+line : label statement end-of line .
+
+label : digit | digit-digit .
+
+end-of-line : '\n' .
+
+end-line : label end-statement end-of-line .
+
+end-statement : "END" .
+
+statement :
+  def-statement |
+  dim-statement |
+  goto-statement | 
+  gosub-statement | 
+  if-then-statement |
+  let-statement |
+  option-statement |
+  print-statement |
+  randomize-statement |
+  remark-statement |
+  return-statement |
+  stop statement .
+
+def-statement : "DEF" user-function-name [ '(' parameter-name ')' ] '=' numeric-expression
+
+user-function-name : "FNA" .. 'FNZ' .
+
+parameter-name : 'A' .. 'Z' .
+
+dim-statement : "DIM" array-declaration { ',' array-declaration } .
+
+array-declaration : array-name '(' number ')' . 
+
+array-name : 'A' .. 'Z' .
+
+goto-statement : ( "GO" "TO" label ) | ( "GOTO" label ) .
+
+gosub-statement : ( "GO" "SUB" label ) | ( "GOSUB" label ) .
+
+if-then-statement : "IF" expression "THEN" label .
+
+let-statement : "LET" variable '=' expression .
+
+option-statement : "OPTION" "BASE" ( '0' | '1' ) .
+
+print-statement : [ print-list ] .
+
+print-list : { print-item print-separator } print-item .
+
+print-item : expression .
+
+print-separator : ',' | ';' .
+
+randomize-statement : "RANDOMIZE" .
+
+remark-statement : "REM" { any-character } .
+
+return-statement : "RETURN" .
+
+stop-statement : "STOP" .
+
+variable : numeric-variable | string-variable .
+
+numeric-variable : leter [ - digit ] .
+
+string-variable : leter - '$' .
+
+leter : 'A' .. 'Z' .
+
+digit : '0' .. '9' .
+
+expression : numeric-expression | string-expression .
+
+numeric-expression : [ sign ] term { sign term } .
+
+sign : '+' | '-' .
+
+term : factor { multiplier factor } .
+
+multiplier : '*' | '/' .
+
+factor : primary { '^' primary } .
+
+primary : number | numeric-variable | numeric-function | '(' numeric-expression ')' | user-function | array-subscription .
+
+numeric-function : numeric-function-name '(' numeric-expression ')' .
+
+numeric-function-name : "ABS" | "ATN" | "COS" | "EXP" | "INT" | "LOG" | "RND" | "SGN" | "SIN" | "SQR" | "TAN" .
+
+user-function : user-function-name [ '(' numeric-function ')' ] .
+
+number : 
+    ( [ sign - ] decimal-part [ - fractional-part ] [ - exponent-part ] ) | 
+    ( [ sign - ] '.' - digit { - digit } [ - exponent-part ] ) .
+
+decimal-part : digit { - digit } .
+
+fractional-part : '.' { - digit } .
+
+exponent.part : 'E' [ - sign ] - digit { - digit } .
+
+array-subscription : array-name '(' numeric-expression ')' .
+
+string-expression : string-variable | string-constant .
+
+string-constant : quoted-string .
+
+quoted-string : '"' { string-character } '"' .
+
+string-character : ! '"' & ! end-of-line .
+</pre>
+
 ## License
 
 ### BasicBasic - (C) 2019 Premysl Fara 
