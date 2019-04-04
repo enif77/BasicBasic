@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "BasicBasicAppCore": {
+      "commandName": "Project",
+      "commandLineArgs": "!..\\..\\..\\..\\BasicBasicApp\\Tests\\arrays.bb"
+    }
+  }
+}
