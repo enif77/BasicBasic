@@ -49,6 +49,11 @@ namespace BasicBasicApp
                         Console.Write("> ");
                         var input = Console.ReadLine().Trim();
 
+                        if (string.IsNullOrWhiteSpace(input))
+                        {
+                            continue;
+                        }
+
                         if (input.StartsWith("BY", StringComparison.InvariantCultureIgnoreCase) ||
                             input.StartsWith("QUIT", StringComparison.InvariantCultureIgnoreCase))
                         {
