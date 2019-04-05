@@ -27,6 +27,9 @@ namespace BasicBasic
     using System.Globalization;
 
 
+    /// <summary>
+    /// Represents and error, that occurred during the execution of a program.
+    /// </summary>
     public class InterpreterException : Exception
     {
         public InterpreterException() : base()
@@ -48,15 +51,6 @@ namespace BasicBasic
     /// </summary>
     public class Interpreter
     {
-        #region constants
-
-        public readonly int MaxLabel = 99;
-        public readonly int MaxProgramLineLength = 72;  // ECMA-55
-        public readonly int ReturnStackSize = 32;
-
-        #endregion
-
-
         #region ctor
 
         public Interpreter()
@@ -68,25 +62,26 @@ namespace BasicBasic
 
         #region public
 
+        /// <summary>
+        /// Initializes this interpereter instance.
+        /// </summary>
         public void Initialize()
         {
-            _programLines = new ProgramLine[MaxLabel + 1];
-            _wasEnd = false;
-            _returnStack = new int[ReturnStackSize];
-            _returnStackTop = -1;
-            _userFns = new int['Z' - 'A'];
-            _arrays = new float['Z' - 'A'][];
-            _arrayBase = -1;                  // -1 = not yet user defined = 0.
-            _random = new Random(20170327);
+            _programState = new ProgramState();
         }
 
-
+        /// <summary>
+        /// Interprets the currently defined program.
+        /// </summary>
         public void Interpret()
         {
             InterpretImpl();
         }
 
-
+        /// <summary>
+        /// Scans the given sorce and interprets it.
+        /// </summary>
+        /// <param name="source"></param>
         public void Interpret(string source)
         {
             if (source == null) Error("A source expected.");
@@ -95,7 +90,10 @@ namespace BasicBasic
             InterpretImpl();
         }
 
-
+        /// <summary>
+        /// Interprets a single program line.
+        /// </summary>
+        /// <param name="source">A program line source.</param>
         public void InterpretLine(string source)
         {
             if (source == null) Error("A source expected.");
@@ -111,48 +109,55 @@ namespace BasicBasic
             InterpretLine(programLine);
         }
 
-
+        /// <summary>
+        /// Returns the list of defined program lines.
+        /// </summary>
+        /// <returns>The list of defined program lines.</returns>
         public IEnumerable<string> ListProgramLines()
         {
             var list = new List<string>();
 
-            for (var i = 0; i < _programLines.Length; i++)
+            for (var i = 0; i < _programState.ProgramLines.Length; i++)
             {
-                if (_programLines[i] == null)
+                if (_programState.ProgramLines[i] == null)
                 {
                     continue;
                 }
 
-                var pl = _programLines[i];
-
-                list.Add(string.Format("{0} {1}",
-                    pl.Label,
-                    pl.Source.Substring(pl.Start, pl.End - pl.Start)));
+                list.Add(_programState.ProgramLines[i].ToString());
             }
 
             return list;
         }
 
-
+        /// <summary>
+        /// Adds a new rogram line to the current program.
+        /// </summary>
+        /// <param name="source">A program line source.</param>
         public void AddProgramLine(string source)
         {
             if (source == null) Error("A source expected.");
 
-            ScanSource(source, true, true);
+            ScanSource(source, true);
         }
 
-
+        /// <summary>
+        /// Removes a program line from the current program.
+        /// </summary>
+        /// <param name="label">A program line label to be removed.</param>
         public void RemoveProgramLine(int label)
         {
-            _programLines[label - 1] = null;
+            _programState.ProgramLines[label - 1] = null;
         }
 
-
+        /// <summary>
+        /// Removes all program lines from this program.
+        /// </summary>
         public void RemoveAllProgramLines()
         {
-            for (var i = 0; i < _programLines.Length; i++)
+            for (var i = 0; i < _programState.ProgramLines.Length; i++)
             {
-                _programLines[i] = null;
+                _programState.ProgramLines[i] = null;
             }
         }
 
@@ -161,37 +166,37 @@ namespace BasicBasic
 
         #region private
 
-        private int _currentProgramLinePos;
-        private ProgramLine _currentProgramLine;
-        private ProgramLine[] _programLines;
-        private bool _wasEnd = false;
-        private int[] _returnStack;
-        private int _returnStackTop;
-        private int[] _userFns;
-        private Random _random;
-               
+        private ProgramState _programState;
 
+
+        /// <summary>
+        /// Interprets the whole program.
+        /// </summary>
         private void InterpretImpl()
         {
-            var programLine = NextProgramLine(0);
+            var programLine = _programState.NextProgramLine(0);
             while (programLine != null)
             {
                 programLine = InterpretLine(programLine);
             }
 
-            if (_wasEnd == false)
+            if (_programState.WasEnd == false)
             {
                 Error("Unexpected end of program.");
             }
         }
 
-
+        /// <summary>
+        /// Interprets a single program line.
+        /// </summary>
+        /// <param name="programLine">A program line.</param>
+        /// <returns>The next program line to interpret.</returns>
         private ProgramLine InterpretLine(ProgramLine programLine)
         {
             //Console.WriteLine("{0:000} -> {1}", programLine.Label, _source.Substring(programLine.Start, (programLine.End - programLine.Start) + 1));
 
-            _currentProgramLine = programLine;
-            _currentProgramLinePos = 0;
+            _programState.CurrentProgramLine = programLine;
+            _programState.CurrentProgramLinePos = 0;
 
             NextToken();
 
@@ -223,27 +228,6 @@ namespace BasicBasic
         }
 
 
-        private ProgramLine NextProgramLine(int fromLabel)
-        {
-            // Interactive mode line.
-            if (fromLabel < 0)
-            {
-                return null;
-            }
-
-            // Skip program lines without code.
-            for (var label = fromLabel; label < _programLines.Length; label++)
-            {
-                if (_programLines[label] != null)
-                {
-                    return _programLines[label];
-                }
-            }
-
-            return null;
-        }
-
-
         #region statements
 
         // An user defined function.
@@ -257,15 +241,15 @@ namespace BasicBasic
             var fname = _strValue;
 
             // Do not redefine user functions.
-            if (_userFns[fname[2] - 'A'] != 0)
+            if (_programState.UserFns[fname[2] - 'A'] != 0)
             {
                 ErrorAtLine("{0} function redefinition", fname);
             }
 
             // Save this function definition.
-            _userFns[fname[2] - 'A'] = _currentProgramLine.Label;
+            _programState.UserFns[fname[2] - 'A'] = _programState.CurrentProgramLine.Label;
 
-            return NextProgramLine(_currentProgramLine.Label);
+            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // An array definition.
@@ -286,7 +270,7 @@ namespace BasicBasic
 
             ExpToken(TOK_EOLN);
 
-            return NextProgramLine(_currentProgramLine.Label);
+            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // array-declaration : letter '(' integer ')' .
@@ -320,13 +304,13 @@ namespace BasicBasic
             EatToken(TOK_KEY_END);
             ExpToken(TOK_EOLN);
 
-            var nextLine = NextProgramLine(_currentProgramLine.Label);
+            var nextLine = _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
             if (nextLine != null)
             {
                 ErrorAtLine("Unexpected END statement");
             }
 
-            _wasEnd = true;
+            _programState.WasEnd = true;
 
             return null;
         }
@@ -372,16 +356,16 @@ namespace BasicBasic
 
             if (gosub)
             {
-                _returnStackTop++;
-                if (_returnStackTop >= _returnStack.Length)
+                _programState.ReturnStackTop++;
+                if (_programState.ReturnStackTop >= _programState.ReturnStack.Length)
                 {
                     ErrorAtLine("Return stack overflow");
                 }
 
-                _returnStack[_returnStackTop] = _currentProgramLine.Label;
+                _programState.ReturnStack[_programState.ReturnStackTop] = _programState.CurrentProgramLine.Label;
             }
 
-            return _programLines[label - 1];
+            return _programState.ProgramLines[label - 1];
         }
         
         // IF exp1 rel exp2 THEN line-number
@@ -467,15 +451,15 @@ namespace BasicBasic
             }
 
             return jump
-                ? _programLines[label - 1] 
-                : NextProgramLine(_currentProgramLine.Label);
+                ? _programState.ProgramLines[label - 1] 
+                : _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // Sets the array bottom dimension.
         // OPTION BASE 1
         private ProgramLine OptionStatement()
         {
-            if (_arrayBase >= 0)
+            if (_programState.ArrayBase >= 0)
             {
                 ErrorAtLine("The OPTION BASE command already executed. Can not change the arrays lower bound");
             }
@@ -487,9 +471,9 @@ namespace BasicBasic
 
             // Array lower bound can not be changed, when an array is already defined.
             var arrayDefined = false;
-            for (var i = 0; i < _arrays.Length; i++)
+            for (var i = 0; i < _programState.Arrays.Length; i++)
             {
-                if (_arrays[i] != null)
+                if (_programState.Arrays[i] != null)
                 {
                     arrayDefined = true;
 
@@ -510,10 +494,10 @@ namespace BasicBasic
             {
                 ErrorAtLine("Array base out of allowed range 0 .. 1");
             }
-            
-            _arrayBase = option;
 
-            return NextProgramLine(_currentProgramLine.Label);
+            _programState.ArrayBase = option;
+
+            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // LET var = expr EOLN
@@ -570,17 +554,17 @@ namespace BasicBasic
 
             if (isSubscription)
             {
-                SetArray(varName, index, v.NumValue);
+                _programState.SetArray(varName, index, v.NumValue);
             }
             else
             {
-                SetVar(varName, v);
+                _programState.SetVar(varName, v);
             }
                         
             // EOLN
             ExpToken(TOK_EOLN);
 
-            return NextProgramLine(_currentProgramLine.Label);
+            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
         
         // PRINT [ expr { print-sep expr } ] EOLN
@@ -617,7 +601,7 @@ namespace BasicBasic
 
             Console.WriteLine();
 
-            return NextProgramLine(_currentProgramLine.Label);
+            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // Reseeds the random number generator.
@@ -626,17 +610,17 @@ namespace BasicBasic
         {
             NextToken();
             ExpToken(TOK_EOLN);
-            
-            _random = new Random((int)DateTime.Now.Ticks);
 
-            return NextProgramLine(_currentProgramLine.Label);
+            _programState.Random = new Random((int)DateTime.Now.Ticks);
+
+            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // The comment.
         // REM ...
         private ProgramLine RemStatement()
         {
-            return NextProgramLine(_currentProgramLine.Label);
+            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // Returns from a subroutine.
@@ -646,12 +630,12 @@ namespace BasicBasic
             NextToken();
             ExpToken(TOK_EOLN);
 
-            if (_returnStackTop < 0)
+            if (_programState.ReturnStackTop < 0)
             {
                 ErrorAtLine("Return stack underflow");
             }
 
-            return NextProgramLine(_returnStack[_returnStackTop--]);
+            return _programState.NextProgramLine(_programState.ReturnStack[_programState.ReturnStackTop--]);
         }
 
         // The end of execution.
@@ -661,7 +645,7 @@ namespace BasicBasic
             NextToken();
             ExpToken(TOK_EOLN);
 
-            _wasEnd = true;
+            _programState.WasEnd = true;
 
             return null;
         }
@@ -692,7 +676,7 @@ namespace BasicBasic
             switch (_tok)
             {
                 case TOK_QSTR: return _strValue;
-                case TOK_STRIDNT: return GetSVar(_strValue);
+                case TOK_STRIDNT: return _programState.GetSVar(_strValue);
 
                 default:
                     UnexpectedTokenError(_tok);
@@ -832,12 +816,12 @@ namespace BasicBasic
                         // Variable used as an array?
                         CheckSubsription(varName);
 
-                        return GetNVar(varName);
+                        return _programState.GetNVar(varName);
                     }
                     
                 case TOK_VARIDNT:
                     {
-                        var v = GetNVar(_strValue);
+                        var v = _programState.GetNVar(_strValue);
                         NextToken();
                         return v;
                     }
@@ -858,7 +842,7 @@ namespace BasicBasic
                         {
                             NextToken();
 
-                            return (float)_random.NextDouble();
+                            return (float)_programState.Random.NextDouble();
                         }
                         else
                         {
@@ -927,7 +911,7 @@ namespace BasicBasic
                     {
                         float v;
                         var fname = _strValue;
-                        var flabel = _userFns[fname[2] - 'A'];
+                        var flabel = _programState.UserFns[fname[2] - 'A'];
                         if (flabel == 0)
                         {
                             ErrorAtLine("Undefined user function {0}", fname);
@@ -946,12 +930,12 @@ namespace BasicBasic
                         }
 
                         // Remember, where we are.
-                        var cpl = _currentProgramLine;
-                        var cplp = _currentProgramLinePos;
+                        var cpl = _programState.CurrentProgramLine;
+                        var cplp = _programState.CurrentProgramLinePos;
 
                         // Go to the user function definition.
-                        _currentProgramLine = _programLines[flabel - 1];
-                        _currentProgramLinePos = 0;
+                        _programState.CurrentProgramLine = _programState.ProgramLines[flabel - 1];
+                        _programState.CurrentProgramLinePos = 0;
 
                         // DEF
                         NextToken();
@@ -1004,8 +988,8 @@ namespace BasicBasic
                         ExpToken(TOK_EOLN);
 
                         // Restore the previous position.
-                        _currentProgramLine = cpl;
-                        _currentProgramLinePos = cplp;
+                        _programState.CurrentProgramLine = cpl;
+                        _programState.CurrentProgramLinePos = cplp;
 
                         return v;
                     }
@@ -1023,10 +1007,6 @@ namespace BasicBasic
 
         #region arrays
 
-        private float[][] _arrays;
-        private int _arrayBase;
-
-
         /// <summary>
         /// Checks the current state of an array and validate the acces to it.
         /// Can create a new array on demand.
@@ -1041,31 +1021,31 @@ namespace BasicBasic
             var arrayIndex = arrayName[0] - 'A';
 
             // Do not redefine array.
-            if (canExist == false && _arrays[arrayIndex] != null)
+            if (canExist == false && _programState.Arrays[arrayIndex] != null)
             {
                 ErrorAtLine("Array {0} redefinition", arrayName);
             }
 
-            var bottomBound = (_arrayBase < 0) ? 0 : _arrayBase;
+            var bottomBound = (_programState.ArrayBase < 0) ? 0 : _programState.ArrayBase;
             if (topBound < bottomBound)
             {
-                ErrorAtLine("Array top bound ({0}) is less than the defined array bottom bound ({1})", topBound, _arrayBase);
+                ErrorAtLine("Array top bound ({0}) is less than the defined array bottom bound ({1})", topBound, _programState.ArrayBase);
             }
 
             index -= bottomBound;
 
             // Undefined array?
-            if (_arrays[arrayIndex] == null)
+            if (_programState.Arrays[arrayIndex] == null)
             {
-                _arrays[arrayIndex] = new float[topBound - bottomBound + 1];
+                _programState.Arrays[arrayIndex] = new float[topBound - bottomBound + 1];
             }
 
-            if (index < 0 || index >= _arrays[arrayIndex].Length)
+            if (index < 0 || index >= _programState.Arrays[arrayIndex].Length)
             {
                 ErrorAtLine("Index {0} out of array bounds", index + bottomBound);
             }
 
-            return _arrays[arrayIndex][index];
+            return _programState.Arrays[arrayIndex][index];
         }
 
         /// <summary>
@@ -1074,23 +1054,10 @@ namespace BasicBasic
         /// <param name="varName"></param>
         private void CheckSubsription(string varName)
         {
-            if (_arrays[varName[0] - 'A'] != null)
+            if (_programState.Arrays[varName[0] - 'A'] != null)
             {
                 ErrorAtLine("Array {0} subsciption expected", varName);
             }
-        }
-
-        /// <summary>
-        /// Sets a value to a specific cell in an array.
-        /// </summary>
-        /// <param name="arrayName">An array name.</param>
-        /// <param name="index">An index.</param>
-        /// <param name="v">A value.</param>
-        private void SetArray(string arrayName, int index, float v)
-        {
-            var bottomBound = (_arrayBase < 0) ? 0 : _arrayBase;
-
-            _arrays[arrayName[0] - 'A'][index - bottomBound] = v;
         }
 
         #endregion
@@ -1098,56 +1065,16 @@ namespace BasicBasic
 
         #region variables
 
-        private float[] _nvars = new float[(('Z' - 'A') + 1) * 10]; // A or A0 .. A9
-        private string[] _svars = new string[('Z' - 'A') + 1];      // A$ .. Z$
-
-
-        // A or A5.
-        // A = A0
-        private float GetNVar(string varName)
-        {
-            var n = varName[0] - 'A';
-            var x = 0;
-            if (varName.Length == 2)
-            {
-                x = varName[1] - '0';
-            }
-
-            return _nvars[n * 10 + x];
-        }
-
-
-        // A$.
-        private string GetSVar(string varName)
-        {
-            return _svars[varName[0] - 'A'] ?? string.Empty;
-        }
-
-
-        private void SetVar(string varName, Value v)
-        {
-            if (varName.EndsWith("$"))
-            {
-                _svars[varName[0] - 'A'] = v.ToString();
-            }
-            else
-            {
-                var n = varName[0] - 'A';
-                var x = 0;
-                if (varName.Length == 2)
-                {
-                    x = varName[1] - '0';
-                }
-
-                _nvars[n * 10 + x] = v.ToNumber();
-            }
-        }
-
         #endregion
 
 
         #region formatters
 
+        /// <summary>
+        /// Formats a Value to a PRINT statement output format.
+        /// </summary>
+        /// <param name="v">A Value.</param>
+        /// <returns>A Value formated to the PRINT statement output format.</returns>
         private string FormatValue(Value v)
         {
             if (v.Type == 0)
@@ -1158,7 +1085,11 @@ namespace BasicBasic
             return v.StrValue;
         }
 
-
+        /// <summary>
+        /// Formats a number to a PRINT statement output format.
+        /// </summary>
+        /// <param name="n">A number.</param>
+        /// <returns>A number formated to the PRINT statement output format.</returns>
         private string FormatNumber(float n)
         {
             var ns = n.ToString(CultureInfo.InvariantCulture);
@@ -1178,19 +1109,61 @@ namespace BasicBasic
 
         #region tokens
 
+        /// <summary>
+        /// The end of the line character.
+        /// </summary>
         private const char C_EOLN = '\n';
 
+        /// <summary>
+        /// The end of the line token.
+        /// </summary>
         private const int TOK_EOLN = 0;
-        private const int TOK_SVARIDNT = 4;  // 'A' .. 'Z'
-        private const int TOK_VARIDNT = 5; // "A0" .. "Z9"
+
+        /// <summary>
+        /// A simple ('A' .. 'Z') identifier token.
+        /// used for variables, arrays and user function parameters.
+        /// </summary>
+        private const int TOK_SVARIDNT = 4;
+
+        /// <summary>
+        /// A numeric variable ("A0" .. "Z9") identifier token.
+        /// </summary>
+        private const int TOK_VARIDNT = 5;
+
+        /// <summary>
+        /// A string variable ("A$" .. "Z$") identifier token.
+        /// </summary>
         private const int TOK_STRIDNT = 6;
+
+        /// <summary>
+        /// A number token.
+        /// </summary>
         private const int TOK_NUM = 10;
+
+        /// <summary>
+        /// A quoted string token.
+        /// </summary>
         private const int TOK_QSTR = 11;
+
+        /// <summary>
+        /// A build in function name token.
+        /// </summary>
         private const int TOK_FN = 12;
+
+        /// <summary>
+        /// An user defined function name ("FN?") token.
+        /// </summary>
         private const int TOK_UFN = 13;
 
-        private const int TOK_PLSTSEP = 20;  // ;
-        private const int TOK_LSTSEP = 21;  // ,
+        /// <summary>
+        /// A PRINT statement values list separator (';') token.
+        /// </summary>
+        private const int TOK_PLSTSEP = 20;
+
+        /// <summary>
+        /// A list separator (',') token.
+        /// </summary>
+        private const int TOK_LSTSEP = 21;
         
         private const int TOK_EQL = 30;   // =
         private const int TOK_NEQL = 31;  // <>
@@ -1207,6 +1180,8 @@ namespace BasicBasic
         private const int TOK_POW = 44;
         private const int TOK_LBRA = 45;
         private const int TOK_RBRA = 46;
+
+        // Keywords tokens.
 
         private const int TOK_KEY_BASE = 100;
         //private const int TOK_KEY_DATA = 101;
@@ -1235,6 +1210,9 @@ namespace BasicBasic
         private const int TOK_KEY_THEN = 124;
         private const int TOK_KEY_TO = 125;
 
+        /// <summary>
+        /// The keyword - token map.
+        /// </summary>
         private readonly Dictionary<string, int> _keyWordsMap = new Dictionary<string, int>()
         {
             { "BASE", TOK_KEY_BASE },
@@ -1270,22 +1248,28 @@ namespace BasicBasic
         /// </summary>
         private float _numValue = 0.0f;
 
-        // A value of TOK_QSTR, TOK_STRIDNT, TOK_FN and TOK_UFN tokens.
+        /// <summary>
+        /// A value of TOK_QSTR, TOK_SVARIDNT, TOK_VARIDNT, TOK_STRIDNT, TOK_FN and TOK_UFN tokens.
+        /// </summary>
         private string _strValue = null;
 
-
+        /// <summary>
+        /// Checks, if this token is a label, if it is from the allowed range of labels
+        /// and if such label/program line actually exists.
+        /// </summary>
+        /// <returns>The integer value representing this label.</returns>
         private int ExpLabel()
         {
             ExpToken(TOK_NUM);
 
             var label = (int)_numValue;
 
-            if (label < 1 || label > MaxLabel)
+            if (label < 1 || label > _programState.MaxLabel)
             {
-                Error("The label {0} at line {1} is out of <1 ... {2}> rangle.", label, _currentProgramLine.Label, MaxLabel);
+                Error("The label {0} at line {1} is out of <1 ... {2}> rangle.", label, _programState.CurrentProgramLine.Label, _programState.MaxLabel);
             }
 
-            var target = _programLines[label - 1];
+            var target = _programState.ProgramLines[label - 1];
             if (target == null)
             {
                 ErrorAtLine("Undefined label {0}", label);
@@ -1294,14 +1278,23 @@ namespace BasicBasic
             return label;
         }
 
-
+        /// <summary>
+        /// Checks, if the given token is the one we expected.
+        /// Throws the unexpected token error if not
+        /// or goes tho the next one, if it is.
+        /// </summary>
+        /// <param name="expTok">The expected token.</param>
         private void EatToken(int expTok)
         {
             ExpToken(expTok);
             NextToken();
         }
 
-
+        /// <summary>
+        /// Checks, if the given token is the one we expected.
+        /// Throws the unexpected token error if not.
+        /// </summary>
+        /// <param name="expTok">The expected token.</param>
         private void ExpToken(int expTok)
         {
             if (_tok != expTok)
@@ -1310,10 +1303,12 @@ namespace BasicBasic
             }
         }
 
-
+        /// <summary>
+        /// Extracts the next token found in the current program line source.
+        /// </summary>
         private void NextToken()
         {
-            if (_currentProgramLine.Start + _currentProgramLinePos > _currentProgramLine.End)
+            if (_programState.CurrentProgramLine.Start + _programState.CurrentProgramLinePos > _programState.CurrentProgramLine.End)
             {
                 ErrorAtLine("Read beyond the line end");
                 //_tok = TOK_EOLN;
@@ -1372,7 +1367,7 @@ namespace BasicBasic
                         }
                         else
                         {
-                            _currentProgramLinePos--;
+                                _programState.CurrentProgramLinePos--;
                             _tok = TOK_LT;
                         }
                         
@@ -1388,7 +1383,7 @@ namespace BasicBasic
                         }
                         else
                         {
-                            _currentProgramLinePos--;
+                                _programState.CurrentProgramLinePos--;
                             _tok = TOK_GT;
                         }
 
@@ -1398,7 +1393,7 @@ namespace BasicBasic
                     case '+':
                     {
                         var cc = NextChar();
-                        _currentProgramLinePos--;
+                            _programState.CurrentProgramLinePos--;
 
                         if (IsDigit(cc) || cc == '.')
                         {
@@ -1415,7 +1410,7 @@ namespace BasicBasic
                     case '-':
                     {
                         var cc = NextChar();
-                        _currentProgramLinePos--;
+                            _programState.CurrentProgramLinePos--;
 
                         if (IsDigit(cc) || cc == '.')
                         {
@@ -1442,12 +1437,10 @@ namespace BasicBasic
             _tok = TOK_EOLN;
         }
 
-        // A or A5 -> numeric var name
-        // A$ -> string var name
-        // A(...) -> array var name
-        // PRINT -> a key word
-        // ABS, ATN, COS, EXP, INT, LOG, RND, SGN, SIN, SQR, TAN -> TOK_FN
-        // FNx -> TOK_UFN
+        /// <summary>
+        /// Parses an identifier the ECMA-55 rules.
+        /// </summary>
+        /// <param name="c">The first character of the parsed identifier.</param>
         private void ParseIdent(char c)
         {
             var tok = TOK_SVARIDNT;
@@ -1479,7 +1472,7 @@ namespace BasicBasic
                 }
 
                 // Go one char back, so the next time we will read the character behind this identifier.
-                _currentProgramLinePos--;
+                _programState.CurrentProgramLinePos--;
 
                 strValue = strValue.ToUpperInvariant();
                                
@@ -1507,14 +1500,16 @@ namespace BasicBasic
                 _strValue = strValue.ToUpperInvariant();
 
                 // Go one char back, so the next time we will read the character behind this identifier.
-                _currentProgramLinePos--;
+                _programState.CurrentProgramLinePos--;
             }
 
             _tok = tok;
         }
-
-
-        // '"' ... '"'
+        
+        /// <summary>
+        /// Parses the quoted string using the ECMA-55 rules.
+        /// </summary>
+        /// <param name="c">The first character ('"') of the parsed string literal.</param>
         private void ParseQuotedString(char c)
         {
             var strValue = string.Empty;
@@ -1535,17 +1530,11 @@ namespace BasicBasic
             _tok = TOK_QSTR;
             _strValue = strValue;
         }
-
-
-        //number : 
-        //    ( [ sign - ] decimal-part [ - fractional-part ] [ - exponent-part ] ) | 
-        //    ( [ sign - ] '.' - digit { - digit } [ - exponent-part ] ) .
-        //
-        //decimal-part : digit { - digit } .
-        //
-        //fractional-part : '.' { - digit } .
-        //
-        //exponent.part : 'E' [ - sign ] - digit { - digit } .
+        
+        /// <summary>
+        /// Parses the number using the ECMA-55 rules.
+        /// </summary>
+        /// <param name="c">The first character of the parsed number.</param>
         private void ParseNumber(char c)
         {
             var negate = false;
@@ -1612,23 +1601,34 @@ namespace BasicBasic
             _tok = TOK_NUM;
             _numValue = negate ? -numValue : numValue;
 
-            // Go one char back, so the next time we will read the character behind this number.
-            _currentProgramLinePos--;
+            // Go one char back, so the next time we will read the character right behind this number.
+            _programState.CurrentProgramLinePos--;
         }
 
-
+        /// <summary>
+        /// Gets the next character from the current program line source.
+        /// </summary>
+        /// <returns>The next character from the current program line source.</returns>
         private char NextChar()
         {
-            return _currentProgramLine.Source[_currentProgramLine.Start + _currentProgramLinePos++];
+            return _programState.CurrentProgramLine.Source[_programState.CurrentProgramLine.Start + _programState.CurrentProgramLinePos++];
         }
 
-
+        /// <summary>
+        /// Checks, if an character is a digit.
+        /// </summary>
+        /// <param name="c">A character.</param>
+        /// <returns>True, if a character is a digit.</returns>
         public bool IsDigit(char c)
         {
             return c >= '0' && c <= '9';
         }
 
-
+        /// <summary>
+        /// Checks, if an character is a letter.
+        /// </summary>
+        /// <param name="c">A character.</param>
+        /// <returns>True, if a character is a letter.</returns>
         private bool IsLetter(char c)
         {
             return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
@@ -1639,7 +1639,14 @@ namespace BasicBasic
 
         #region scanner
 
-        private void ScanSource(string source, bool canExist = false, bool interactiveMode = false)
+        /// <summary>
+        /// Scans the source for program lines.
+        /// Exctracts labels, line starts and ends, etc.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="interactiveMode">A program line in the interactive mode can exist, 
+        /// so the user can redefine it, an can be empty, so the user can delete it.</param>
+        private void ScanSource(string source, bool interactiveMode = false)
         {
             ProgramLine programLine = null;
             var atLineStart = true;
@@ -1670,12 +1677,12 @@ namespace BasicBasic
                             c = source[i];
                         }
 
-                        if (label < 1 || label > MaxLabel)
+                        if (label < 1 || label > _programState.MaxLabel)
                         {
-                            Error("Label {0} at line {1} out of <1 ... {2}> rangle.", label, line, MaxLabel);
+                            Error("Label {0} at line {1} out of <1 ... {2}> rangle.", label, line, _programState.MaxLabel);
                         }
 
-                        if (canExist == false && _programLines[label - 1] != null)
+                        if (interactiveMode == false && _programState.ProgramLines[label - 1] != null)
                         {
                             Error("Label {0} redefinition at line {1}.", label, line);
                         }
@@ -1686,7 +1693,7 @@ namespace BasicBasic
                         programLine.Start = i;
 
                         // Remember this line.
-                        _programLines[label - 1] = programLine;
+                        _programState.ProgramLines[label - 1] = programLine;
 
                         atLineStart = false;
                     }
@@ -1708,16 +1715,16 @@ namespace BasicBasic
                     programLine.End = i;
 
                     // Max program line length check.
-                    if (programLine.Length > MaxProgramLineLength)
+                    if (programLine.Length > _programState.MaxProgramLineLength)
                     {
-                        Error("The line {0} is longer than {1} characters.", line, MaxProgramLineLength);
+                        Error("The line {0} is longer than {1} characters.", line, _programState.MaxProgramLineLength);
                     }
 
                     // An empty line?
                     if (interactiveMode && string.IsNullOrWhiteSpace(programLine.Source.Substring(programLine.Start, programLine.End - programLine.Start)))
                     {
                         // Remove the existing program line.
-                        _programLines[programLine.Label - 1] = null;
+                        _programState.ProgramLines[programLine.Label - 1] = null;
                     }
 
                     // We are done with this line.
@@ -1741,25 +1748,53 @@ namespace BasicBasic
 
         #region errors
 
+        /// <summary>
+        /// Reports the unexpected token error.
+        /// </summary>
+        /// <param name="tok">The unexpected token.</param>
         private void UnexpectedTokenError(int tok)
         {
             ErrorAtLine("Unexpected token {0}", tok);
         }
 
-
+        /// <summary>
+        /// Reports an general error on a program line.
+        /// </summary>
+        /// <param name="message">An error message.</param>
+        /// <param name="args">Error message arguments.</param>
         private void ErrorAtLine(string message, params object[] args)
         {
-            if (args == null || args.Length == 0)
+            // Interactive mode?
+            if (_programState.CurrentProgramLine.Label < 1)
             {
-                Error("{0} at line {1}.", message, _currentProgramLine.Label);
+                if (args == null || args.Length == 0)
+                {
+                    Error(message + ".");
+                }
+                else
+                {
+                    Error("{0}.", string.Format(message, args));
+                }
             }
             else
             {
-                Error("{0} at line {1}.", string.Format(message, args), _currentProgramLine.Label);
+                if (args == null || args.Length == 0)
+                {
+                    Error("{0} at line {1}.", message, _programState.CurrentProgramLine.Label);
+                }
+                else
+                {
+                    Error("{0} at line {1}.", string.Format(message, args), _programState.CurrentProgramLine.Label);
+                }
             }
         }
 
-
+        /// <summary>
+        /// Reports an general error and ends the current program execution.
+        /// </summary>
+        /// <exception cref="InterpreterException">Thrown when an error occurs during a program execution.</exception>
+        /// <param name="message">An error message.</param>
+        /// <param name="args">Error message arguments.</param>
         private void Error(string message, params object[] args)
         {
             throw new InterpreterException(string.Format(message, args));
@@ -1770,41 +1805,259 @@ namespace BasicBasic
 
         #region classes
 
-        private class ProgramLine
+        /// <summary>
+        /// The global program state.
+        /// </summary>
+        private class ProgramState
         {
-            public string Source { get; set; }
-            public int Label { get; set; }
-            public int Start { get; set; }
-            public int End { get; set; }
+            #region constants
 
-            public int Length { get { return (End - Start) + 1; } }
+            public readonly int MaxLabel = 99;
+            public readonly int MaxProgramLineLength = 72;  // ECMA-55
+            public readonly int ReturnStackSize = 32;
+
+            #endregion
 
 
-            public override string ToString()
+            public int CurrentProgramLinePos { get; set; }
+            public ProgramLine CurrentProgramLine { get; set; }
+            public ProgramLine[] ProgramLines { get; }
+
+            public bool WasEnd { get; set; }
+            public int[] ReturnStack { get; set; }
+            public int ReturnStackTop { get; set; }
+            public int[] UserFns { get; set; }
+
+            /// <summary>
+            /// The random number generator.
+            /// </summary>
+            public Random Random { get; set; }
+
+            /// <summary>
+            /// User defined arrays.
+            /// Overrides numeric variables. 
+            /// If an array N is defined, the N numeric variable can not be used as an numeric variable anymore.
+            /// </summary>
+            public float[][] Arrays { get; set; }
+
+            /// <summary>
+            /// The lover bound array index.
+            /// Can be -1, which is "not yet defined", so it can be changed by the OPTION statement.
+            /// If its -1, it is like if it was 0.
+            /// </summary>
+            public int ArrayBase { get; set; }
+
+            /// <summary>
+            /// Numeric variables values.
+            /// </summary>
+            private float[] NVars { get; }
+
+            /// <summary>
+            /// String variables values.
+            /// </summary>
+            private string[] SVars { get; }
+
+
+            public ProgramState()
             {
-                return string.Format("{0}: {1} - {2}", Label, Start, End);
+                ProgramLines = new ProgramLine[MaxLabel + 1];
+                ReturnStack = new int[ReturnStackSize];
+                ReturnStackTop = -1;
+                UserFns = new int['Z' - 'A'];
+                Arrays = new float['Z' - 'A'][];
+                ArrayBase = -1;                  // -1 = not yet user defined = 0.
+                Random = new Random(20170327);
+
+                NVars = new float[(('Z' - 'A') + 1) * 10]; // A or A0 .. A9;
+                SVars = new string[('Z' - 'A') + 1];      // A$ .. Z$
+
+                WasEnd = false;
+            }
+
+
+            /// <summary>
+            /// Gets the next defined program line.
+            /// </summary>
+            /// <param name="fromLabel">From which label should we start to look for the next program line.</param>
+            /// <returns>The next defined program line or null.</returns>
+            public ProgramLine NextProgramLine(int fromLabel)
+            {
+                // Interactive mode line.
+                if (fromLabel < 0)
+                {
+                    return null;
+                }
+
+                // Skip program lines without code.
+                // NOTE: Because labels are 1 to N, but program lines are 0 to N,
+                // by using the fromLabel value directly, we are effectivelly starting
+                // one line behind the from-label program line.
+                for (var label = fromLabel; label < ProgramLines.Length; label++)
+                {
+                    if (ProgramLines[label] != null)
+                    {
+                        return ProgramLines[label];
+                    }
+                }
+
+                return null;
+            }
+            
+            /// <summary>
+            /// Gets a value of a numeric variable.
+            /// </summary>
+            /// <param name="varName">A variable name.</param>
+            /// <returns>A value of a numeric variable.</returns>
+            public float GetNVar(string varName)
+            {
+                var n = varName[0] - 'A';
+                var x = 0;
+                if (varName.Length == 2)
+                {
+                    x = varName[1] - '0';
+                }
+
+                return NVars[n * 10 + x];
+            }
+            
+            /// <summary>
+            /// Gets a value of a string variable.
+            /// </summary>
+            /// <param name="varName">A variable name.</param>
+            /// <returns>A value of a string variable.</returns>
+            public string GetSVar(string varName)
+            {
+                return SVars[varName[0] - 'A'] ?? string.Empty;
+            }
+
+            /// <summary>
+            /// Sets a value to a variable.
+            /// </summary>
+            /// <param name="varName">A variable name.</param>
+            /// <param name="v">A value.</param>
+            public void SetVar(string varName, Value v)
+            {
+                if (varName.EndsWith("$"))
+                {
+                    SVars[varName[0] - 'A'] = v.ToString();
+                }
+                else
+                {
+                    var n = varName[0] - 'A';
+                    var x = 0;
+                    if (varName.Length == 2)
+                    {
+                        x = varName[1] - '0';
+                    }
+
+                    NVars[n * 10 + x] = v.ToNumber();
+                }
+            }
+
+            /// <summary>
+            /// Sets a value to a specific cell in an array.
+            /// </summary>
+            /// <param name="arrayName">An array name.</param>
+            /// <param name="index">An index.</param>
+            /// <param name="v">A value.</param>
+            public void SetArray(string arrayName, int index, float v)
+            {
+                var bottomBound = (ArrayBase < 0) ? 0 : ArrayBase;
+
+                Arrays[arrayName[0] - 'A'][index - bottomBound] = v;
             }
         }
 
+        /// <summary>
+        /// Holds information about a single program line.
+        /// </summary>
+        private class ProgramLine
+        {
+            /// <summary>
+            /// The source of this program line.
+            /// Can be the same for all program lines, if we are running a script,
+            /// or each program line can have its own, if we are defining a program 
+            /// in the interactive mode.
+            /// </summary>
+            public string Source { get; set; }
 
+            /// <summary>
+            /// The label extracted from this program line.
+            /// Can be -1, if it is a program line for immediate execution from the interactive
+            /// mode. Meaning - there is no label int the source at all.
+            /// </summary>
+            public int Label { get; set; }
+
+            /// <summary>
+            /// The start index of this program line.
+            /// Usually the first character after the label.
+            /// </summary>
+            public int Start { get; set; }
+
+            /// <summary>
+            /// The end index of this program line.
+            /// Points on the end-of-line ('\n') character.
+            /// </summary>
+            public int End { get; set; }
+
+            /// <summary>
+            /// The length of this program line in character.
+            /// </summary>
+            public int Length { get { return (End - Start) + 1; } }
+
+            /// <summary>
+            /// The string representation of this program line.
+            /// </summary>
+            /// <returns>The string representation of this program line.</returns>
+            public override string ToString()
+            {
+                //return string.Format("{0}: {1} - {2}", Label, Start, End);
+                return string.Format("{0}{1}",
+                    Label,
+                    Source.Substring(Start, End - Start));
+            }
+        }
+
+        /// <summary>
+        /// A value of an expression.
+        /// </summary>
         private class Value
         {
-            // 0 = number, 1 = string
+            /// <summary>
+            /// The type of this value.
+            /// 0 = number, 1 = string.
+            /// </summary>
             public int Type { get; private set; }
 
+            /// <summary>
+            /// The numeric value.
+            /// </summary>
             public float NumValue { get; private set; }
+
+            /// <summary>
+            /// The string value.
+            /// </summary>
             public string StrValue { get; private set; }
 
 
+            /// <summary>
+            /// A value can not be constructed by an user.
+            /// </summary>
             private Value()
             {
             }
 
 
+            /// <summary>
+            /// Converts this value to a string.
+            /// </summary>
+            /// <returns>The string representation of this value.</returns>
             public override string ToString()
             {
                 if (Type == 0)
                 {
+                    // TODO: Format the number using the ECMA-55 rules.
+
                     return NumValue.ToString(CultureInfo.InvariantCulture);
                 }
                 else
@@ -1813,7 +2066,10 @@ namespace BasicBasic
                 }
             }
 
-
+            /// <summary>
+            /// Converts this value to a number.
+            /// </summary>
+            /// <returns>The numeric representation of this value.</returns>
             public float ToNumber()
             {
                 if (Type == 0)
@@ -1822,6 +2078,8 @@ namespace BasicBasic
                 }
                 else
                 {
+                    // TODO: Parse this number using the ParseNumber() method.
+
                     if (float.TryParse(StrValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var n))
                     {
                         return n;
@@ -1832,12 +2090,21 @@ namespace BasicBasic
             }
 
 
+            /// <summary>
+            /// Creates a new numeric value.
+            /// </summary>
+            /// <param name="n">A value.</param>
+            /// <returns>A new Value instance.</returns>
             public static Value Numeric(float n)
             {
                 return new Value() { Type = 0, NumValue = n };
             }
 
-
+            /// <summary>
+            /// Creates a new string value.
+            /// </summary>
+            /// <param name="s">A value.</param>
+            /// <returns>A new Value instance.</returns>
             public static Value String(string s)
             {
                 return new Value() { Type = 1, StrValue = s };
@@ -1849,140 +2116,3 @@ namespace BasicBasic
         #endregion
     }
 }
-
-/*
-
-Syntax
--------
-
-{} - Repeat 0 or more.
-() - Groups things together.
-[] - An optional part.
-|  - Or.
-&  - And.
-!  - Not.
-:  - Definition name and definition separator.
--  - No white spaces allowed.
-"" - A specific string (keyword etc.).
-'' - A specific character.
-.. - A range.
-.  - The end of a definition.
-
-
-program : { block } end-line .
-
-block : { line | for-block } .
-
-line : label statement end-of line .
-
-label : digit | digit-digit .
-
-end-of-line : '\n' .
-
-end-line : label end-statement end-of-line .
-
-end-statement : "END" .
-
-statement :
-  def-statement |
-  dim-statement |
-  goto-statement | 
-  gosub-statement | 
-  if-then-statement |
-  let-statement |
-  option-statement |
-  print-statement |
-  randomize-statement |
-  remark-statement |
-  return-statement |
-  stop statement .
-
-def-statement : "DEF" user-function-name [ '(' parameter-name ')' ] '=' numeric-expression
-
-user-function-name : "FNA" .. 'FNZ' .
-
-parameter-name : 'A' .. 'Z' .
-
-dim-statement : "DIM" array-declaration { ',' array-declaration } .
-
-array-declaration : array-name '(' number ')' . 
-
-array-name : 'A' .. 'Z' .
-
-goto-statement : ( GO TO label ) | ( GOTO label ) .
-
-gosub-statement : ( GO SUB label ) | ( GOSUB label ) .
-
-if-then-statement : "IF" expression "THEN" label .
-
-let-statement : "LET" variable '=' expression .
-
-option-statement : "OPTION" "BASE" ( '0' | '1' ) .
-
-print-statement : [ print-list ] .
-
-print-list : { print-item print-separator } print-item .
-
-print-item : expression .
-
-print-separator : ',' | ';' .
-
-randomize-statement : "RANDOMIZE" .
-
-remark-statement : "REM" { any-character } .
-
-return-statement : "RETURN" .
-
-stop-statement : "STOP" .
-
-variable : numeric-variable | string-variable .
-
-numeric-variable : leter [ - digit ] .
-
-string-variable : leter - '$' .
-
-leter : 'A' .. 'Z' .
-
-digit : '0' .. '9' .
-
-expression : numeric-expression | string-expression .
-
-numeric-expression : [ sign ] term { sign term } .
-
-sign : '+' | '-' .
-
-term : factor { multiplier factor } .
-
-multiplier : '*' | '/' .
-
-factor : primary { '^' primary } .
-
-primary : number | numeric-variable | numeric-function | '(' numeric-expression ')' | user-function | array-subscription .
-
-numeric-function : numeric-function-name '(' numeric-expression ')' .
-
-numeric-function-name : "ABS" | "ATN" | "COS" | "EXP" | "INT" | "LOG" | "RND" | "SGN" | "SIN" | "SQR" | "TAN" .
-
-user-function : user-function-name [ '(' numeric-function ')' ] .
-
-number : 
-    ( [ sign - ] decimal-part [ - fractional-part ] [ - exponent-part ] ) | 
-    ( [ sign - ] '.' - digit { - digit } [ - exponent-part ] ) .
-
-decimal-part : digit { - digit } .
-
-fractional-part : '.' { - digit } .
-
-exponent.part : 'E' [ - sign ] - digit { - digit } .
-
-array-subscription : array-name '(' numeric-expression ')' .
-
-string-expression : string-variable | string-constant .
-
-string-constant : quoted-string .
-
-quoted-string : '"' { string-character } '"' .
-
-string-character : ! '"' & ! end-of-line .
-
-*/

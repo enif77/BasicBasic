@@ -76,9 +76,7 @@ Executes the entered program.
 .  - The end of a definition.
 
 
-program : { block } end-line .
-
-block : { line | for-block } .
+program : { line } end-line .
 
 line : label statement end-of line .
 
