@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>
@@ -6,6 +6,9 @@
 
   <ItemGroup>
     <Compile Include="..\BasicBasic\Interpreter.cs" Link="Interpreter.cs" />
+    <Compile Include="..\BasicBasic\ProgramLine.cs" Link="ProgramLine.cs" />
+    <Compile Include="..\BasicBasic\ProgramState.cs" Link="ProgramState.cs" />
+    <Compile Include="..\BasicBasic\Value.cs" Link="Value.cs" />
   </ItemGroup>
 
 </Project>
