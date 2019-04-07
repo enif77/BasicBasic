@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- dotnet build .\BasicBasicCore.csproj -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>BasicBasic</AssemblyName>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
+    
+    <!-- https://github.com/dotnet/cli/issues/4783 -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+</Project>

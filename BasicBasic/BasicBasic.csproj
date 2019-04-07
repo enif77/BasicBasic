@@ -53,6 +53,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="ECMA-55.TXT" />
+    <Content Include="BasicBasicCore.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
