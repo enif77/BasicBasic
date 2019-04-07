@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{A389E039-DCB1-492D-A106-BAF8AEB69DC2}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>BasicBasic</RootNamespace>
     <AssemblyName>BasicBasic</AssemblyName>
@@ -30,6 +30,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -42,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Interpreter.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="ProgramLine.cs" />
     <Compile Include="ProgramState.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -49,6 +53,18 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="ECMA-55.TXT" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+    <None Include="Tests\arrays.bb" />
+    <None Include="Tests\fn.bb" />
+    <None Include="Tests\gosub.bb" />
+    <None Include="Tests\hello.bb" />
+    <None Include="Tests\rnd.bb" />
+    <None Include="Tests\roots.bb" />
+    <None Include="Tests\roots_sub.bb" />
+    <None Include="Tests\various.bb" />
+    <None Include="Tests\while.bb" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

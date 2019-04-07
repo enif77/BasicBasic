@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "BasicBasicAppCore": {
-      "commandName": "Project",
-      "commandLineArgs": "!..\\..\\..\\..\\BasicBasicApp\\Tests\\fn.bb"
-    }
-  }
-}

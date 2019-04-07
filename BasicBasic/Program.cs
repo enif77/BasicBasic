@@ -20,7 +20,7 @@ freely, subject to the following restrictions:
  
  */
 
-namespace BasicBasicApp
+namespace BasicBasic
 {
     using System;
     using System.IO;
