@@ -307,6 +307,23 @@ namespace BasicBasic
         }
 
         /// <summary>
+        /// Sets a value to a numeric variable.
+        /// </summary>
+        /// <param name="varName">A variable name.</param>
+        /// <param name="v">A value.</param>
+        public void SetNVar(string varName, float v)
+        {
+            var n = varName[0] - 'A';
+            var x = 0;
+            if (varName.Length == 2)
+            {
+                x = varName[1] - '0';
+            }
+
+            NVars[n * 10 + x] = v;
+        }
+
+        /// <summary>
         /// Gets a value of a string variable.
         /// </summary>
         /// <param name="varName">A variable name.</param>
@@ -321,23 +338,9 @@ namespace BasicBasic
         /// </summary>
         /// <param name="varName">A variable name.</param>
         /// <param name="v">A value.</param>
-        public void SetVar(string varName, Value v)
+        public void SetSVar(string varName, string v)
         {
-            if (varName.EndsWith("$"))
-            {
-                SVars[varName[0] - 'A'] = v.ToString();
-            }
-            else
-            {
-                var n = varName[0] - 'A';
-                var x = 0;
-                if (varName.Length == 2)
-                {
-                    x = varName[1] - '0';
-                }
-
-                NVars[n * 10 + x] = v.ToNumber();
-            }
+            SVars[varName[0] - 'A'] = v;
         }
 
         #endregion

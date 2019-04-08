@@ -359,13 +359,35 @@ namespace BasicBasic
         private ProgramLine IfStatement()
         {
             EatToken(TOK_KEY_IF);
-            
-            var v1 = Expression();
 
-            var relTok = _tok;
-            NextToken();
+            // Do not jump.
+            var jump = false;
 
-            var v2 = Expression();
+            // String or numeric conditional jump?
+            if (_tok == TOK_QSTR || _tok == TOK_STRIDNT)
+            {
+                var v1 = StringExpression();
+                NextToken();
+
+                var relTok = _tok;
+                NextToken();
+
+                var v2 = StringExpression();
+                NextToken();
+
+                jump = StringComparison(relTok, v1, v2);
+            }
+            else
+            {
+                var v1 = NumericExpression();
+
+                var relTok = _tok;
+                NextToken();
+
+                var v2 = NumericExpression();
+
+                jump = NumericComparison(relTok, v1, v2);
+            }
 
             EatToken(TOK_KEY_THEN);
 
@@ -376,69 +398,47 @@ namespace BasicBasic
             NextToken();
             ExpToken(TOK_EOLN);
 
-            // Do not jump.
-            var jump = false;
-
-            // Numeric.
-            if (v1.Type == 0 && v2.Type == 0)
-            {
-                switch (relTok)
-                {
-                    case TOK_EQL:   // =
-                        jump = v1.NumValue == v2.NumValue;
-                        break;
-
-                    case TOK_NEQL:  // <>
-                        jump = v1.NumValue != v2.NumValue;
-                        break;
-
-                    case TOK_LT:    // <
-                        jump = v1.NumValue < v2.NumValue;
-                        break;
-
-                    case TOK_LTE:   // <=
-                        jump = v1.NumValue <= v2.NumValue;
-                        break;
-
-                    case TOK_GT:    // >
-                        jump = v1.NumValue > v2.NumValue;
-                        break;
-
-                    case TOK_GTE:   // >=
-                        jump = v1.NumValue >= v2.NumValue;
-                        break;
-
-                    default:
-                        UnexpectedTokenError(relTok);
-                        break;
-                }
-            }
-            else if (v1.Type == 0 && v2.Type == 0)
-            {
-                switch (relTok)
-                {
-                    case TOK_EQL:   // =
-                        jump = v1.StrValue == v2.StrValue;
-                        break;
-
-                    case TOK_NEQL:  // <>
-                        jump = v1.StrValue != v2.StrValue;
-                        break;
-
-                    default:
-                        UnexpectedTokenError(relTok);
-                        break;
-                }
-            }
-            else
-            {
-                ErrorAtLine("Incompatible types in comparison");
-            }
-
             return jump
                 ? _programState.GetProgramLine(label) 
                 : _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
+
+
+        private bool NumericComparison(int relTok, float v1, float v2)
+        {
+            switch (relTok)
+            {
+                case TOK_EQL: return v1 == v2; // =
+                case TOK_NEQL: return v1 != v2; // <>
+                case TOK_LT: return v1 < v2; // <
+                case TOK_LTE: return v1 <= v2; // <=
+                case TOK_GT: return v1 > v2; // >
+                case TOK_GTE: return v1 >= v2; // >=
+
+                default:
+                    UnexpectedTokenError(relTok);
+                    break;
+            }
+
+            return false;
+        }
+
+
+        private bool StringComparison(int relTok, string v1, string v2)
+        {
+            switch (relTok)
+            {
+                case TOK_EQL: return v1 == v2; // =
+                case TOK_NEQL: return v1 != v2; // <>
+
+                default:
+                    UnexpectedTokenError(relTok);
+                    break;
+            }
+
+            return false;
+        }
+
 
         // Sets the array bottom dimension.
         // OPTION BASE 1
@@ -481,12 +481,9 @@ namespace BasicBasic
             EatToken(TOK_KEY_LET);
 
             // var
-            var isSubscription = false;
-            var index = 0;
-            string varName = null;
             if (_tok == TOK_SVARIDNT)
             {
-                varName = _strValue;
+                var varName = _strValue;
 
                 // Eat the variable identifier.
                 NextToken();
@@ -496,43 +493,53 @@ namespace BasicBasic
                 {
                     NextToken();
 
-                    index = (int)NumericExpression();
+                    var index = (int)NumericExpression();
 
                     EatToken(TOK_RBRA);
 
                     CheckArray(varName, 10, index, true);
 
-                    isSubscription = true;
+                    EatToken(TOK_EQL);
+
+                    _programState.SetArray(varName, index, NumericExpression());
                 }
                 else
                 {
                     CheckSubsription(varName);
+
+                    EatToken(TOK_EQL);
+
+                    _programState.SetNVar(varName, NumericExpression());
                 }
             }
-            else if (_tok == TOK_VARIDNT || _tok == TOK_STRIDNT)
+            else if (_tok == TOK_VARIDNT)
             {
-                varName = _strValue;
+                var varName = _strValue;
 
                 // Eat the variable identifier.
+                NextToken();
+
+                EatToken(TOK_EQL);
+
+                _programState.SetNVar(varName, NumericExpression());
+            }
+            else if (_tok == TOK_STRIDNT)
+            {
+                var varName = _strValue;
+
+                // Eat the variable identifier.
+                NextToken();
+
+                EatToken(TOK_EQL);
+
+                _programState.SetSVar(varName, StringExpression());
+
+                // Eat the string expression.
                 NextToken();
             }
             else
             {
                 UnexpectedTokenError(_tok);
-            }
-            
-            EatToken(TOK_EQL);
-
-            // expr
-            var v = Expression();
-
-            if (isSubscription)
-            {
-                _programState.SetArray(varName, index, v.NumValue);
-            }
-            else
-            {
-                _programState.SetVar(varName, v);
             }
                         
             // EOLN
@@ -565,7 +572,19 @@ namespace BasicBasic
                         {
                             ErrorAtLine("A list separator expected");
                         }
-                        Console.Write(FormatValue(Expression()));
+
+                        if (_tok == TOK_QSTR || _tok == TOK_STRIDNT)
+                        {
+                            Console.Write(StringExpression());
+
+                            // Eat the string expression.
+                            NextToken();
+                        }
+                        else
+                        {
+                            Console.Write(FormatNumber(NumericExpression()));
+                        }
+                        
                         atSep = false;
                         break;
                 }
@@ -633,20 +652,20 @@ namespace BasicBasic
 
         #region expressions
 
-        // expr :: string-expression | numeric-expression
-        private Value Expression()
-        {
-            if (_tok == TOK_QSTR || _tok == TOK_STRIDNT)
-            {
-                var s = StringExpression();
+        //// expr:: string-expression | numeric-expression
+        //private Value Expression()
+        //{
+        //    if (_tok == TOK_QSTR || _tok == TOK_STRIDNT)
+        //    {
+        //        var s = StringExpression();
 
-                NextToken();
+        //        NextToken();
 
-                return Value.String(s);
-            }
+        //        return Value.String(s);
+        //    }
 
-            return Value.Numeric(NumericExpression());
-        }
+        //    return Value.Numeric(NumericExpression());
+        //}
 
         // string-expression : string-variable | string-constant .
         private string StringExpression()
@@ -1047,20 +1066,20 @@ namespace BasicBasic
 
         #region formatters
 
-        /// <summary>
-        /// Formats a Value to a PRINT statement output format.
-        /// </summary>
-        /// <param name="v">A Value.</param>
-        /// <returns>A Value formated to the PRINT statement output format.</returns>
-        private string FormatValue(Value v)
-        {
-            if (v.Type == 0)
-            {
-                return FormatNumber(v.NumValue);
-            }
+        ///// <summary>
+        ///// Formats a Value to a PRINT statement output format.
+        ///// </summary>
+        ///// <param name="v">A Value.</param>
+        ///// <returns>A Value formated to the PRINT statement output format.</returns>
+        //private string FormatValue(Value v)
+        //{
+        //    if (v.Type == 0)
+        //    {
+        //        return FormatNumber(v.NumValue);
+        //    }
 
-            return v.StrValue;
-        }
+        //    return v.StrValue;
+        //}
 
         /// <summary>
         /// Formats a number to a PRINT statement output format.
