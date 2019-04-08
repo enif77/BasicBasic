@@ -364,7 +364,7 @@ namespace BasicBasic
             var jump = false;
 
             // String or numeric conditional jump?
-            if (_tok == TOK_QSTR || _tok == TOK_STRIDNT)
+            if (IsStringExpression())
             {
                 var v1 = StringExpression();
                 NextToken();
@@ -573,7 +573,7 @@ namespace BasicBasic
                             ErrorAtLine("A list separator expected");
                         }
 
-                        if (_tok == TOK_QSTR || _tok == TOK_STRIDNT)
+                        if (IsStringExpression())
                         {
                             Console.Write(StringExpression());
 
@@ -652,20 +652,11 @@ namespace BasicBasic
 
         #region expressions
 
-        //// expr:: string-expression | numeric-expression
-        //private Value Expression()
-        //{
-        //    if (_tok == TOK_QSTR || _tok == TOK_STRIDNT)
-        //    {
-        //        var s = StringExpression();
-
-        //        NextToken();
-
-        //        return Value.String(s);
-        //    }
-
-        //    return Value.Numeric(NumericExpression());
-        //}
+        // expr:: string-expression | numeric-expression
+        private bool IsStringExpression()
+        {
+            return _tok == TOK_QSTR || _tok == TOK_STRIDNT;
+        }
 
         // string-expression : string-variable | string-constant .
         private string StringExpression()
@@ -1065,21 +1056,6 @@ namespace BasicBasic
 
 
         #region formatters
-
-        ///// <summary>
-        ///// Formats a Value to a PRINT statement output format.
-        ///// </summary>
-        ///// <param name="v">A Value.</param>
-        ///// <returns>A Value formated to the PRINT statement output format.</returns>
-        //private string FormatValue(Value v)
-        //{
-        //    if (v.Type == 0)
-        //    {
-        //        return FormatNumber(v.NumValue);
-        //    }
-
-        //    return v.StrValue;
-        //}
 
         /// <summary>
         /// Formats a number to a PRINT statement output format.
