@@ -84,7 +84,7 @@ namespace BasicBasic
         /// <param name="source"></param>
         public void Interpret(string source)
         {
-            if (source == null) Error("A source expected.");
+            if (source == null) throw Error("A source expected.");
 
             ScanSource(source);
             InterpretImpl();
@@ -96,7 +96,7 @@ namespace BasicBasic
         /// <param name="source">A program line source.</param>
         public void InterpretLine(string source)
         {
-            if (source == null) Error("A source expected.");
+            if (source == null) throw Error("A source expected.");
 
             var programLine = new ProgramLine()
             {
@@ -124,7 +124,7 @@ namespace BasicBasic
         /// <param name="source">A program line source.</param>
         public void AddProgramLine(string source)
         {
-            if (source == null) Error("A source expected.");
+            if (source == null) throw Error("A program line source expected.");
 
             ScanSource(source, true);
         }
@@ -167,7 +167,7 @@ namespace BasicBasic
 
             if (_programState.WasEnd == false)
             {
-                Error("Unexpected end of program.");
+                throw Error("Unexpected end of program.");
             }
         }
 
@@ -204,11 +204,8 @@ namespace BasicBasic
                 case TOK_KEY_STOP: return StopStatement();
 
                 default:
-                    UnexpectedTokenError(_tok);
-                    break;
+                    throw UnexpectedTokenError(_tok);
             }
-
-            return null;
         }
 
 
@@ -227,7 +224,7 @@ namespace BasicBasic
             // Do not redefine user functions.
             if (_programState.IsUserFnDefined(fname))
             {
-                ErrorAtLine("{0} function redefinition", fname);
+                throw ErrorAtLine("{0} function redefinition", fname);
             }
 
             // Save this function definition.
@@ -291,7 +288,7 @@ namespace BasicBasic
             var nextLine = _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
             if (nextLine != null)
             {
-                ErrorAtLine("Unexpected END statement");
+                throw ErrorAtLine("Unexpected END statement");
             }
 
             _programState.WasEnd = true;
@@ -346,7 +343,7 @@ namespace BasicBasic
                 }
                 catch
                 {
-                    ErrorAtLine("Return stack overflow");
+                    throw ErrorAtLine("Return stack overflow");
                 }
             }
 
@@ -416,11 +413,8 @@ namespace BasicBasic
                 case TOK_GTE: return v1 >= v2; // >=
 
                 default:
-                    UnexpectedTokenError(relTok);
-                    break;
+                    throw UnexpectedTokenError(relTok);
             }
-
-            return false;
         }
 
 
@@ -432,11 +426,8 @@ namespace BasicBasic
                 case TOK_NEQL: return v1 != v2; // <>
 
                 default:
-                    UnexpectedTokenError(relTok);
-                    break;
+                    throw UnexpectedTokenError(relTok);
             }
-
-            return false;
         }
 
 
@@ -446,7 +437,7 @@ namespace BasicBasic
         {
             if (_programState.ArrayBase >= 0)
             {
-                ErrorAtLine("The OPTION BASE command already executed. Can not change the arrays lower bound");
+                throw ErrorAtLine("The OPTION BASE command already executed. Can not change the arrays lower bound");
             }
 
             // Eat "OPTION".
@@ -457,7 +448,7 @@ namespace BasicBasic
             // Array lower bound can not be changed, when an array is already defined.
             if (_programState.IsArrayDefined())
             {
-                ErrorAtLine("An array is already defined. Can not change the arrays lower bound");
+                throw ErrorAtLine("An array is already defined. Can not change the arrays lower bound");
             }
 
             // 0 or 1.
@@ -466,7 +457,7 @@ namespace BasicBasic
             var option = (int)_numValue;
             if (option < 0 || option > 1)
             {
-                ErrorAtLine("Array base out of allowed range 0 .. 1");
+                throw ErrorAtLine("Array base out of allowed range 0 .. 1");
             }
 
             _programState.ArrayBase = option;
@@ -539,7 +530,7 @@ namespace BasicBasic
             }
             else
             {
-                UnexpectedTokenError(_tok);
+                throw UnexpectedTokenError(_tok);
             }
                         
             // EOLN
@@ -570,7 +561,7 @@ namespace BasicBasic
                     default:
                         if (atSep == false)
                         {
-                            ErrorAtLine("A list separator expected");
+                            throw ErrorAtLine("A list separator expected");
                         }
 
                         if (IsStringExpression())
@@ -629,7 +620,7 @@ namespace BasicBasic
             }
             catch
             {
-                ErrorAtLine("Return stack underflow");
+                throw ErrorAtLine("Return stack underflow");
             }
 
             return null;
@@ -667,11 +658,8 @@ namespace BasicBasic
                 case TOK_STRIDNT: return _programState.GetSVar(_strValue);
 
                 default:
-                    UnexpectedTokenError(_tok);
-                    break;
+                    throw UnexpectedTokenError(_tok);
             }
-
-            return null;
         }
 
         // numeric-expression : [ sign ] term { sign term } .
@@ -888,8 +876,7 @@ namespace BasicBasic
                                 break;
 
                             default:
-                                ErrorAtLine("Unknown function '{0}'", fnName);
-                                break;
+                                throw ErrorAtLine("Unknown function '{0}'", fnName);
                         }
 
                         return v;
@@ -902,7 +889,7 @@ namespace BasicBasic
                         var flabel = _programState.GetUserFnLabel(fname);
                         if (flabel == 0)
                         {
-                            ErrorAtLine("Undefined user function {0}", fname);
+                            throw ErrorAtLine("Undefined user function {0}", fname);
                         }
 
                         // Eat the function name.
@@ -934,7 +921,7 @@ namespace BasicBasic
 
                         if (fname != _strValue)
                         {
-                            ErrorAtLine("Unexpected {0} function definition", _strValue);
+                            throw ErrorAtLine("Unexpected {0} function definition", _strValue);
                         }
 
                         // Eat the function name.
@@ -946,7 +933,7 @@ namespace BasicBasic
                         {
                             if (p.HasValue == false)
                             {
-                                ErrorAtLine("The {0} function expects a parameter", fname);
+                                throw ErrorAtLine("The {0} function expects a parameter", fname);
                             }
 
                             // Eat '(';
@@ -964,7 +951,7 @@ namespace BasicBasic
                         {
                             if (p.HasValue)
                             {
-                                ErrorAtLine("The {0} function does not expect a parameter", fname);
+                                throw ErrorAtLine("The {0} function does not expect a parameter", fname);
                             }
                         }
                                                
@@ -982,11 +969,8 @@ namespace BasicBasic
                     }
                     
                 default:
-                    UnexpectedTokenError(_tok);
-                    break;
+                    throw UnexpectedTokenError(_tok);
             }
-
-            return float.NaN;
         }
 
         #endregion
@@ -1010,13 +994,13 @@ namespace BasicBasic
             // Do not redefine array.
             if (canExist == false && _programState.IsArrayDefined(arrayIndex))
             {
-                ErrorAtLine("Array {0} redefinition", arrayName);
+                throw ErrorAtLine("Array {0} redefinition", arrayName);
             }
 
             var bottomBound = (_programState.ArrayBase < 0) ? 0 : _programState.ArrayBase;
             if (topBound < bottomBound)
             {
-                ErrorAtLine("Array top bound ({0}) is less than the defined array bottom bound ({1})", topBound, _programState.ArrayBase);
+                throw ErrorAtLine("Array top bound ({0}) is less than the defined array bottom bound ({1})", topBound, _programState.ArrayBase);
             }
 
             index -= bottomBound;
@@ -1029,7 +1013,7 @@ namespace BasicBasic
 
             if (index < 0 || index >= _programState.GetArrayLength(arrayIndex))
             {
-                ErrorAtLine("Index {0} out of array bounds", index + bottomBound);
+                throw ErrorAtLine("Index {0} out of array bounds", index + bottomBound);
             }
 
             return _programState.GetArrayValue(arrayIndex, index);
@@ -1043,7 +1027,7 @@ namespace BasicBasic
         {
             if (_programState.IsArrayDefined(varName))
             {
-                ErrorAtLine("Array {0} subsciption expected", varName);
+                throw ErrorAtLine("Array {0} subsciption expected", varName);
             }
         }
 
@@ -1238,13 +1222,13 @@ namespace BasicBasic
 
             if (label < 1 || label > _programState.MaxLabel)
             {
-                Error("The label {0} at line {1} is out of <1 ... {2}> rangle.", label, _programState.CurrentProgramLine.Label, _programState.MaxLabel);
+                throw Error("The label {0} at line {1} is out of <1 ... {2}> rangle.", label, _programState.CurrentProgramLine.Label, _programState.MaxLabel);
             }
 
             var target = _programState.GetProgramLine(label);
             if (target == null)
             {
-                ErrorAtLine("Undefined label {0}", label);
+                throw ErrorAtLine("Undefined label {0}", label);
             }
 
             return label;
@@ -1271,7 +1255,7 @@ namespace BasicBasic
         {
             if (_tok != expTok)
             {
-                UnexpectedTokenError(_tok);
+                throw UnexpectedTokenError(_tok);
             }
         }
 
@@ -1282,7 +1266,7 @@ namespace BasicBasic
         {
             if (_programState.CurrentProgramLine.Start + _programState.CurrentProgramLinePos > _programState.CurrentProgramLine.End)
             {
-                ErrorAtLine("Read beyond the line end");
+                throw ErrorAtLine("Read beyond the line end");
                 //_tok = TOK_EOLN;
 
                 //return;
@@ -1456,7 +1440,7 @@ namespace BasicBasic
                 {
                     if (strValue.Length != 3)
                     {
-                        ErrorAtLine("Unknown token '{0}'", strValue);
+                        throw ErrorAtLine("Unknown token '{0}'", strValue);
                     }
 
                     tok = strValue.StartsWith("FN") 
@@ -1496,7 +1480,7 @@ namespace BasicBasic
 
             if (c != '"')
             {
-                ErrorAtLine("Unexpected end of quoted string");
+                throw ErrorAtLine("Unexpected end of quoted string");
             }
 
             _tok = TOK_QSTR;
@@ -1651,12 +1635,12 @@ namespace BasicBasic
 
                         if (label < 1 || label > _programState.MaxLabel)
                         {
-                            Error("Label {0} at line {1} out of <1 ... {2}> rangle.", label, line, _programState.MaxLabel);
+                            throw Error("Label {0} at line {1} out of <1 ... {2}> rangle.", label, line, _programState.MaxLabel);
                         }
 
                         if (interactiveMode == false && _programState.GetProgramLine(label) != null)
                         {
-                            Error("Label {0} redefinition at line {1}.", label, line);
+                            throw Error("Label {0} redefinition at line {1}.", label, line);
                         }
 
                         // Remember this program line.
@@ -1671,7 +1655,7 @@ namespace BasicBasic
                     }
                     else
                     {
-                        Error("Label not found at line {0}.", line);
+                        throw Error("Label not found at line {0}.", line);
                     }
                 }
 
@@ -1689,7 +1673,7 @@ namespace BasicBasic
                     // Max program line length check.
                     if (programLine.Length > _programState.MaxProgramLineLength)
                     {
-                        Error("The line {0} is longer than {1} characters.", line, _programState.MaxProgramLineLength);
+                        throw Error("The line {0} is longer than {1} characters.", line, _programState.MaxProgramLineLength);
                     }
 
                     // An empty line?
@@ -1711,7 +1695,7 @@ namespace BasicBasic
             // The last line does not ended with the '\n' character.
             if (programLine != null)
             {
-                Error("No line end at line {0}.", line);
+                throw Error("No line end at line {0}.", line);
             }
         }
 
@@ -1724,9 +1708,9 @@ namespace BasicBasic
         /// Reports the unexpected token error.
         /// </summary>
         /// <param name="tok">The unexpected token.</param>
-        private void UnexpectedTokenError(int tok)
+        private InterpreterException UnexpectedTokenError(int tok)
         {
-            ErrorAtLine("Unexpected token {0}", tok);
+            return ErrorAtLine("Unexpected token {0}", tok);
         }
 
         /// <summary>
@@ -1734,29 +1718,29 @@ namespace BasicBasic
         /// </summary>
         /// <param name="message">An error message.</param>
         /// <param name="args">Error message arguments.</param>
-        private void ErrorAtLine(string message, params object[] args)
+        private InterpreterException ErrorAtLine(string message, params object[] args)
         {
             // Interactive mode?
             if (_programState.CurrentProgramLine.Label < 1)
             {
                 if (args == null || args.Length == 0)
                 {
-                    Error(message + ".");
+                    return Error(message + ".");
                 }
                 else
                 {
-                    Error("{0}.", string.Format(message, args));
+                    return Error("{0}.", string.Format(message, args));
                 }
             }
             else
             {
                 if (args == null || args.Length == 0)
                 {
-                    Error("{0} at line {1}.", message, _programState.CurrentProgramLine.Label);
+                    return Error("{0} at line {1}.", message, _programState.CurrentProgramLine.Label);
                 }
                 else
                 {
-                    Error("{0} at line {1}.", string.Format(message, args), _programState.CurrentProgramLine.Label);
+                    return Error("{0} at line {1}.", string.Format(message, args), _programState.CurrentProgramLine.Label);
                 }
             }
         }
@@ -1767,9 +1751,9 @@ namespace BasicBasic
         /// <exception cref="InterpreterException">Thrown when an error occurs during a program execution.</exception>
         /// <param name="message">An error message.</param>
         /// <param name="args">Error message arguments.</param>
-        private void Error(string message, params object[] args)
+        private InterpreterException Error(string message, params object[] args)
         {
-            throw new InterpreterException(string.Format(message, args));
+            return new InterpreterException(string.Format(message, args));
         }
 
         #endregion

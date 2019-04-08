@@ -116,28 +116,3 @@ namespace BasicBasic
     }
 }
 
-/*
-
-Usage
-=====
-
-If the first argument of the program is a path to an existing source file, it is loaded and interpreted.
-If the first argument starts with the exclamation character ('!'), it is ignored.
-
-Without any argument, interactive mode starts.
-
-All lines are passed to the interpreter for execution. 
-
-If a line contains the "quit" or the "by" commands, this program ends.
-If a line starts with a label (integer 1 .. 99) it defines a new program line.
-A program line can be redefined by a program line starting with the same label.
-If a program line contains a label only, it deletes an existing program line with the same label.
-
-Commands:
-
-BY or QUIT - Ends this app.
-NEW - Clears all defined program lines.
-LIST - Lists all currently defined program lines.
-RUN - Executes the entered program.
-     
-*/
