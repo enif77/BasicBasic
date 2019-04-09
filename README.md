@@ -6,7 +6,6 @@ calculator thing". :-)
 
 Right now it is a bit incomplete. Bigest missing parts are:
 
-  - INPUT command.
   - DATA, READ and RESTORE commands.
   - PRINT statement output formatting.
   - FOR loop.
