@@ -1,4 +1,5 @@
-﻿10 PRINT "Enter your name:"
+﻿01 REM INPUT statement test.
+10 PRINT "Enter your name:"
 20 INPUT a$
 30 PRINT "Hello, "; a$; "!"
 40 PRINT "Wanna end now? (yes/no)"

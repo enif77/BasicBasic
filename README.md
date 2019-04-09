@@ -124,7 +124,7 @@ if-then-statement : "IF" expression "THEN" label .
 
 input-statement : "INPUT" variable { ',' variable } .
 
-### NOTE: The INPUT statement accepts numbers abd quoted strings only!
+### NOTE: The INPUT statement accepts numbers, quoted strings and unquoted strings.
 
 let-statement : "LET" variable '=' expression .
 

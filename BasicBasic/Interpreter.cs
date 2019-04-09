@@ -439,7 +439,7 @@ namespace BasicBasic
             NextToken();
 
             var varsList = new List<string>();
-            var valuesList = new List<string>();
+            //var valuesList = new List<string>();
 
             bool atSep = true;
             while (_tok != TOK_EOLN)
@@ -481,7 +481,20 @@ namespace BasicBasic
             {
                 throw ErrorAtLine("The INPUT statement variables list can not be empty");
             }
-                        
+
+            ReadUserInput(varsList);
+
+            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+        }
+
+        /// <summary>
+        /// Reads the user's inputs and assigns it to selected variables.
+        /// </summary>
+        /// <param name="varsList">Variables, for which we need values.</param>
+        private void ReadUserInput(List<string> varsList)
+        {
+            var valuesList = new List<string>();
+
             while (true)
             {
                 Console.Write("? ");
@@ -499,7 +512,7 @@ namespace BasicBasic
                 // input : data { ',' data } .
                 // data : number | quoted-string
                 var i = 0;
-                atSep = true;
+                bool atSep = true;
                 while (true)
                 {
                     if (i >= input.Length || input[i] == C_EOLN)
@@ -564,6 +577,10 @@ namespace BasicBasic
                             sign = '-';
                             i++;
                         }
+
+                        // TODO: '+', '-' and '.' can start the unquoted string.
+                        // unquoted -string-character : space | plain-string-character
+                        // plain-string-character : plus-sign | minus-sign | full-stop | digit | letter
 
                         var c = input[i];
                         while (IsDigit(c))
@@ -641,6 +658,39 @@ namespace BasicBasic
                         }
 
                         atSep = true;
+                    }
+                    else
+                    {
+                        // Missing separator.
+                        if (atSep == false)
+                        {
+                            break;
+                        }
+
+                        var strValue = string.Empty;
+
+                        var c = input[i];
+                        while (c != C_EOLN)
+                        {
+                            // TODO: Not all characters are allowed.
+                            // unquoted -string-character : space | plain-string-character
+                            // plain-string-character : plus-sign | minus-sign | full-stop | digit | letter
+
+                            if (c == ',')
+                            {
+                                break;
+                            }
+
+                            strValue += c;
+                            c = input[++i];
+                        }
+
+                        valuesList.Add(string.IsNullOrWhiteSpace(strValue) ? string.Empty : ("$" + strValue.Trim())); // '$' = a string value type.
+
+                        // Go back one character.
+                        i--;
+
+                        atSep = false;
                     }
 
                     i++;
@@ -721,8 +771,6 @@ namespace BasicBasic
 
                 break;
             }
-
-            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
 
