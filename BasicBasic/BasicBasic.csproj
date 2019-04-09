@@ -59,6 +59,7 @@
     <None Include="Tests\arrays.bb" />
     <None Include="Tests\fn.bb" />
     <None Include="Tests\gosub.bb" />
+    <None Include="Tests\input.bb" />
     <None Include="Tests\hello.bb" />
     <None Include="Tests\rnd.bb" />
     <None Include="Tests\roots.bb" />
