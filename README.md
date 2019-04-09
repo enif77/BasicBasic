@@ -62,6 +62,7 @@ Executes the entered program.
 ## Syntax
 
 <pre>
+#  - A comment.
 {} - Repeat 0 or more.
 () - Groups things together.
 [] - An optional part.
@@ -94,6 +95,7 @@ statement :
   goto-statement | 
   gosub-statement | 
   if-then-statement |
+  input-statement |
   let-statement |
   option-statement |
   print-statement |
@@ -119,6 +121,10 @@ goto-statement : ( "GO" "TO" label ) | ( "GOTO" label ) .
 gosub-statement : ( "GO" "SUB" label ) | ( "GOSUB" label ) .
 
 if-then-statement : "IF" expression "THEN" label .
+
+input-statement : "INPUT" variable { ',' variable } .
+
+### NOTE: The INPUT statement accepts numbers abd quoted strings only!
 
 let-statement : "LET" variable '=' expression .
 

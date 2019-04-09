@@ -195,6 +195,7 @@ namespace BasicBasic
                 case TOK_KEY_GOTO:
                     return GoToStatement();
                 case TOK_KEY_IF: return IfStatement();
+                case TOK_KEY_INPUT: return InputStatement();
                 case TOK_KEY_LET: return LetStatement();
                 case TOK_KEY_OPTION: return OptionStatement();
                 case TOK_KEY_PRINT: return PrintStatement();
@@ -428,6 +429,300 @@ namespace BasicBasic
                 default:
                     throw UnexpectedTokenError(relTok);
             }
+        }
+
+
+        // INPUT variable { ',' variable } EOLN
+        private ProgramLine InputStatement()
+        {
+            // Eat INPUT.
+            NextToken();
+
+            var varsList = new List<string>();
+            var valuesList = new List<string>();
+
+            bool atSep = true;
+            while (_tok != TOK_EOLN)
+            {
+                switch (_tok)
+                {
+                    // Consume these.
+                    case TOK_LSTSEP:
+                        atSep = true;
+                        NextToken();
+                        break;
+
+                    default:
+                        if (atSep == false)
+                        {
+                            throw ErrorAtLine("A list separator expected");
+                        }
+
+                        if (_tok == TOK_STRIDNT || _tok == TOK_SVARIDNT ||_tok == TOK_VARIDNT)
+                        {
+                            varsList.Add(_strValue);
+
+                            // Eat the variable.
+                            NextToken();
+                        }
+                        else
+                        {
+                            throw UnexpectedTokenError(_tok);
+                        }
+
+                        atSep = false;
+                        break;
+                }
+            }
+
+            ExpToken(TOK_EOLN);
+
+            if (varsList.Count == 0)
+            {
+                throw ErrorAtLine("The INPUT statement variables list can not be empty");
+            }
+                        
+            while (true)
+            {
+                Console.Write("? ");
+
+                var input = Console.ReadLine() + C_EOLN;
+                var inputParsed = false;
+
+                // Remove this!
+                if (string.IsNullOrWhiteSpace(input))
+                {
+                    break;
+                }
+
+                // Parse th input.
+                // input : data { ',' data } .
+                // data : number | quoted-string
+                var i = 0;
+                atSep = true;
+                while (true)
+                {
+                    if (i >= input.Length || input[i] == C_EOLN)
+                    {
+                        inputParsed = true;
+
+                        break;
+                    }
+
+                    // A quoted string.
+                    if (input[i] == '\"')
+                    {
+                        // Missing separator.
+                        if (atSep == false)
+                        {
+                            break;
+                        }
+
+                        var strValue = "$"; // '$' = a string value type.
+
+                        // Eat '"'.
+                        var c = input[++i];
+                        while (c != C_EOLN)
+                        {
+                            if (c == '\"')
+                            {
+                                break;
+                            }
+
+                            strValue += c;
+                            c = input[++i];
+                        }
+
+                        if (c != '"')
+                        {
+                            // Unfinished quoted string.
+                            break;
+                        }
+
+                        valuesList.Add(c == 0 ? string.Empty : strValue);
+
+                        atSep = false;
+                    }
+                    // A number.
+                    else if (input[i] == '+' || input[i] == '-' || IsDigit(input[i]))
+                    {
+                        // Missing separator.
+                        if (atSep == false)
+                        {
+                            break;
+                        }
+
+                        var sign = '+';
+                        var numValue = (string)null;
+
+                        if (input[i] == '+')
+                        {
+                            i++;
+                        }
+                        else if (input[i] == '-')
+                        {
+                            sign = '-';
+                            i++;
+                        }
+
+                        var c = input[i];
+                        while (IsDigit(c))
+                        {
+                            if (numValue == null)
+                            {
+                                numValue = sign.ToString();
+                            }
+
+                            numValue += c;
+                            c = input[++i];
+                        }
+
+                        if (c == '.')
+                        {
+                            if (numValue == null)
+                            {
+                                numValue = sign.ToString();
+                            }
+
+                            numValue += c;
+
+                            c = input[++i];
+                            while (IsDigit(c))
+                            {
+                                numValue += c;
+                                c = input[++i];
+                            }
+                        }
+
+                        if (c == 'E')
+                        {
+                            if (numValue == null)
+                            {
+                                // A number should not start with the exponent.
+                                break;
+                            }
+
+                            numValue += c;
+
+                            c = input[++i];
+                            if (c == '+' || c == '-')
+                            {
+                                numValue += c;
+                                c = input[++i];
+                            }
+
+                            while (IsDigit(c))
+                            {
+                                numValue += c;
+
+                                c = input[++i];
+                            }
+                        }
+
+                        // Not a number?
+                        if (numValue == null)
+                        {
+                            break;
+                        }
+
+                        valuesList.Add(numValue);
+
+                        // Go back one character.
+                        i--;
+
+                        atSep = false;
+                    }
+                    else if (input[i] == ',')
+                    {
+                        // Missing value.
+                        if (atSep)
+                        {
+                            break;
+                        }
+
+                        atSep = true;
+                    }
+
+                    i++;
+                }
+
+                // Something wrong?
+                if (inputParsed == false || atSep)
+                {
+                    valuesList.Clear();
+
+                    continue;
+                }
+
+                // Assign values.
+                if (varsList.Count != valuesList.Count)
+                {
+                    valuesList.Clear();
+
+                    // Not enought or too much values.
+                    continue;
+                }
+
+                var valuesAssigned = true;
+                for (i = 0; i < varsList.Count; i++)
+                {
+                    var varName = varsList[i];
+                    var value = valuesList[i];
+
+                    // A string variable?
+                    if (varName.EndsWith("$"))
+                    {
+                        if (string.IsNullOrWhiteSpace(value))
+                        {
+                            _programState.SetSVar(varName, string.Empty);
+                        }
+                        else
+                        {
+                            // Not a string value?
+                            if (value.StartsWith("$") == false)
+                            {
+                                valuesAssigned = false;
+
+                                break;
+                            }
+
+                            _programState.SetSVar(varName, value.Substring(1));
+                        }
+                    }
+                    // A numeric variable.
+                    else
+                    {
+                        if (string.IsNullOrWhiteSpace(value))
+                        {
+                            _programState.SetNVar(varName, 0);
+                        }
+                        else
+                        {
+                            // Not a numeric value?
+                            if (value.StartsWith("$"))
+                            {
+                                valuesAssigned = false;
+
+                                break;
+                            }
+
+                            _programState.SetNVar(varName, float.Parse(value, NumberStyles.Number, CultureInfo.InvariantCulture));
+                        }
+                    }
+                }
+
+                // Values assignment failed.
+                if (valuesAssigned == false)
+                {
+                    valuesList.Clear();
+
+                    continue;
+                }
+
+                break;
+            }
+
+            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
 
@@ -1149,7 +1444,7 @@ namespace BasicBasic
         private const int TOK_KEY_GOSUB = 107;
         private const int TOK_KEY_GOTO = 108;
         private const int TOK_KEY_IF = 109;
-        //private const int TOK_KEY_INPUT = 110;
+        private const int TOK_KEY_INPUT = 110;
         private const int TOK_KEY_LET = 111;
         //private const int TOK_KEY_NEXT = 112;
         //private const int TOK_KEY_ON = 113;
@@ -1179,6 +1474,7 @@ namespace BasicBasic
             { "GOSUB", TOK_KEY_GOSUB },
             { "GOTO", TOK_KEY_GOTO },
             { "IF", TOK_KEY_IF },
+            { "INPUT", TOK_KEY_INPUT },
             { "LET", TOK_KEY_LET },
             { "OPTION", TOK_KEY_OPTION },
             { "PRINT", TOK_KEY_PRINT },
