@@ -25,8 +25,6 @@ namespace BasicBasic
     using System;
     using System.IO;
 
-    using BasicBasic;
-
 
     static class Program
     {
