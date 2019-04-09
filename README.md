@@ -1,8 +1,8 @@
 # BasicBasic Interpreter
 
-BasicBasic is a basic implementation of the ECMA-55 Minimal BASIC System. It is a direct interpreter 
-without any compilation phase. Can execute a script in a file or work directly as a "super smart
-calculator thing". :-)
+BasicBasic is a basic implementation of the ECMA-55 Minimal BASIC System. It is a direct 
+interpreter without any compilation phase. Can execute a script in a file or work directly 
+as a "super smart calculator thingy". :-)
 
 Right now it is a bit incomplete. Bigest missing parts are:
 
@@ -22,23 +22,36 @@ More interesting informations and implementations of the Minimal Basic can be fo
 
 ## Usage
 
-If the first argument of the program is a path to an existing source file, it is loaded and interpreted.
-If the first argument starts with the exclamation character ('!'), it is ignored.
+If the first argument of the program is a path to an existing source file, it is loaded 
+and interpreted. If the provided path starts with the exclamation character ('!'), 
+it is ignored. Helps with debugging.
 
 Without any program argument, the interactive mode starts.
 
 ## Interactive Mode
 
-The interactive mode allows an user to immediatelly execute inserted progam lines or to define
-program lines for later execution.
+The interactive mode allows an user to immediatelly execute inserted program lines 
+or to define program lines for later execution.
 
-The command propmt for a new program line is "> ".
+The command prompt for a new program line is "> ".
+The command prompt for the INPUT statement is "? ".
 
 All lines are passed to the interpreter for execution.
 
-If a line starts with a label (integer 1 .. 99) it defines a new program line.
-A program line can be redefined by a program line starting with the same label.
-If a program line contains only a label, it deletes an existing program line with the same label.
+If a program line starts with a label (integer 1 .. 99) it defines a new program line.
+A program line can be redefined by a new program line starting with the same label.
+If a program line contains only a label, it deletes an existing program line with 
+the same label.
+
+### The INPUT command user input processing
+
+If the INPUT command is executed, a user must enter all required values in the correct 
+order and format/type. Any error or missing/excessive value leads to a new input read 
+cycle, where user must enter all values again, till he/she successfully enters 
+everything in.
+
+An empty input line ends the user input processing and a program continues, like the 
+INPUT command was never executed. No variable values are changed.
 
 ### Interactive Mode Commands
 
