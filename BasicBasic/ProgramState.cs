@@ -39,12 +39,6 @@ namespace BasicBasic
 
         #endregion
 
-
-        /// <summary>
-        /// The current character position in the curent program line.
-        /// </summary>
-        public int CurrentProgramLinePos { get; set; }
-
         /// <summary>
         /// The currently interpreted program line.
         /// </summary>
@@ -145,11 +139,15 @@ namespace BasicBasic
         /// Sets the current program line.
         /// </summary>
         /// <param name="programLine">A program line.</param>
-        /// <param name="programLinePos">From which character this program line should be parsed.</param>
-        public void SetCurrentProgramLine(ProgramLine programLine, int programLinePos = 0)
+        /// <param name="rewind">If true, call Rewind() on the program line to start its proccesing from its beginning.</param>
+        public void SetCurrentProgramLine(ProgramLine programLine, bool rewind = true)
         {
             CurrentProgramLine = programLine;
-            CurrentProgramLinePos = programLinePos;
+
+            if (rewind)
+            {
+                CurrentProgramLine.Rewind();
+            }
         }
 
         /// <summary>

@@ -103,6 +103,7 @@ namespace BasicBasic
                 Source = source,
                 Label = -1,
                 Start = 0,
+                SourcePosition = -1,  // Start - 1.
                 End = source.Length - 1
             };
 
@@ -965,8 +966,6 @@ namespace BasicBasic
             {
                 throw ErrorAtLine("Return stack underflow");
             }
-
-            return null;
         }
 
         // The end of execution.
@@ -1249,11 +1248,9 @@ namespace BasicBasic
 
                         // Remember, where we are.
                         var cpl = _programState.CurrentProgramLine;
-                        var cplp = _programState.CurrentProgramLinePos;
 
                         // Go to the user function definition.
                         _programState.SetCurrentProgramLine(_programState.GetProgramLine(flabel));
-                        _programState.CurrentProgramLinePos = 0;
 
                         // DEF
                         NextToken();
@@ -1306,7 +1303,7 @@ namespace BasicBasic
                         ExpToken(TOK_EOLN);
 
                         // Restore the previous position.
-                        _programState.SetCurrentProgramLine(cpl, cplp);
+                        _programState.SetCurrentProgramLine(cpl, false);
 
                         return v;
                     }
@@ -1608,12 +1605,9 @@ namespace BasicBasic
         /// </summary>
         private void NextToken()
         {
-            if (_programState.CurrentProgramLine.Start + _programState.CurrentProgramLinePos > _programState.CurrentProgramLine.End)
+            if (_programState.CurrentProgramLine.SourcePosition > _programState.CurrentProgramLine.End)
             {
                 throw ErrorAtLine("Read beyond the line end");
-                //_tok = TOK_EOLN;
-
-                //return;
             }
 
             var c = NextChar();
@@ -1667,7 +1661,7 @@ namespace BasicBasic
                         }
                         else
                         {
-                                _programState.CurrentProgramLinePos--;
+                            _programState.CurrentProgramLine.PreviousChar();
                             _tok = TOK_LT;
                         }
                         
@@ -1683,7 +1677,7 @@ namespace BasicBasic
                         }
                         else
                         {
-                                _programState.CurrentProgramLinePos--;
+                            _programState.CurrentProgramLine.PreviousChar();
                             _tok = TOK_GT;
                         }
 
@@ -1693,7 +1687,7 @@ namespace BasicBasic
                     case '+':
                     {
                         var cc = NextChar();
-                            _programState.CurrentProgramLinePos--;
+                        _programState.CurrentProgramLine.PreviousChar();
 
                         if (IsDigit(cc) || cc == '.')
                         {
@@ -1710,7 +1704,7 @@ namespace BasicBasic
                     case '-':
                     {
                         var cc = NextChar();
-                            _programState.CurrentProgramLinePos--;
+                        _programState.CurrentProgramLine.PreviousChar();
 
                         if (IsDigit(cc) || cc == '.')
                         {
@@ -1772,7 +1766,7 @@ namespace BasicBasic
                 }
 
                 // Go one char back, so the next time we will read the character behind this identifier.
-                _programState.CurrentProgramLinePos--;
+                _programState.CurrentProgramLine.PreviousChar();
 
                 strValue = strValue.ToUpperInvariant();
                                
@@ -1800,7 +1794,7 @@ namespace BasicBasic
                 _strValue = strValue.ToUpperInvariant();
 
                 // Go one char back, so the next time we will read the character behind this identifier.
-                _programState.CurrentProgramLinePos--;
+                _programState.CurrentProgramLine.PreviousChar();
             }
 
             _tok = tok;
@@ -1902,7 +1896,7 @@ namespace BasicBasic
             _numValue = negate ? -numValue : numValue;
 
             // Go one char back, so the next time we will read the character right behind this number.
-            _programState.CurrentProgramLinePos--;
+            _programState.CurrentProgramLine.PreviousChar();
         }
 
         /// <summary>
@@ -1911,7 +1905,7 @@ namespace BasicBasic
         /// <returns>The next character from the current program line source.</returns>
         private char NextChar()
         {
-            return _programState.CurrentProgramLine.Source[_programState.CurrentProgramLine.Start + _programState.CurrentProgramLinePos++];
+            return _programState.CurrentProgramLine.NextChar();
         }
 
         /// <summary>
@@ -1991,6 +1985,7 @@ namespace BasicBasic
                         programLine.Source = source;
                         programLine.Label = label;
                         programLine.Start = i;
+                        programLine.SourcePosition = programLine.Start - 1;
 
                         // Remember this line.
                         _programState.SetProgramLine(programLine);

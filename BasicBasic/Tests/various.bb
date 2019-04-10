@@ -9,8 +9,8 @@
 11 LET A3 = 66
 12 let b = -a3
 13 let s$ = "str"
-14 let s1 = "123"
-15 let s2 = "a123"
+14 let s1 = 123
+15 let s2 = 124
 19 if a = 5 then 26
 20 PRINT
 23 print a0 + 100 - b; a, a3; b, s$, 78.25 
