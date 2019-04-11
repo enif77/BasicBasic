@@ -449,5 +449,62 @@ namespace BasicBasic
         }
 
         #endregion
+
+
+        #region errors
+
+        /// <summary>
+        /// Reports the unexpected token error.
+        /// </summary>
+        /// <param name="tok">The unexpected token.</param>
+        public InterpreterException UnexpectedTokenError(int tok)
+        {
+            return ErrorAtLine("Unexpected token {0}", tok);
+        }
+
+        /// <summary>
+        /// Reports an general error on a program line.
+        /// </summary>
+        /// <param name="message">An error message.</param>
+        /// <param name="args">Error message arguments.</param>
+        public InterpreterException ErrorAtLine(string message, params object[] args)
+        {
+            // Interactive mode?
+            if (CurrentProgramLine.Label < 1)
+            {
+                if (args == null || args.Length == 0)
+                {
+                    return Error(message + ".");
+                }
+                else
+                {
+                    return Error("{0}.", string.Format(message, args));
+                }
+            }
+            else
+            {
+                if (args == null || args.Length == 0)
+                {
+                    return Error("{0} at line {1}.", message, CurrentProgramLine.Label);
+                }
+                else
+                {
+                    return Error("{0} at line {1}.", string.Format(message, args), CurrentProgramLine.Label);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Reports an general error and ends the current program execution.
+        /// </summary>
+        /// <exception cref="InterpreterException">Thrown when an error occurs during a program execution.</exception>
+        /// <param name="message">An error message.</param>
+        /// <param name="args">Error message arguments.</param>
+        public InterpreterException Error(string message, params object[] args)
+        {
+            return new InterpreterException(string.Format(message, args));
+        }
+
+        #endregion
     }
 }

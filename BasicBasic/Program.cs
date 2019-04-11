@@ -84,7 +84,7 @@ namespace BasicBasic
                         {
                             try
                             {
-                                if (interpreter.IsDigit(input[0]))
+                                if (Tokenizer.IsDigit(input[0]))
                                 {
                                     interpreter.AddProgramLine(input + "\n");
                                 }

@@ -68,6 +68,7 @@ namespace BasicBasic
         public void Initialize()
         {
             _programState = new ProgramState();
+            _tokenizer = new Tokenizer(_programState);
         }
 
         /// <summary>
@@ -84,7 +85,7 @@ namespace BasicBasic
         /// <param name="source"></param>
         public void Interpret(string source)
         {
-            if (source == null) throw Error("A source expected.");
+            if (source == null) throw _programState.Error("A source expected.");
 
             ScanSource(source);
             InterpretImpl();
@@ -96,7 +97,7 @@ namespace BasicBasic
         /// <param name="source">A program line source.</param>
         public void InterpretLine(string source)
         {
-            if (source == null) throw Error("A source expected.");
+            if (source == null) throw _programState.Error("A source expected.");
 
             var programLine = new ProgramLine()
             {
@@ -125,7 +126,7 @@ namespace BasicBasic
         /// <param name="source">A program line source.</param>
         public void AddProgramLine(string source)
         {
-            if (source == null) throw Error("A program line source expected.");
+            if (source == null) throw _programState.Error("A program line source expected.");
 
             ScanSource(source, true);
         }
@@ -153,6 +154,7 @@ namespace BasicBasic
         #region private
 
         private ProgramState _programState;
+        private Tokenizer _tokenizer;
 
 
         /// <summary>
@@ -168,7 +170,7 @@ namespace BasicBasic
 
             if (_programState.WasEnd == false)
             {
-                throw Error("Unexpected end of program.");
+                throw _programState.Error("Unexpected end of program.");
             }
         }
 
@@ -183,30 +185,30 @@ namespace BasicBasic
 
             _programState.SetCurrentProgramLine(programLine);
 
-            NextToken();
+            _tokenizer.NextToken();
 
             // The statement.
-            switch (_tok)
+            switch (_tokenizer.Token)
             {
-                case TOK_KEY_DEF: return DefStatement();
-                case TOK_KEY_DIM: return DimStatement();
-                case TOK_KEY_END: return EndStatement();
-                case TOK_KEY_GO:
-                case TOK_KEY_GOSUB:
-                case TOK_KEY_GOTO:
+                case Tokenizer.TOK_KEY_DEF: return DefStatement();
+                case Tokenizer.TOK_KEY_DIM: return DimStatement();
+                case Tokenizer.TOK_KEY_END: return EndStatement();
+                case Tokenizer.TOK_KEY_GO:
+                case Tokenizer.TOK_KEY_GOSUB:
+                case Tokenizer.TOK_KEY_GOTO:
                     return GoToStatement();
-                case TOK_KEY_IF: return IfStatement();
-                case TOK_KEY_INPUT: return InputStatement();
-                case TOK_KEY_LET: return LetStatement();
-                case TOK_KEY_OPTION: return OptionStatement();
-                case TOK_KEY_PRINT: return PrintStatement();
-                case TOK_KEY_RANDOMIZE: return RandomizeStatement();
-                case TOK_KEY_REM: return RemStatement();
-                case TOK_KEY_RETURN: return ReturnStatement();
-                case TOK_KEY_STOP: return StopStatement();
+                case Tokenizer.TOK_KEY_IF: return IfStatement();
+                case Tokenizer.TOK_KEY_INPUT: return InputStatement();
+                case Tokenizer.TOK_KEY_LET: return LetStatement();
+                case Tokenizer.TOK_KEY_OPTION: return OptionStatement();
+                case Tokenizer.TOK_KEY_PRINT: return PrintStatement();
+                case Tokenizer.TOK_KEY_RANDOMIZE: return RandomizeStatement();
+                case Tokenizer.TOK_KEY_REM: return RemStatement();
+                case Tokenizer.TOK_KEY_RETURN: return ReturnStatement();
+                case Tokenizer.TOK_KEY_STOP: return StopStatement();
 
                 default:
-                    throw UnexpectedTokenError(_tok);
+                    throw _programState.UnexpectedTokenError(_tokenizer.Token);
             }
         }
 
@@ -217,16 +219,16 @@ namespace BasicBasic
         // DEF FNx = numeric-expression EOLN
         private ProgramLine DefStatement()
         {
-            EatToken(TOK_KEY_DEF);
+            EatToken(Tokenizer.TOK_KEY_DEF);
 
             // Get the function name.
-            ExpToken(TOK_UFN);
-            var fname = _strValue;
+            ExpToken(Tokenizer.TOK_UFN);
+            var fname = _tokenizer.StrValue;
 
             // Do not redefine user functions.
             if (_programState.IsUserFnDefined(fname))
             {
-                throw ErrorAtLine("{0} function redefinition", fname);
+                throw _programState.ErrorAtLine("{0} function redefinition", fname);
             }
 
             // Save this function definition.
@@ -239,19 +241,19 @@ namespace BasicBasic
         // DIM array-declaration { ',' array-declaration } EOLN
         private ProgramLine DimStatement()
         {
-            EatToken(TOK_KEY_DIM);
+            EatToken(Tokenizer.TOK_KEY_DIM);
 
             ArrayDeclaration();
 
             // ','
-            while (_tok == TOK_LSTSEP)
+            while (_tokenizer.Token == Tokenizer.TOK_LSTSEP)
             {
-                EatToken(TOK_LSTSEP);
+                EatToken(Tokenizer.TOK_LSTSEP);
 
                 ArrayDeclaration();
             }
 
-            ExpToken(TOK_EOLN);
+            ExpToken(Tokenizer.TOK_EOLN);
 
             return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
@@ -260,37 +262,37 @@ namespace BasicBasic
         private void ArrayDeclaration()
         {
             // Get the function name.
-            ExpToken(TOK_SVARIDNT);
+            ExpToken(Tokenizer.TOK_SVARIDNT);
 
-            var arrayName = _strValue;
+            var arrayName = _tokenizer.StrValue;
 
             // Eat array name.
-            NextToken();
+            _tokenizer.NextToken();
 
-            EatToken(TOK_LBRA);
-            ExpToken(TOK_NUM);
+            EatToken(Tokenizer.TOK_LBRA);
+            ExpToken(Tokenizer.TOK_NUM);
 
-            var topBound = (int)_numValue;
+            var topBound = (int)_tokenizer.NumValue;
 
             CheckArray(arrayName, topBound, topBound, false);
 
             // Eat array upper bound.
-            NextToken();
+            _tokenizer.NextToken();
 
-            EatToken(TOK_RBRA);
+            EatToken(Tokenizer.TOK_RBRA);
         }
 
         // The end of program.
         // END EOLN
         private ProgramLine EndStatement()
         {
-            EatToken(TOK_KEY_END);
-            ExpToken(TOK_EOLN);
+            EatToken(Tokenizer.TOK_KEY_END);
+            ExpToken(Tokenizer.TOK_EOLN);
 
             var nextLine = _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
             if (nextLine != null)
             {
-                throw ErrorAtLine("Unexpected END statement");
+                throw _programState.ErrorAtLine("Unexpected END statement");
             }
 
             _programState.WasEnd = true;
@@ -307,35 +309,35 @@ namespace BasicBasic
             var gosub = false;
 
             // GO TO or GO SUB ...
-            if (_tok == TOK_KEY_GO)
+            if (_tokenizer.Token == Tokenizer.TOK_KEY_GO)
             {
                 // Eat TO.
-                NextToken();
+                _tokenizer.NextToken();
 
                 // GO SUB?
-                if (_tok == TOK_KEY_SUB)
+                if (_tokenizer.Token == Tokenizer.TOK_KEY_SUB)
                 {
                     gosub = true;
                 }
                 else
                 {
-                    ExpToken(TOK_KEY_TO);
+                    ExpToken(Tokenizer.TOK_KEY_TO);
                 }
             }
-            else if (_tok == TOK_KEY_GOSUB)
+            else if (_tokenizer.Token == Tokenizer.TOK_KEY_GOSUB)
             {
                 gosub = true;
             }
 
             // Eat the statement.
-            NextToken();
+            _tokenizer.NextToken();
 
             // Get the label.
             var label = ExpLabel();
-            NextToken();
+            _tokenizer.NextToken();
 
             // EOLN.
-            ExpToken(TOK_EOLN);
+            ExpToken(Tokenizer.TOK_EOLN);
 
             if (gosub)
             {
@@ -345,7 +347,7 @@ namespace BasicBasic
                 }
                 catch
                 {
-                    throw ErrorAtLine("Return stack overflow");
+                    throw _programState.ErrorAtLine("Return stack overflow");
                 }
             }
 
@@ -357,7 +359,7 @@ namespace BasicBasic
         // rel-str :: = <>
         private ProgramLine IfStatement()
         {
-            EatToken(TOK_KEY_IF);
+            EatToken(Tokenizer.TOK_KEY_IF);
 
             // Do not jump.
             var jump = false;
@@ -366,13 +368,13 @@ namespace BasicBasic
             if (IsStringExpression())
             {
                 var v1 = StringExpression();
-                NextToken();
+                _tokenizer.NextToken();
 
-                var relTok = _tok;
-                NextToken();
+                var relTok = _tokenizer.Token;
+                _tokenizer.NextToken();
 
                 var v2 = StringExpression();
-                NextToken();
+                _tokenizer.NextToken();
 
                 jump = StringComparison(relTok, v1, v2);
             }
@@ -380,22 +382,22 @@ namespace BasicBasic
             {
                 var v1 = NumericExpression();
 
-                var relTok = _tok;
-                NextToken();
+                var relTok = _tokenizer.Token;
+                _tokenizer.NextToken();
 
                 var v2 = NumericExpression();
 
                 jump = NumericComparison(relTok, v1, v2);
             }
 
-            EatToken(TOK_KEY_THEN);
+            EatToken(Tokenizer.TOK_KEY_THEN);
 
             // Get the label.
             var label = ExpLabel();
 
             // EOLN.
-            NextToken();
-            ExpToken(TOK_EOLN);
+            _tokenizer.NextToken();
+            ExpToken(Tokenizer.TOK_EOLN);
 
             return jump
                 ? _programState.GetProgramLine(label) 
@@ -407,15 +409,15 @@ namespace BasicBasic
         {
             switch (relTok)
             {
-                case TOK_EQL: return v1 == v2; // =
-                case TOK_NEQL: return v1 != v2; // <>
-                case TOK_LT: return v1 < v2; // <
-                case TOK_LTE: return v1 <= v2; // <=
-                case TOK_GT: return v1 > v2; // >
-                case TOK_GTE: return v1 >= v2; // >=
+                case Tokenizer.TOK_EQL: return v1 == v2; // =
+                case Tokenizer.TOK_NEQL: return v1 != v2; // <>
+                case Tokenizer.TOK_LT: return v1 < v2; // <
+                case Tokenizer.TOK_LTE: return v1 <= v2; // <=
+                case Tokenizer.TOK_GT: return v1 > v2; // >
+                case Tokenizer.TOK_GTE: return v1 >= v2; // >=
 
                 default:
-                    throw UnexpectedTokenError(relTok);
+                    throw _programState.UnexpectedTokenError(relTok);
             }
         }
 
@@ -424,11 +426,11 @@ namespace BasicBasic
         {
             switch (relTok)
             {
-                case TOK_EQL: return v1 == v2; // =
-                case TOK_NEQL: return v1 != v2; // <>
+                case Tokenizer.TOK_EQL: return v1 == v2; // =
+                case Tokenizer.TOK_NEQL: return v1 != v2; // <>
 
                 default:
-                    throw UnexpectedTokenError(relTok);
+                    throw _programState.UnexpectedTokenError(relTok);
             }
         }
 
@@ -437,38 +439,37 @@ namespace BasicBasic
         private ProgramLine InputStatement()
         {
             // Eat INPUT.
-            NextToken();
+            _tokenizer.NextToken();
 
             var varsList = new List<string>();
-            //var valuesList = new List<string>();
 
             bool atSep = true;
-            while (_tok != TOK_EOLN)
+            while (_tokenizer.Token != Tokenizer.TOK_EOLN)
             {
-                switch (_tok)
+                switch (_tokenizer.Token)
                 {
                     // Consume these.
-                    case TOK_LSTSEP:
+                    case Tokenizer.TOK_LSTSEP:
                         atSep = true;
-                        NextToken();
+                        _tokenizer.NextToken();
                         break;
 
                     default:
                         if (atSep == false)
                         {
-                            throw ErrorAtLine("A list separator expected");
+                            throw _programState.ErrorAtLine("A list separator expected");
                         }
 
-                        if (_tok == TOK_STRIDNT || _tok == TOK_SVARIDNT ||_tok == TOK_VARIDNT)
+                        if (_tokenizer.Token == Tokenizer.TOK_STRIDNT || _tokenizer.Token == Tokenizer.TOK_SVARIDNT || _tokenizer.Token == Tokenizer.TOK_VARIDNT)
                         {
-                            varsList.Add(_strValue);
+                            varsList.Add(_tokenizer.StrValue);
 
                             // Eat the variable.
-                            NextToken();
+                            _tokenizer.NextToken();
                         }
                         else
                         {
-                            throw UnexpectedTokenError(_tok);
+                            throw _programState.UnexpectedTokenError(_tokenizer.Token);
                         }
 
                         atSep = false;
@@ -476,11 +477,11 @@ namespace BasicBasic
                 }
             }
 
-            ExpToken(TOK_EOLN);
+            ExpToken(Tokenizer.TOK_EOLN);
 
             if (varsList.Count == 0)
             {
-                throw ErrorAtLine("The INPUT statement variables list can not be empty");
+                throw _programState.ErrorAtLine("The INPUT statement variables list can not be empty");
             }
 
             ReadUserInput(varsList);
@@ -500,7 +501,7 @@ namespace BasicBasic
             {
                 Console.Write("? ");
 
-                var input = Console.ReadLine() + C_EOLN;
+                var input = Console.ReadLine() + Tokenizer.C_EOLN;
                 var inputParsed = false;
 
                 // Remove this!
@@ -516,7 +517,7 @@ namespace BasicBasic
                 bool atSep = true;
                 while (true)
                 {
-                    if (i >= input.Length || input[i] == C_EOLN)
+                    if (i >= input.Length || input[i] == Tokenizer.C_EOLN)
                     {
                         inputParsed = true;
 
@@ -536,7 +537,7 @@ namespace BasicBasic
 
                         // Eat '"'.
                         var c = input[++i];
-                        while (c != C_EOLN)
+                        while (c != Tokenizer.C_EOLN)
                         {
                             if (c == '\"')
                             {
@@ -558,7 +559,7 @@ namespace BasicBasic
                         atSep = false;
                     }
                     // A number.
-                    else if (input[i] == '+' || input[i] == '-' || IsDigit(input[i]))
+                    else if (input[i] == '+' || input[i] == '-' || Tokenizer.IsDigit(input[i]))
                     {
                         // Missing separator.
                         if (atSep == false)
@@ -584,7 +585,7 @@ namespace BasicBasic
                         // plain-string-character : plus-sign | minus-sign | full-stop | digit | letter
 
                         var c = input[i];
-                        while (IsDigit(c))
+                        while (Tokenizer.IsDigit(c))
                         {
                             if (numValue == null)
                             {
@@ -605,7 +606,7 @@ namespace BasicBasic
                             numValue += c;
 
                             c = input[++i];
-                            while (IsDigit(c))
+                            while (Tokenizer.IsDigit(c))
                             {
                                 numValue += c;
                                 c = input[++i];
@@ -629,7 +630,7 @@ namespace BasicBasic
                                 c = input[++i];
                             }
 
-                            while (IsDigit(c))
+                            while (Tokenizer.IsDigit(c))
                             {
                                 numValue += c;
 
@@ -671,7 +672,7 @@ namespace BasicBasic
                         var strValue = string.Empty;
 
                         var c = input[i];
-                        while (c != C_EOLN)
+                        while (c != Tokenizer.C_EOLN)
                         {
                             // TODO: Not all characters are allowed.
                             // unquoted -string-character : space | plain-string-character
@@ -781,27 +782,27 @@ namespace BasicBasic
         {
             if (_programState.ArrayBase >= 0)
             {
-                throw ErrorAtLine("The OPTION BASE command already executed. Can not change the arrays lower bound");
+                throw _programState.ErrorAtLine("The OPTION BASE command already executed. Can not change the arrays lower bound");
             }
 
             // Eat "OPTION".
-            NextToken();
+            _tokenizer.NextToken();
 
-            EatToken(TOK_KEY_BASE);
+            EatToken(Tokenizer.TOK_KEY_BASE);
 
             // Array lower bound can not be changed, when an array is already defined.
             if (_programState.IsArrayDefined())
             {
-                throw ErrorAtLine("An array is already defined. Can not change the arrays lower bound");
+                throw _programState.ErrorAtLine("An array is already defined. Can not change the arrays lower bound");
             }
 
             // 0 or 1.
-            ExpToken(TOK_NUM);
+            ExpToken(Tokenizer.TOK_NUM);
 
-            var option = (int)_numValue;
+            var option = (int)_tokenizer.NumValue;
             if (option < 0 || option > 1)
             {
-                throw ErrorAtLine("Array base out of allowed range 0 .. 1");
+                throw _programState.ErrorAtLine("Array base out of allowed range 0 .. 1");
             }
 
             _programState.ArrayBase = option;
@@ -813,28 +814,28 @@ namespace BasicBasic
         // var :: num-var | string-var
         private ProgramLine LetStatement()
         {
-            EatToken(TOK_KEY_LET);
+            EatToken(Tokenizer.TOK_KEY_LET);
 
             // var
-            if (_tok == TOK_SVARIDNT)
+            if (_tokenizer.Token == Tokenizer.TOK_SVARIDNT)
             {
-                var varName = _strValue;
+                var varName = _tokenizer.StrValue;
 
                 // Eat the variable identifier.
-                NextToken();
+                _tokenizer.NextToken();
 
                 // Array subscript.
-                if (_tok == TOK_LBRA)
+                if (_tokenizer.Token == Tokenizer.TOK_LBRA)
                 {
-                    NextToken();
+                    _tokenizer.NextToken();
 
                     var index = (int)NumericExpression();
 
-                    EatToken(TOK_RBRA);
+                    EatToken(Tokenizer.TOK_RBRA);
 
                     CheckArray(varName, 10, index, true);
 
-                    EatToken(TOK_EQL);
+                    EatToken(Tokenizer.TOK_EQL);
 
                     _programState.SetArray(varName, index, NumericExpression());
                 }
@@ -842,43 +843,43 @@ namespace BasicBasic
                 {
                     CheckSubsription(varName);
 
-                    EatToken(TOK_EQL);
+                    EatToken(Tokenizer.TOK_EQL);
 
                     _programState.SetNVar(varName, NumericExpression());
                 }
             }
-            else if (_tok == TOK_VARIDNT)
+            else if (_tokenizer.Token == Tokenizer.TOK_VARIDNT)
             {
-                var varName = _strValue;
+                var varName = _tokenizer.StrValue;
 
                 // Eat the variable identifier.
-                NextToken();
+                _tokenizer.NextToken();
 
-                EatToken(TOK_EQL);
+                EatToken(Tokenizer.TOK_EQL);
 
                 _programState.SetNVar(varName, NumericExpression());
             }
-            else if (_tok == TOK_STRIDNT)
+            else if (_tokenizer.Token == Tokenizer.TOK_STRIDNT)
             {
-                var varName = _strValue;
+                var varName = _tokenizer.StrValue;
 
                 // Eat the variable identifier.
-                NextToken();
+                _tokenizer.NextToken();
 
-                EatToken(TOK_EQL);
+                EatToken(Tokenizer.TOK_EQL);
 
                 _programState.SetSVar(varName, StringExpression());
 
                 // Eat the string expression.
-                NextToken();
+                _tokenizer.NextToken();
             }
             else
             {
-                throw UnexpectedTokenError(_tok);
+                throw _programState.UnexpectedTokenError(_tokenizer.Token);
             }
                         
             // EOLN
-            ExpToken(TOK_EOLN);
+            ExpToken(Tokenizer.TOK_EOLN);
 
             return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
@@ -888,24 +889,24 @@ namespace BasicBasic
         private ProgramLine PrintStatement()
         {
             // Eat PRINT.
-            NextToken();
+            _tokenizer.NextToken();
 
             bool atSep = true;
-            while (_tok != TOK_EOLN)
+            while (_tokenizer.Token != Tokenizer.TOK_EOLN)
             {
-                switch (_tok)
+                switch (_tokenizer.Token)
                 {
                     // Consume these.
-                    case TOK_LSTSEP:
-                    case TOK_PLSTSEP:
+                    case Tokenizer.TOK_LSTSEP:
+                    case Tokenizer.TOK_PLSTSEP:
                         atSep = true;
-                        NextToken();
+                        _tokenizer.NextToken();
                         break;
 
                     default:
                         if (atSep == false)
                         {
-                            throw ErrorAtLine("A list separator expected");
+                            throw _programState.ErrorAtLine("A list separator expected");
                         }
 
                         if (IsStringExpression())
@@ -913,7 +914,7 @@ namespace BasicBasic
                             Console.Write(StringExpression());
 
                             // Eat the string expression.
-                            NextToken();
+                            _tokenizer.NextToken();
                         }
                         else
                         {
@@ -925,7 +926,7 @@ namespace BasicBasic
                 }
             }
 
-            ExpToken(TOK_EOLN);
+            ExpToken(Tokenizer.TOK_EOLN);
 
             Console.WriteLine();
 
@@ -936,8 +937,8 @@ namespace BasicBasic
         // RANDOMIZE EOLN
         private ProgramLine RandomizeStatement()
         {
-            NextToken();
-            ExpToken(TOK_EOLN);
+            _tokenizer.NextToken();
+            ExpToken(Tokenizer.TOK_EOLN);
 
             _programState.Randomize();
 
@@ -955,8 +956,8 @@ namespace BasicBasic
         // RETURN EOLN
         private ProgramLine ReturnStatement()
         {
-            NextToken();
-            ExpToken(TOK_EOLN);
+            _tokenizer.NextToken();
+            ExpToken(Tokenizer.TOK_EOLN);
 
             try
             {
@@ -964,7 +965,7 @@ namespace BasicBasic
             }
             catch
             {
-                throw ErrorAtLine("Return stack underflow");
+                throw _programState.ErrorAtLine("Return stack underflow");
             }
         }
 
@@ -972,8 +973,8 @@ namespace BasicBasic
         // STOP EOLN
         private ProgramLine StopStatement()
         {
-            NextToken();
-            ExpToken(TOK_EOLN);
+            _tokenizer.NextToken();
+            ExpToken(Tokenizer.TOK_EOLN);
 
             _programState.WasEnd = true;
 
@@ -988,19 +989,19 @@ namespace BasicBasic
         // expr:: string-expression | numeric-expression
         private bool IsStringExpression()
         {
-            return _tok == TOK_QSTR || _tok == TOK_STRIDNT;
+            return _tokenizer.Token == Tokenizer.TOK_QSTR || _tokenizer.Token == Tokenizer.TOK_STRIDNT;
         }
 
         // string-expression : string-variable | string-constant .
         private string StringExpression()
         {
-            switch (_tok)
+            switch (_tokenizer.Token)
             {
-                case TOK_QSTR: return _strValue;
-                case TOK_STRIDNT: return _programState.GetSVar(_strValue);
+                case Tokenizer.TOK_QSTR: return _tokenizer.StrValue;
+                case Tokenizer.TOK_STRIDNT: return _programState.GetSVar(_tokenizer.StrValue);
 
                 default:
-                    throw UnexpectedTokenError(_tok);
+                    throw _programState.UnexpectedTokenError(_tokenizer.Token);
             }
         }
 
@@ -1010,29 +1011,29 @@ namespace BasicBasic
         private float NumericExpression(string paramName = null, float? paramValue = null)
         {
             var negate = false;
-            if (_tok == TOK_PLUS)
+            if (_tokenizer.Token == Tokenizer.TOK_PLUS)
             {
-                NextToken();
+                _tokenizer.NextToken();
             }
-            else if (_tok == TOK_MINUS)
+            else if (_tokenizer.Token == Tokenizer.TOK_MINUS)
             {
                 negate = true;
-                NextToken();
+                _tokenizer.NextToken();
             }
 
             var v = Term(paramName, paramValue);
 
             while (true)
             {
-                if (_tok == TOK_PLUS)
+                if (_tokenizer.Token == Tokenizer.TOK_PLUS)
                 {
-                    NextToken();
+                    _tokenizer.NextToken();
 
                     v += Term(paramName, paramValue);
                 }
-                else if (_tok == TOK_MINUS)
+                else if (_tokenizer.Token == Tokenizer.TOK_MINUS)
                 {
-                    NextToken();
+                    _tokenizer.NextToken();
 
                     v -= Term(paramName, paramValue);
                 }
@@ -1053,15 +1054,15 @@ namespace BasicBasic
 
             while (true)
             {
-                if (_tok == TOK_MULT)
+                if (_tokenizer.Token == Tokenizer.TOK_MULT)
                 {
-                    NextToken();
+                    _tokenizer.NextToken();
 
                     v *= Factor(paramName, paramValue);
                 }
-                else if (_tok == TOK_DIV)
+                else if (_tokenizer.Token == Tokenizer.TOK_DIV)
                 {
-                    NextToken();
+                    _tokenizer.NextToken();
 
                     var n = Factor(paramName, paramValue);
 
@@ -1085,9 +1086,9 @@ namespace BasicBasic
 
             while (true)
             {
-                if (_tok == TOK_POW)
+                if (_tokenizer.Token == Tokenizer.TOK_POW)
                 {
-                    NextToken();
+                    _tokenizer.NextToken();
 
                     v = (float)Math.Pow(v, Primary(paramName, paramValue));
                 }
@@ -1103,26 +1104,26 @@ namespace BasicBasic
         // primary : number | numeric-variable | numeric-function | '(' numeric-expression ')' | user-function .
         private float Primary(string pName = null, float? pValue = null)
         {
-            switch (_tok)
+            switch (_tokenizer.Token)
             {
-                case TOK_NUM:
-                    var s = _numValue;
-                    NextToken();
-                    return s;
+                case Tokenizer.TOK_NUM:
+                    var n = _tokenizer.NumValue;
+                    _tokenizer.NextToken();
+                    return n;
 
-                case TOK_SVARIDNT:
+                case Tokenizer.TOK_SVARIDNT:
                     {
-                        var varName = _strValue;
-                        NextToken();
+                        var varName = _tokenizer.StrValue;
+                        _tokenizer.NextToken();
 
                         // Array subscript.
-                        if (_tok == TOK_LBRA)
+                        if (_tokenizer.Token == Tokenizer.TOK_LBRA)
                         {
-                            NextToken();
+                            _tokenizer.NextToken();
 
                             var index = (int)NumericExpression();
 
-                            EatToken(TOK_RBRA);
+                            EatToken(Tokenizer.TOK_RBRA);
 
                             return CheckArray(varName, 10, index, true);
                         }
@@ -1137,40 +1138,40 @@ namespace BasicBasic
                         return _programState.GetNVar(varName);
                     }
                     
-                case TOK_VARIDNT:
+                case Tokenizer.TOK_VARIDNT:
                     {
-                        var v = _programState.GetNVar(_strValue);
-                        NextToken();
+                        var v = _programState.GetNVar(_tokenizer.StrValue);
+                        _tokenizer.NextToken();
                         return v;
                     }
                     
-                case TOK_LBRA:
+                case Tokenizer.TOK_LBRA:
                     {
-                        NextToken();
+                        _tokenizer.NextToken();
                         var v = NumericExpression();
-                        EatToken(TOK_RBRA);
+                        EatToken(Tokenizer.TOK_RBRA);
                         return v;
                     }
                     
-                case TOK_FN:
+                case Tokenizer.TOK_FN:
                     {
                         float v;
-                        var fnName = _strValue;
+                        var fnName = _tokenizer.StrValue;
                         if (fnName == "RND")
                         {
-                            NextToken();
+                            _tokenizer.NextToken();
 
                             return (float)_programState.NextRandom();
                         }
                         else
                         {
-                            NextToken();
+                            _tokenizer.NextToken();
 
-                            EatToken(TOK_LBRA);
+                            EatToken(Tokenizer.TOK_LBRA);
 
                             v = NumericExpression();
 
-                            EatToken(TOK_RBRA);
+                            EatToken(Tokenizer.TOK_RBRA);
                         }
                         
                         switch (fnName)
@@ -1218,32 +1219,32 @@ namespace BasicBasic
                                 break;
 
                             default:
-                                throw ErrorAtLine("Unknown function '{0}'", fnName);
+                                throw _programState.ErrorAtLine("Unknown function '{0}'", fnName);
                         }
 
                         return v;
                     }
 
-                case TOK_UFN:
+                case Tokenizer.TOK_UFN:
                     {
                         float v;
-                        var fname = _strValue;
+                        var fname = _tokenizer.StrValue;
                         var flabel = _programState.GetUserFnLabel(fname);
                         if (flabel == 0)
                         {
-                            throw ErrorAtLine("Undefined user function {0}", fname);
+                            throw _programState.ErrorAtLine("Undefined user function {0}", fname);
                         }
 
                         // Eat the function name.
-                        NextToken();
+                        _tokenizer.NextToken();
 
                         // FNA(X)
                         var p = (float?)null;
-                        if (_tok == TOK_LBRA)
+                        if (_tokenizer.Token == Tokenizer.TOK_LBRA)
                         {
-                            NextToken();
+                            _tokenizer.NextToken();
                             p = NumericExpression();
-                            EatToken(TOK_RBRA);
+                            EatToken(Tokenizer.TOK_RBRA);
                         }
 
                         // Remember, where we are.
@@ -1253,54 +1254,54 @@ namespace BasicBasic
                         _programState.SetCurrentProgramLine(_programState.GetProgramLine(flabel));
 
                         // DEF
-                        NextToken();
-                        EatToken(TOK_KEY_DEF);
+                        _tokenizer.NextToken();
+                        EatToken(Tokenizer.TOK_KEY_DEF);
 
                         // Function name.
-                        ExpToken(TOK_UFN);
+                        ExpToken(Tokenizer.TOK_UFN);
 
-                        if (fname != _strValue)
+                        if (fname != _tokenizer.StrValue)
                         {
-                            throw ErrorAtLine("Unexpected {0} function definition", _strValue);
+                            throw _programState.ErrorAtLine("Unexpected {0} function definition", _tokenizer.StrValue);
                         }
 
                         // Eat the function name.
-                        NextToken();
+                        _tokenizer.NextToken();
 
                         // FNx(X)
                         var paramName = (string)null;
-                        if (_tok == TOK_LBRA)
+                        if (_tokenizer.Token == Tokenizer.TOK_LBRA)
                         {
                             if (p.HasValue == false)
                             {
-                                throw ErrorAtLine("The {0} function expects a parameter", fname);
+                                throw _programState.ErrorAtLine("The {0} function expects a parameter", fname);
                             }
 
                             // Eat '(';
-                            NextToken();
+                            _tokenizer.NextToken();
 
                             // A siple variable name (A .. Z) expected.
-                            ExpToken(TOK_SVARIDNT);
+                            ExpToken(Tokenizer.TOK_SVARIDNT);
 
-                            paramName = _strValue;
+                            paramName = _tokenizer.StrValue;
 
-                            NextToken();
-                            EatToken(TOK_RBRA);
+                            _tokenizer.NextToken();
+                            EatToken(Tokenizer.TOK_RBRA);
                         }
                         else
                         {
                             if (p.HasValue)
                             {
-                                throw ErrorAtLine("The {0} function does not expect a parameter", fname);
+                                throw _programState.ErrorAtLine("The {0} function does not expect a parameter", fname);
                             }
                         }
                                                
                         // '='
-                        EatToken(TOK_EQL);
+                        EatToken(Tokenizer.TOK_EQL);
 
                         v = NumericExpression(paramName, p);
 
-                        ExpToken(TOK_EOLN);
+                        ExpToken(Tokenizer.TOK_EOLN);
 
                         // Restore the previous position.
                         _programState.SetCurrentProgramLine(cpl, false);
@@ -1309,7 +1310,7 @@ namespace BasicBasic
                     }
                     
                 default:
-                    throw UnexpectedTokenError(_tok);
+                    throw _programState.UnexpectedTokenError(_tokenizer.Token);
             }
         }
 
@@ -1334,13 +1335,13 @@ namespace BasicBasic
             // Do not redefine array.
             if (canExist == false && _programState.IsArrayDefined(arrayIndex))
             {
-                throw ErrorAtLine("Array {0} redefinition", arrayName);
+                throw _programState.ErrorAtLine("Array {0} redefinition", arrayName);
             }
 
             var bottomBound = (_programState.ArrayBase < 0) ? 0 : _programState.ArrayBase;
             if (topBound < bottomBound)
             {
-                throw ErrorAtLine("Array top bound ({0}) is less than the defined array bottom bound ({1})", topBound, _programState.ArrayBase);
+                throw _programState.ErrorAtLine("Array top bound ({0}) is less than the defined array bottom bound ({1})", topBound, _programState.ArrayBase);
             }
 
             index -= bottomBound;
@@ -1353,7 +1354,7 @@ namespace BasicBasic
 
             if (index < 0 || index >= _programState.GetArrayLength(arrayIndex))
             {
-                throw ErrorAtLine("Index {0} out of array bounds", index + bottomBound);
+                throw _programState.ErrorAtLine("Index {0} out of array bounds", index + bottomBound);
             }
 
             return _programState.GetArrayValue(arrayIndex, index);
@@ -1367,14 +1368,9 @@ namespace BasicBasic
         {
             if (_programState.IsArrayDefined(varName))
             {
-                throw ErrorAtLine("Array {0} subsciption expected", varName);
+                throw _programState.ErrorAtLine("Array {0} subsciption expected", varName);
             }
         }
-
-        #endregion
-
-
-        #region variables
 
         #endregion
 
@@ -1403,152 +1399,152 @@ namespace BasicBasic
 
         #region tokenizer
 
-        #region tokens
+        //#region tokens
 
-        /// <summary>
-        /// The end of the line character.
-        /// </summary>
-        private const char C_EOLN = '\n';
+        ///// <summary>
+        ///// The end of the line character.
+        ///// </summary>
+        //private const char C_EOLN = '\n';
 
-        /// <summary>
-        /// The end of the line token.
-        /// </summary>
-        private const int TOK_EOLN = 0;
+        ///// <summary>
+        ///// The end of the line token.
+        ///// </summary>
+        //private const int TOK_EOLN = 0;
 
-        /// <summary>
-        /// A simple ('A' .. 'Z') identifier token.
-        /// used for variables, arrays and user function parameters.
-        /// </summary>
-        private const int TOK_SVARIDNT = 4;
+        ///// <summary>
+        ///// A simple ('A' .. 'Z') identifier token.
+        ///// used for variables, arrays and user function parameters.
+        ///// </summary>
+        //private const int TOK_SVARIDNT = 4;
 
-        /// <summary>
-        /// A numeric variable ("A0" .. "Z9") identifier token.
-        /// </summary>
-        private const int TOK_VARIDNT = 5;
+        ///// <summary>
+        ///// A numeric variable ("A0" .. "Z9") identifier token.
+        ///// </summary>
+        //private const int TOK_VARIDNT = 5;
 
-        /// <summary>
-        /// A string variable ("A$" .. "Z$") identifier token.
-        /// </summary>
-        private const int TOK_STRIDNT = 6;
+        ///// <summary>
+        ///// A string variable ("A$" .. "Z$") identifier token.
+        ///// </summary>
+        //private const int TOK_STRIDNT = 6;
 
-        /// <summary>
-        /// A number token.
-        /// </summary>
-        private const int TOK_NUM = 10;
+        ///// <summary>
+        ///// A number token.
+        ///// </summary>
+        //private const int TOK_NUM = 10;
 
-        /// <summary>
-        /// A quoted string token.
-        /// </summary>
-        private const int TOK_QSTR = 11;
+        ///// <summary>
+        ///// A quoted string token.
+        ///// </summary>
+        //private const int TOK_QSTR = 11;
 
-        /// <summary>
-        /// A build in function name token.
-        /// </summary>
-        private const int TOK_FN = 12;
+        ///// <summary>
+        ///// A build in function name token.
+        ///// </summary>
+        //private const int TOK_FN = 12;
 
-        /// <summary>
-        /// An user defined function name ("FN?") token.
-        /// </summary>
-        private const int TOK_UFN = 13;
+        ///// <summary>
+        ///// An user defined function name ("FN?") token.
+        ///// </summary>
+        //private const int TOK_UFN = 13;
 
-        /// <summary>
-        /// A PRINT statement values list separator (';') token.
-        /// </summary>
-        private const int TOK_PLSTSEP = 20;
+        ///// <summary>
+        ///// A PRINT statement values list separator (';') token.
+        ///// </summary>
+        //private const int TOK_PLSTSEP = 20;
 
-        /// <summary>
-        /// A list separator (',') token.
-        /// </summary>
-        private const int TOK_LSTSEP = 21;
-        
-        private const int TOK_EQL = 30;   // =
-        private const int TOK_NEQL = 31;  // <>
-        private const int TOK_LT = 32;    // <
-        private const int TOK_LTE = 33;   // <=
-        private const int TOK_GT = 34;    // >
-        private const int TOK_GTE = 35;   // >=
+        ///// <summary>
+        ///// A list separator (',') token.
+        ///// </summary>
+        //private const int TOK_LSTSEP = 21;
 
-        // + - * / ^ ( )
-        private const int TOK_PLUS = 40;
-        private const int TOK_MINUS = 41;
-        private const int TOK_MULT = 42;
-        private const int TOK_DIV = 43;
-        private const int TOK_POW = 44;
-        private const int TOK_LBRA = 45;
-        private const int TOK_RBRA = 46;
+        //private const int TOK_EQL = 30;   // =
+        //private const int TOK_NEQL = 31;  // <>
+        //private const int TOK_LT = 32;    // <
+        //private const int TOK_LTE = 33;   // <=
+        //private const int TOK_GT = 34;    // >
+        //private const int TOK_GTE = 35;   // >=
 
-        // Keywords tokens.
+        //// + - * / ^ ( )
+        //private const int TOK_PLUS = 40;
+        //private const int TOK_MINUS = 41;
+        //private const int TOK_MULT = 42;
+        //private const int TOK_DIV = 43;
+        //private const int TOK_POW = 44;
+        //private const int TOK_LBRA = 45;
+        //private const int TOK_RBRA = 46;
 
-        private const int TOK_KEY_BASE = 100;
-        //private const int TOK_KEY_DATA = 101;
-        private const int TOK_KEY_DEF = 102;
-        private const int TOK_KEY_DIM = 103;
-        private const int TOK_KEY_END = 104;
-        //private const int TOK_KEY_FOR = 105;
-        private const int TOK_KEY_GO = 106;
-        private const int TOK_KEY_GOSUB = 107;
-        private const int TOK_KEY_GOTO = 108;
-        private const int TOK_KEY_IF = 109;
-        private const int TOK_KEY_INPUT = 110;
-        private const int TOK_KEY_LET = 111;
-        //private const int TOK_KEY_NEXT = 112;
-        //private const int TOK_KEY_ON = 113;
-        private const int TOK_KEY_OPTION = 114;
-        private const int TOK_KEY_PRINT = 115;
-        private const int TOK_KEY_RANDOMIZE = 116;
-        //private const int TOK_KEY_READ = 117;
-        private const int TOK_KEY_REM = 118;
-        //private const int TOK_KEY_RESTORE = 119;
-        private const int TOK_KEY_RETURN = 120;
-        //private const int TOK_KEY_STEP = 121;
-        private const int TOK_KEY_STOP = 122;
-        private const int TOK_KEY_SUB = 123;
-        private const int TOK_KEY_THEN = 124;
-        private const int TOK_KEY_TO = 125;
+        //// Keywords tokens.
 
-        /// <summary>
-        /// The keyword - token map.
-        /// </summary>
-        private readonly Dictionary<string, int> _keyWordsMap = new Dictionary<string, int>()
-        {
-            { "BASE", TOK_KEY_BASE },
-            { "DEF", TOK_KEY_DEF },
-            { "DIM", TOK_KEY_DIM },
-            { "END", TOK_KEY_END },
-            { "GO", TOK_KEY_GO },
-            { "GOSUB", TOK_KEY_GOSUB },
-            { "GOTO", TOK_KEY_GOTO },
-            { "IF", TOK_KEY_IF },
-            { "INPUT", TOK_KEY_INPUT },
-            { "LET", TOK_KEY_LET },
-            { "OPTION", TOK_KEY_OPTION },
-            { "PRINT", TOK_KEY_PRINT },
-            { "RANDOMIZE", TOK_KEY_RANDOMIZE },
-            { "REM", TOK_KEY_REM },
-            { "RETURN", TOK_KEY_RETURN },
-            { "STOP", TOK_KEY_STOP },
-            { "SUB", TOK_KEY_SUB },
-            { "THEN", TOK_KEY_THEN },
-            { "TO", TOK_KEY_TO },
-        };
+        //private const int TOK_KEY_BASE = 100;
+        ////private const int TOK_KEY_DATA = 101;
+        //private const int TOK_KEY_DEF = 102;
+        //private const int TOK_KEY_DIM = 103;
+        //private const int TOK_KEY_END = 104;
+        ////private const int TOK_KEY_FOR = 105;
+        //private const int TOK_KEY_GO = 106;
+        //private const int TOK_KEY_GOSUB = 107;
+        //private const int TOK_KEY_GOTO = 108;
+        //private const int TOK_KEY_IF = 109;
+        //private const int TOK_KEY_INPUT = 110;
+        //private const int TOK_KEY_LET = 111;
+        ////private const int TOK_KEY_NEXT = 112;
+        ////private const int TOK_KEY_ON = 113;
+        //private const int TOK_KEY_OPTION = 114;
+        //private const int TOK_KEY_PRINT = 115;
+        //private const int TOK_KEY_RANDOMIZE = 116;
+        ////private const int TOK_KEY_READ = 117;
+        //private const int TOK_KEY_REM = 118;
+        ////private const int TOK_KEY_RESTORE = 119;
+        //private const int TOK_KEY_RETURN = 120;
+        ////private const int TOK_KEY_STEP = 121;
+        //private const int TOK_KEY_STOP = 122;
+        //private const int TOK_KEY_SUB = 123;
+        //private const int TOK_KEY_THEN = 124;
+        //private const int TOK_KEY_TO = 125;
 
-        #endregion
+        ///// <summary>
+        ///// The keyword - token map.
+        ///// </summary>
+        //private readonly Dictionary<string, int> _keyWordsMap = new Dictionary<string, int>()
+        //{
+        //    { "BASE", TOK_KEY_BASE },
+        //    { "DEF", TOK_KEY_DEF },
+        //    { "DIM", TOK_KEY_DIM },
+        //    { "END", TOK_KEY_END },
+        //    { "GO", TOK_KEY_GO },
+        //    { "GOSUB", TOK_KEY_GOSUB },
+        //    { "GOTO", TOK_KEY_GOTO },
+        //    { "IF", TOK_KEY_IF },
+        //    { "INPUT", TOK_KEY_INPUT },
+        //    { "LET", TOK_KEY_LET },
+        //    { "OPTION", TOK_KEY_OPTION },
+        //    { "PRINT", TOK_KEY_PRINT },
+        //    { "RANDOMIZE", TOK_KEY_RANDOMIZE },
+        //    { "REM", TOK_KEY_REM },
+        //    { "RETURN", TOK_KEY_RETURN },
+        //    { "STOP", TOK_KEY_STOP },
+        //    { "SUB", TOK_KEY_SUB },
+        //    { "THEN", TOK_KEY_THEN },
+        //    { "TO", TOK_KEY_TO },
+        //};
+
+        //#endregion
 
 
-        /// <summary>
-        /// The last found token.
-        /// </summary>
-        private int _tok = 0;
+        ///// <summary>
+        ///// The last found token.
+        ///// </summary>
+        //private int _tok = 0;
 
-        /// <summary>
-        /// A value of the TOK_NUM.
-        /// </summary>
-        private float _numValue = 0.0f;
+        ///// <summary>
+        ///// A value of the TOK_NUM.
+        ///// </summary>
+        //private float _numValue = 0.0f;
 
-        /// <summary>
-        /// A value of TOK_QSTR, TOK_SVARIDNT, TOK_VARIDNT, TOK_STRIDNT, TOK_FN and TOK_UFN tokens.
-        /// </summary>
-        private string _strValue = null;
+        ///// <summary>
+        ///// A value of TOK_QSTR, TOK_SVARIDNT, TOK_VARIDNT, TOK_STRIDNT, TOK_FN and TOK_UFN tokens.
+        ///// </summary>
+        //private string _strValue = null;
 
         /// <summary>
         /// Checks, if this token is a label, if it is from the allowed range of labels
@@ -1557,19 +1553,19 @@ namespace BasicBasic
         /// <returns>The integer value representing this label.</returns>
         private int ExpLabel()
         {
-            ExpToken(TOK_NUM);
+            ExpToken(Tokenizer.TOK_NUM);
 
-            var label = (int)_numValue;
+            var label = (int)_tokenizer.NumValue;
 
             if (label < 1 || label > _programState.MaxLabel)
             {
-                throw Error("The label {0} at line {1} is out of <1 ... {2}> rangle.", label, _programState.CurrentProgramLine.Label, _programState.MaxLabel);
+                throw _programState.Error("The label {0} at line {1} is out of <1 ... {2}> rangle.", label, _programState.CurrentProgramLine.Label, _programState.MaxLabel);
             }
 
             var target = _programState.GetProgramLine(label);
             if (target == null)
             {
-                throw ErrorAtLine("Undefined label {0}", label);
+                throw _programState.ErrorAtLine("Undefined label {0}", label);
             }
 
             return label;
@@ -1584,7 +1580,7 @@ namespace BasicBasic
         private void EatToken(int expTok)
         {
             ExpToken(expTok);
-            NextToken();
+            _tokenizer.NextToken();
         }
 
         /// <summary>
@@ -1594,339 +1590,339 @@ namespace BasicBasic
         /// <param name="expTok">The expected token.</param>
         private void ExpToken(int expTok)
         {
-            if (_tok != expTok)
+            if (_tokenizer.Token != expTok)
             {
-                throw UnexpectedTokenError(_tok);
+                throw _programState.UnexpectedTokenError(_tokenizer.Token);
             }
         }
 
-        /// <summary>
-        /// Extracts the next token found in the current program line source.
-        /// </summary>
-        private void NextToken()
-        {
-            if (_programState.CurrentProgramLine.SourcePosition > _programState.CurrentProgramLine.End)
-            {
-                throw ErrorAtLine("Read beyond the line end");
-            }
+        ///// <summary>
+        ///// Extracts the next token found in the current program line source.
+        ///// </summary>
+        //private void NextToken()
+        //{
+        //    if (_programState.CurrentProgramLine.SourcePosition > _programState.CurrentProgramLine.End)
+        //    {
+        //        throw ErrorAtLine("Read beyond the line end");
+        //    }
 
-            var c = NextChar();
-            while (c != C_EOLN)
-            {
-                //Console.WriteLine("C[{0:00}]: {1}", _currentProgramLinePos, c);
+        //    var c = NextChar();
+        //    while (c != C_EOLN)
+        //    {
+        //        //Console.WriteLine("C[{0:00}]: {1}", _currentProgramLinePos, c);
 
-                //// Skip white chars.
-                //if (c <= ' ' && c != '\n')
-                //{
-                //    c = NextChar();
-                //}
+        //        //// Skip white chars.
+        //        //if (c <= ' ' && c != '\n')
+        //        //{
+        //        //    c = NextChar();
+        //        //}
 
-                if (IsDigit(c) || c == '.')
-                {
-                    ParseNumber(c);
+        //        if (IsDigit(c) || c == '.')
+        //        {
+        //            ParseNumber(c);
 
-                    return;
-                }
+        //            return;
+        //        }
 
-                if (IsLetter(c))
-                {
-                    ParseIdent(c);
+        //        if (IsLetter(c))
+        //        {
+        //            ParseIdent(c);
 
-                    return;
-                }
+        //            return;
+        //        }
 
-                if (c == '"')
-                {
-                    ParseQuotedString(c);
+        //        if (c == '"')
+        //        {
+        //            ParseQuotedString(c);
 
-                    return;
-                }
+        //            return;
+        //        }
 
-                switch (c)
-                {
-                    case ';': _tok = TOK_PLSTSEP; return;
-                    case ',': _tok = TOK_LSTSEP; return;
-                    case '=': _tok = TOK_EQL; return;
+        //        switch (c)
+        //        {
+        //            case ';': _tok = TOK_PLSTSEP; return;
+        //            case ',': _tok = TOK_LSTSEP; return;
+        //            case '=': _tok = TOK_EQL; return;
 
-                    case '<':
-                    {
-                        var cc = NextChar();
-                        if (cc == '>')
-                        {
-                            _tok = TOK_NEQL;
-                        }
-                        else if (cc == '=')
-                        {
-                            _tok = TOK_LTE;
-                        }
-                        else
-                        {
-                            _programState.CurrentProgramLine.PreviousChar();
-                            _tok = TOK_LT;
-                        }
-                        
-                        return;
-                    }
+        //            case '<':
+        //            {
+        //                var cc = NextChar();
+        //                if (cc == '>')
+        //                {
+        //                    _tok = TOK_NEQL;
+        //                }
+        //                else if (cc == '=')
+        //                {
+        //                    _tok = TOK_LTE;
+        //                }
+        //                else
+        //                {
+        //                    _programState.CurrentProgramLine.PreviousChar();
+        //                    _tok = TOK_LT;
+        //                }
 
-                    case '>':
-                    {
-                        var cc = NextChar();
-                        if (cc == '=')
-                        {
-                            _tok = TOK_GTE;
-                        }
-                        else
-                        {
-                            _programState.CurrentProgramLine.PreviousChar();
-                            _tok = TOK_GT;
-                        }
+        //                return;
+        //            }
 
-                        return;
-                    }
+        //            case '>':
+        //            {
+        //                var cc = NextChar();
+        //                if (cc == '=')
+        //                {
+        //                    _tok = TOK_GTE;
+        //                }
+        //                else
+        //                {
+        //                    _programState.CurrentProgramLine.PreviousChar();
+        //                    _tok = TOK_GT;
+        //                }
 
-                    case '+':
-                    {
-                        var cc = NextChar();
-                        _programState.CurrentProgramLine.PreviousChar();
+        //                return;
+        //            }
 
-                        if (IsDigit(cc) || cc == '.')
-                        {
-                            ParseNumber(c);
-                        }
-                        else
-                        {
-                            _tok = TOK_PLUS;
-                        }
+        //            case '+':
+        //            {
+        //                var cc = NextChar();
+        //                _programState.CurrentProgramLine.PreviousChar();
 
-                        return;
-                    }
+        //                if (IsDigit(cc) || cc == '.')
+        //                {
+        //                    ParseNumber(c);
+        //                }
+        //                else
+        //                {
+        //                    _tok = TOK_PLUS;
+        //                }
 
-                    case '-':
-                    {
-                        var cc = NextChar();
-                        _programState.CurrentProgramLine.PreviousChar();
+        //                return;
+        //            }
 
-                        if (IsDigit(cc) || cc == '.')
-                        {
-                            ParseNumber(c);
-                        }
-                        else
-                        {
-                            _tok = TOK_MINUS;
-                        }
-                            
-                        return;
-                    }
+        //            case '-':
+        //            {
+        //                var cc = NextChar();
+        //                _programState.CurrentProgramLine.PreviousChar();
 
-                    case '*': _tok = TOK_MULT; return;
-                    case '/': _tok = TOK_DIV; return;
-                    case '^': _tok = TOK_POW; return;
-                    case '(': _tok = TOK_LBRA; return;
-                    case ')': _tok = TOK_RBRA; return;
-                }
+        //                if (IsDigit(cc) || cc == '.')
+        //                {
+        //                    ParseNumber(c);
+        //                }
+        //                else
+        //                {
+        //                    _tok = TOK_MINUS;
+        //                }
 
-                c = NextChar();
-            }
+        //                return;
+        //            }
 
-            _tok = TOK_EOLN;
-        }
+        //            case '*': _tok = TOK_MULT; return;
+        //            case '/': _tok = TOK_DIV; return;
+        //            case '^': _tok = TOK_POW; return;
+        //            case '(': _tok = TOK_LBRA; return;
+        //            case ')': _tok = TOK_RBRA; return;
+        //        }
 
-        /// <summary>
-        /// Parses an identifier the ECMA-55 rules.
-        /// </summary>
-        /// <param name="c">The first character of the parsed identifier.</param>
-        private void ParseIdent(char c)
-        {
-            var tok = TOK_SVARIDNT;
-            var strValue = c.ToString();
+        //        c = NextChar();
+        //    }
 
-            c = NextChar();
+        //    _tok = TOK_EOLN;
+        //}
 
-            if (IsDigit(c))
-            {
-                // A numeric Ax variable.
-                _strValue = (strValue + c).ToUpperInvariant();
-                tok = TOK_VARIDNT;
-            }
-            else if (c == '$')
-            {
-                // A string A$ variable.
-                tok = TOK_STRIDNT;
+        ///// <summary>
+        ///// Parses an identifier the ECMA-55 rules.
+        ///// </summary>
+        ///// <param name="c">The first character of the parsed identifier.</param>
+        //private void ParseIdent(char c)
+        //{
+        //    var tok = TOK_SVARIDNT;
+        //    var strValue = c.ToString();
 
-                _strValue = (strValue + c).ToUpperInvariant();
-            }
-            else if (IsLetter(c))
-            {
-                // A key word?
-                while (IsLetter(c))
-                {
-                    strValue += c;
+        //    c = NextChar();
 
-                    c = NextChar();
-                }
+        //    if (IsDigit(c))
+        //    {
+        //        // A numeric Ax variable.
+        //        _strValue = (strValue + c).ToUpperInvariant();
+        //        tok = TOK_VARIDNT;
+        //    }
+        //    else if (c == '$')
+        //    {
+        //        // A string A$ variable.
+        //        tok = TOK_STRIDNT;
 
-                // Go one char back, so the next time we will read the character behind this identifier.
-                _programState.CurrentProgramLine.PreviousChar();
+        //        _strValue = (strValue + c).ToUpperInvariant();
+        //    }
+        //    else if (IsLetter(c))
+        //    {
+        //        // A key word?
+        //        while (IsLetter(c))
+        //        {
+        //            strValue += c;
 
-                strValue = strValue.ToUpperInvariant();
-                               
-                if (_keyWordsMap.ContainsKey(strValue))
-                {
-                    tok = _keyWordsMap[strValue];
-                }
-                else
-                {
-                    if (strValue.Length != 3)
-                    {
-                        throw ErrorAtLine("Unknown token '{0}'", strValue);
-                    }
+        //            c = NextChar();
+        //        }
 
-                    tok = strValue.StartsWith("FN") 
-                        ? TOK_UFN 
-                        : TOK_FN;
-                }
+        //        // Go one char back, so the next time we will read the character behind this identifier.
+        //        _programState.CurrentProgramLine.PreviousChar();
 
-                _strValue = strValue;
-            }
-            else
-            {
-                // A simple variable A.
-                _strValue = strValue.ToUpperInvariant();
+        //        strValue = strValue.ToUpperInvariant();
 
-                // Go one char back, so the next time we will read the character behind this identifier.
-                _programState.CurrentProgramLine.PreviousChar();
-            }
+        //        if (_keyWordsMap.ContainsKey(strValue))
+        //        {
+        //            tok = _keyWordsMap[strValue];
+        //        }
+        //        else
+        //        {
+        //            if (strValue.Length != 3)
+        //            {
+        //                throw ErrorAtLine("Unknown token '{0}'", strValue);
+        //            }
 
-            _tok = tok;
-        }
-        
-        /// <summary>
-        /// Parses the quoted string using the ECMA-55 rules.
-        /// </summary>
-        /// <param name="c">The first character ('"') of the parsed string literal.</param>
-        private void ParseQuotedString(char c)
-        {
-            var strValue = string.Empty;
+        //            tok = strValue.StartsWith("FN") 
+        //                ? TOK_UFN 
+        //                : TOK_FN;
+        //        }
 
-            c = NextChar();
-            while (c != '"' && c != C_EOLN)
-            {
-                strValue += c;
+        //        _strValue = strValue;
+        //    }
+        //    else
+        //    {
+        //        // A simple variable A.
+        //        _strValue = strValue.ToUpperInvariant();
 
-                c = NextChar();
-            }
+        //        // Go one char back, so the next time we will read the character behind this identifier.
+        //        _programState.CurrentProgramLine.PreviousChar();
+        //    }
 
-            if (c != '"')
-            {
-                throw ErrorAtLine("Unexpected end of quoted string");
-            }
+        //    _tok = tok;
+        //}
 
-            _tok = TOK_QSTR;
-            _strValue = strValue;
-        }
-        
-        /// <summary>
-        /// Parses the number using the ECMA-55 rules.
-        /// </summary>
-        /// <param name="c">The first character of the parsed number.</param>
-        private void ParseNumber(char c)
-        {
-            var negate = false;
-            if (c == '+')
-            {
-                c = NextChar();
-            }
-            else if (c == '-')
-            {
-                negate = true;
-                c = NextChar();
-            }
+        ///// <summary>
+        ///// Parses the quoted string using the ECMA-55 rules.
+        ///// </summary>
+        ///// <param name="c">The first character ('"') of the parsed string literal.</param>
+        //private void ParseQuotedString(char c)
+        //{
+        //    var strValue = string.Empty;
 
-            var numValue = 0.0f;
-            while (IsDigit(c))
-            {
-                numValue = numValue * 10.0f + (c - '0');
+        //    c = NextChar();
+        //    while (c != '"' && c != C_EOLN)
+        //    {
+        //        strValue += c;
 
-                c = NextChar();
-            }
+        //        c = NextChar();
+        //    }
 
-            if (c == '.')
-            {
-                var exp = 0.1f;
+        //    if (c != '"')
+        //    {
+        //        throw ErrorAtLine("Unexpected end of quoted string");
+        //    }
 
-                c = NextChar();
-                while (IsDigit(c))
-                {
-                    numValue += (c - '0') * exp;
-                    exp *= 0.1f;
+        //    _tok = TOK_QSTR;
+        //    _strValue = strValue;
+        //}
 
-                    c = NextChar();
-                }
-            }
+        ///// <summary>
+        ///// Parses the number using the ECMA-55 rules.
+        ///// </summary>
+        ///// <param name="c">The first character of the parsed number.</param>
+        //private void ParseNumber(char c)
+        //{
+        //    var negate = false;
+        //    if (c == '+')
+        //    {
+        //        c = NextChar();
+        //    }
+        //    else if (c == '-')
+        //    {
+        //        negate = true;
+        //        c = NextChar();
+        //    }
 
-            if (c == 'E')
-            {
-                c = NextChar();
+        //    var numValue = 0.0f;
+        //    while (IsDigit(c))
+        //    {
+        //        numValue = numValue * 10.0f + (c - '0');
 
-                var negateExp = false;
-                if (c == '+')
-                {
-                    c = NextChar();
-                }
-                else if (c == '-')
-                {
-                    negateExp = true;
-                    c = NextChar();
-                }
+        //        c = NextChar();
+        //    }
 
-                var exp = 0f;
-                while (IsDigit(c))
-                {
-                    exp = exp * 10.0f + (c - '0');
+        //    if (c == '.')
+        //    {
+        //        var exp = 0.1f;
 
-                    c = NextChar();
-                }
+        //        c = NextChar();
+        //        while (IsDigit(c))
+        //        {
+        //            numValue += (c - '0') * exp;
+        //            exp *= 0.1f;
 
-                exp = negateExp ? -exp : exp;
+        //            c = NextChar();
+        //        }
+        //    }
 
-                numValue = (float)(numValue * Math.Pow(10.0, exp));
-            }
+        //    if (c == 'E')
+        //    {
+        //        c = NextChar();
 
-            _tok = TOK_NUM;
-            _numValue = negate ? -numValue : numValue;
+        //        var negateExp = false;
+        //        if (c == '+')
+        //        {
+        //            c = NextChar();
+        //        }
+        //        else if (c == '-')
+        //        {
+        //            negateExp = true;
+        //            c = NextChar();
+        //        }
 
-            // Go one char back, so the next time we will read the character right behind this number.
-            _programState.CurrentProgramLine.PreviousChar();
-        }
+        //        var exp = 0f;
+        //        while (IsDigit(c))
+        //        {
+        //            exp = exp * 10.0f + (c - '0');
 
-        /// <summary>
-        /// Gets the next character from the current program line source.
-        /// </summary>
-        /// <returns>The next character from the current program line source.</returns>
-        private char NextChar()
-        {
-            return _programState.CurrentProgramLine.NextChar();
-        }
+        //            c = NextChar();
+        //        }
 
-        /// <summary>
-        /// Checks, if an character is a digit.
-        /// </summary>
-        /// <param name="c">A character.</param>
-        /// <returns>True, if a character is a digit.</returns>
-        public bool IsDigit(char c)
-        {
-            return c >= '0' && c <= '9';
-        }
+        //        exp = negateExp ? -exp : exp;
 
-        /// <summary>
-        /// Checks, if an character is a letter.
-        /// </summary>
-        /// <param name="c">A character.</param>
-        /// <returns>True, if a character is a letter.</returns>
-        private bool IsLetter(char c)
-        {
-            return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
-        }
+        //        numValue = (float)(numValue * Math.Pow(10.0, exp));
+        //    }
+
+        //    _tok = TOK_NUM;
+        //    _numValue = negate ? -numValue : numValue;
+
+        //    // Go one char back, so the next time we will read the character right behind this number.
+        //    _programState.CurrentProgramLine.PreviousChar();
+        //}
+
+        ///// <summary>
+        ///// Gets the next character from the current program line source.
+        ///// </summary>
+        ///// <returns>The next character from the current program line source.</returns>
+        //private char NextChar()
+        //{
+        //    return _programState.CurrentProgramLine.NextChar();
+        //}
+
+        ///// <summary>
+        ///// Checks, if an character is a digit.
+        ///// </summary>
+        ///// <param name="c">A character.</param>
+        ///// <returns>True, if a character is a digit.</returns>
+        //public bool IsDigit(char c)
+        //{
+        //    return c >= '0' && c <= '9';
+        //}
+
+        ///// <summary>
+        ///// Checks, if an character is a letter.
+        ///// </summary>
+        ///// <param name="c">A character.</param>
+        ///// <returns>True, if a character is a letter.</returns>
+        //private bool IsLetter(char c)
+        //{
+        //    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+        //}
 
         #endregion
 
@@ -1955,10 +1951,10 @@ namespace BasicBasic
                     programLine = new ProgramLine();
 
                     // Label.
-                    if (IsDigit(c))
+                    if (Tokenizer.IsDigit(c))
                     {
                         var label = 0;
-                        while (IsDigit(c))
+                        while (Tokenizer.IsDigit(c))
                         {
                             label = label * 10 + (c - '0');
 
@@ -1973,12 +1969,12 @@ namespace BasicBasic
 
                         if (label < 1 || label > _programState.MaxLabel)
                         {
-                            throw Error("Label {0} at line {1} out of <1 ... {2}> rangle.", label, line, _programState.MaxLabel);
+                            throw _programState.Error("Label {0} at line {1} out of <1 ... {2}> rangle.", label, line, _programState.MaxLabel);
                         }
 
                         if (interactiveMode == false && _programState.GetProgramLine(label) != null)
                         {
-                            throw Error("Label {0} redefinition at line {1}.", label, line);
+                            throw _programState.Error("Label {0} redefinition at line {1}.", label, line);
                         }
 
                         // Remember this program line.
@@ -1994,7 +1990,7 @@ namespace BasicBasic
                     }
                     else
                     {
-                        throw Error("Label not found at line {0}.", line);
+                        throw _programState.Error("Label not found at line {0}.", line);
                     }
                 }
 
@@ -2004,7 +2000,7 @@ namespace BasicBasic
                 //    continue;
                 //}
 
-                if (c == C_EOLN)
+                if (c == Tokenizer.C_EOLN)
                 {
                     // The '\n' character.
                     programLine.End = i;
@@ -2012,7 +2008,7 @@ namespace BasicBasic
                     // Max program line length check.
                     if (programLine.Length > _programState.MaxProgramLineLength)
                     {
-                        throw Error("The line {0} is longer than {1} characters.", line, _programState.MaxProgramLineLength);
+                        throw _programState.Error("The line {0} is longer than {1} characters.", line, _programState.MaxProgramLineLength);
                     }
 
                     // An empty line?
@@ -2034,68 +2030,68 @@ namespace BasicBasic
             // The last line does not ended with the '\n' character.
             if (programLine != null)
             {
-                throw Error("No line end at line {0}.", line);
+                throw _programState.Error("No line end at line {0}.", line);
             }
         }
 
         #endregion
 
 
-        #region errors
+        //#region errors
 
-        /// <summary>
-        /// Reports the unexpected token error.
-        /// </summary>
-        /// <param name="tok">The unexpected token.</param>
-        private InterpreterException UnexpectedTokenError(int tok)
-        {
-            return ErrorAtLine("Unexpected token {0}", tok);
-        }
+        ///// <summary>
+        ///// Reports the unexpected token error.
+        ///// </summary>
+        ///// <param name="tok">The unexpected token.</param>
+        //private InterpreterException UnexpectedTokenError(int tok)
+        //{
+        //    return ErrorAtLine("Unexpected token {0}", tok);
+        //}
 
-        /// <summary>
-        /// Reports an general error on a program line.
-        /// </summary>
-        /// <param name="message">An error message.</param>
-        /// <param name="args">Error message arguments.</param>
-        private InterpreterException ErrorAtLine(string message, params object[] args)
-        {
-            // Interactive mode?
-            if (_programState.CurrentProgramLine.Label < 1)
-            {
-                if (args == null || args.Length == 0)
-                {
-                    return Error(message + ".");
-                }
-                else
-                {
-                    return Error("{0}.", string.Format(message, args));
-                }
-            }
-            else
-            {
-                if (args == null || args.Length == 0)
-                {
-                    return Error("{0} at line {1}.", message, _programState.CurrentProgramLine.Label);
-                }
-                else
-                {
-                    return Error("{0} at line {1}.", string.Format(message, args), _programState.CurrentProgramLine.Label);
-                }
-            }
-        }
+        ///// <summary>
+        ///// Reports an general error on a program line.
+        ///// </summary>
+        ///// <param name="message">An error message.</param>
+        ///// <param name="args">Error message arguments.</param>
+        //private InterpreterException ErrorAtLine(string message, params object[] args)
+        //{
+        //    // Interactive mode?
+        //    if (_programState.CurrentProgramLine.Label < 1)
+        //    {
+        //        if (args == null || args.Length == 0)
+        //        {
+        //            return Error(message + ".");
+        //        }
+        //        else
+        //        {
+        //            return Error("{0}.", string.Format(message, args));
+        //        }
+        //    }
+        //    else
+        //    {
+        //        if (args == null || args.Length == 0)
+        //        {
+        //            return Error("{0} at line {1}.", message, _programState.CurrentProgramLine.Label);
+        //        }
+        //        else
+        //        {
+        //            return Error("{0} at line {1}.", string.Format(message, args), _programState.CurrentProgramLine.Label);
+        //        }
+        //    }
+        //}
 
-        /// <summary>
-        /// Reports an general error and ends the current program execution.
-        /// </summary>
-        /// <exception cref="InterpreterException">Thrown when an error occurs during a program execution.</exception>
-        /// <param name="message">An error message.</param>
-        /// <param name="args">Error message arguments.</param>
-        private InterpreterException Error(string message, params object[] args)
-        {
-            return new InterpreterException(string.Format(message, args));
-        }
+        ///// <summary>
+        ///// Reports an general error and ends the current program execution.
+        ///// </summary>
+        ///// <exception cref="InterpreterException">Thrown when an error occurs during a program execution.</exception>
+        ///// <param name="message">An error message.</param>
+        ///// <param name="args">Error message arguments.</param>
+        //private InterpreterException Error(string message, params object[] args)
+        //{
+        //    return new InterpreterException(string.Format(message, args));
+        //}
 
-        #endregion
+        //#endregion
                 
         #endregion
     }
