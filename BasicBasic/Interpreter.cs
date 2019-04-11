@@ -157,6 +157,12 @@ namespace BasicBasic
         private Tokenizer _tokenizer;
 
 
+        private bool IsInteractiveModeProgramLine()
+        {
+            return _programState.CurrentProgramLine.Label < 0;
+        }
+
+
         /// <summary>
         /// Interprets the whole program.
         /// </summary>
@@ -219,6 +225,11 @@ namespace BasicBasic
         // DEF FNx = numeric-expression EOLN
         private ProgramLine DefStatement()
         {
+            if (IsInteractiveModeProgramLine())
+            {
+                throw _programState.Error("DEF statement is not supported in the interactive mode.");
+            }
+
             EatToken(Tokenizer.TOK_KEY_DEF);
 
             // Get the function name.
@@ -286,6 +297,11 @@ namespace BasicBasic
         // END EOLN
         private ProgramLine EndStatement()
         {
+            if (IsInteractiveModeProgramLine())
+            {
+                throw _programState.Error("END statement is not supported in the interactive mode.");
+            }
+
             EatToken(Tokenizer.TOK_KEY_END);
             ExpToken(Tokenizer.TOK_EOLN);
 
@@ -306,6 +322,11 @@ namespace BasicBasic
         // GOSUB line-number EOLN
         private ProgramLine GoToStatement()
         {
+            if (IsInteractiveModeProgramLine())
+            {
+                throw _programState.Error("GO TO and GO SUB statements are not supported in the interactive mode.");
+            }
+
             var gosub = false;
 
             // GO TO or GO SUB ...
@@ -359,6 +380,11 @@ namespace BasicBasic
         // rel-str :: = <>
         private ProgramLine IfStatement()
         {
+            if (IsInteractiveModeProgramLine())
+            {
+                throw _programState.Error("IF statement is not supported in the interactive mode.");
+            }
+
             EatToken(Tokenizer.TOK_KEY_IF);
 
             // Do not jump.
@@ -956,6 +982,11 @@ namespace BasicBasic
         // RETURN EOLN
         private ProgramLine ReturnStatement()
         {
+            if (IsInteractiveModeProgramLine())
+            {
+                throw _programState.Error("RETURN statement is not supported in the interactive mode.");
+            }
+
             _tokenizer.NextToken();
             ExpToken(Tokenizer.TOK_EOLN);
 
@@ -973,6 +1004,11 @@ namespace BasicBasic
         // STOP EOLN
         private ProgramLine StopStatement()
         {
+            if (IsInteractiveModeProgramLine())
+            {
+                throw _programState.Error("STOP statement is not supported in the interactive mode.");
+            }
+
             _tokenizer.NextToken();
             ExpToken(Tokenizer.TOK_EOLN);
 
