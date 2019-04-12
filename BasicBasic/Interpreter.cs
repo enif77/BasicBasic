@@ -68,6 +68,7 @@ namespace BasicBasic
         public void Initialize()
         {
             _programState = new ProgramState();
+            _scanner = new Scanner(_programState);
             _tokenizer = new Tokenizer(_programState);
         }
 
@@ -87,7 +88,7 @@ namespace BasicBasic
         {
             if (source == null) throw _programState.Error("A source expected.");
 
-            ScanSource(source);
+            _scanner.ScanSource(source);
             InterpretImpl();
         }
 
@@ -128,7 +129,7 @@ namespace BasicBasic
         {
             if (source == null) throw _programState.Error("A program line source expected.");
 
-            ScanSource(source, true);
+            _scanner.ScanSource(source, true);
         }
 
         /// <summary>
@@ -154,6 +155,7 @@ namespace BasicBasic
         #region private
 
         private ProgramState _programState;
+        private Scanner _scanner;
         private Tokenizer _tokenizer;
 
 
@@ -1485,116 +1487,6 @@ namespace BasicBasic
             }
         }
         
-        #endregion
-
-
-        #region scanner
-
-        /// <summary>
-        /// Scans the source for program lines.
-        /// Exctracts labels, line starts and ends, etc.
-        /// </summary>
-        /// <param name="source">The source.</param>
-        /// <param name="interactiveMode">A program line in the interactive mode can exist, 
-        /// so the user can redefine it, an can be empty, so the user can delete it.</param>
-        private void ScanSource(string source, bool interactiveMode = false)
-        {
-            ProgramLine programLine = null;
-            var atLineStart = true;
-            var line = 1;
-            var i = 0;
-            for (; i < source.Length; i++)
-            {
-                var c = source[i];
-
-                if (atLineStart)
-                {
-                    programLine = new ProgramLine();
-
-                    // Label.
-                    if (Tokenizer.IsDigit(c))
-                    {
-                        var label = 0;
-                        while (Tokenizer.IsDigit(c))
-                        {
-                            label = label * 10 + (c - '0');
-
-                            i++;
-                            if (i >= source.Length)
-                            {
-                                break;
-                            }
-
-                            c = source[i];
-                        }
-
-                        if (label < 1 || label > _programState.MaxLabel)
-                        {
-                            throw _programState.Error("Label {0} at line {1} out of <1 ... {2}> rangle.", label, line, _programState.MaxLabel);
-                        }
-
-                        if (interactiveMode == false && _programState.GetProgramLine(label) != null)
-                        {
-                            throw _programState.Error("Label {0} redefinition at line {1}.", label, line);
-                        }
-
-                        // Remember this program line.
-                        programLine.Source = source;
-                        programLine.Label = label;
-                        programLine.Start = i;
-                        programLine.SourcePosition = programLine.Start - 1;
-
-                        // Remember this line.
-                        _programState.SetProgramLine(programLine);
-
-                        atLineStart = false;
-                    }
-                    else
-                    {
-                        throw _programState.Error("Label not found at line {0}.", line);
-                    }
-                }
-
-                //// Skip white chars.
-                //if (c <= ' ' && c != '\n')
-                //{
-                //    continue;
-                //}
-
-                if (c == Tokenizer.C_EOLN)
-                {
-                    // The '\n' character.
-                    programLine.End = i;
-
-                    // Max program line length check.
-                    if (programLine.Length > _programState.MaxProgramLineLength)
-                    {
-                        throw _programState.Error("The line {0} is longer than {1} characters.", line, _programState.MaxProgramLineLength);
-                    }
-
-                    // An empty line?
-                    if (interactiveMode && string.IsNullOrWhiteSpace(programLine.Source.Substring(programLine.Start, programLine.End - programLine.Start)))
-                    {
-                        // Remove the existing program line.
-                        _programState.RemoveProgramLine(programLine.Label);
-                    }
-
-                    // We are done with this line.
-                    programLine = null;
-
-                    // Starting the next line.
-                    line++;
-                    atLineStart = true;
-                }
-            }
-
-            // The last line does not ended with the '\n' character.
-            if (programLine != null)
-            {
-                throw _programState.Error("No line end at line {0}.", line);
-            }
-        }
-
         #endregion
 
         #endregion
