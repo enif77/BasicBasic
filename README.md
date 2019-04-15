@@ -214,7 +214,6 @@ plain-string-character : '+' | '-' | '.' | digit | letter .
 
 unquoted-string : 
     plain-string-character [ { unquoted-string-character } plain-string-character ] .
-
 </pre>
 
 ## License
