@@ -87,11 +87,16 @@ namespace BasicBasic
                             throw ProgramState.Error("Label {0} at line {1} out of <1 ... {2}> rangle.", label, line, ProgramState.MaxLabel);
                         }
 
+                        if (Tokenizer.IsWhite(c) == false)
+                        {
+                            throw ProgramState.Error("Label {0} at line {1} is not separated from the statement by a white character.", label, line);
+                        }
+
                         if (interactiveMode == false && ProgramState.GetProgramLine(label) != null)
                         {
                             throw ProgramState.Error("Label {0} redefinition at line {1}.", label, line);
                         }
-
+                                               
                         // Remember this program line.
                         programLine.Source = source;
                         programLine.Label = label;
@@ -108,12 +113,6 @@ namespace BasicBasic
                         throw ProgramState.Error("Label not found at line {0}.", line);
                     }
                 }
-
-                //// Skip white chars.
-                //if (c <= ' ' && c != '\n')
-                //{
-                //    continue;
-                //}
 
                 if (c == Tokenizer.C_EOLN)
                 {

@@ -523,6 +523,17 @@ namespace BasicBasic
         }
 
         /// <summary>
+        /// Checks, if an character is a white character.
+        /// hwite-character = SPACE | TAB .
+        /// </summary>
+        /// <param name="c">A character.</param>
+        /// <returns>True, if a character is a white character.</returns>
+        public static bool IsWhite(char c)
+        {
+            return c == ' ' || c == '\t';
+        }
+
+        /// <summary>
         /// Checks, if an character is a letter.
         /// </summary>
         /// <param name="c">A character.</param>
