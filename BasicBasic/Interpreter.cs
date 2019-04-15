@@ -100,6 +100,13 @@ namespace BasicBasic
         {
             if (source == null) throw _programState.Error("A source expected.");
 
+            // Each token should be preceeded by at least a single white character.
+            // So we have to add one here, if user do not inserted one.
+            if (Tokenizer.IsWhite(source[0]) == false)
+            {
+                source = " " + source;
+            }
+
             var programLine = new ProgramLine()
             {
                 Source = source,

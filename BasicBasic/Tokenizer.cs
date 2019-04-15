@@ -210,11 +210,19 @@ namespace BasicBasic
             {
                 //Console.WriteLine("C[{0:00}]: {1}", _currentProgramLinePos, c);
 
-                //// Skip white chars.
-                //if (c <= ' ' && c != '\n')
-                //{
-                //    c = NextChar();
-                //}
+                // Skip white chars.
+                bool wasWhite = false;
+                if (IsWhite(c))
+                {
+                    c = NextChar();
+                    wasWhite = true;
+                }
+
+                // Each token should be preceeded by at least a single white character.
+                if (wasWhite == false)
+                {
+                    throw ProgramState.ErrorAtLine("No white character between tokens found");
+                }
 
                 if (IsDigit(c) || c == '.')
                 {
