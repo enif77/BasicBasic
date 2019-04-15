@@ -207,6 +207,14 @@ string-constant : quoted-string .
 quoted-string : '"' { string-character } '"' .
 
 string-character : ! '"' & ! end-of-line .
+
+unquoted-string-character : ' ' | plain-string-character .
+
+plain-string-character : '+' | '-' | '.' | digit | letter .
+
+unquoted-string : 
+    plain-string-character [ { unquoted-string-character } plain-string-character ] .
+
 </pre>
 
 ## License

@@ -218,6 +218,19 @@ namespace BasicBasic
                     wasWhite = true;
                 }
 
+                // These two tokens can be without white characters before them.
+                if (c == ',')
+                {
+                    Token = TOK_LSTSEP;
+                    return;
+                }
+
+                if (c == ';')
+                {
+                    Token = TOK_PLSTSEP;
+                    return;
+                }
+
                 // Each token should be preceeded by at least a single white character.
                 if (wasWhite == false)
                 {
@@ -247,8 +260,6 @@ namespace BasicBasic
 
                 switch (c)
                 {
-                    case ';': Token = TOK_PLSTSEP; return;
-                    case ',': Token = TOK_LSTSEP; return;
                     case '=': Token = TOK_EQL; return;
 
                     case '<':
@@ -549,6 +560,28 @@ namespace BasicBasic
         public static bool IsLetter(char c)
         {
             return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+        }
+
+        /// <summary>
+        /// Checks, if an character is a plain-string-character.
+        /// plain-string-character : plus-sign | minus-sign | full-stop | digit | letter
+        /// </summary>
+        /// <param name="c">A character.</param>
+        /// <returns>True, if a character is a plain-string-character.</returns>
+        public static bool IsPlainStringCharacter(char c)
+        {
+            return c == '+' || c == '-' || c == '.' || IsDigit(c) || IsLetter(c);
+        }
+
+        /// <summary>
+        /// Checks, if an character is a unquoted-string-character.
+        /// unquoted-string-character : ' ' | plain-string-character .
+        /// </summary>
+        /// <param name="c">A character.</param>
+        /// <returns>True, if a character is an unquoted-string-character.</returns>
+        public static bool IsUquotedStringCharacter(char c)
+        {
+            return c == ' ' || IsPlainStringCharacter(c);
         }
     }
 }

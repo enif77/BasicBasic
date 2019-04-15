@@ -615,10 +615,6 @@ namespace BasicBasic
                             i++;
                         }
 
-                        // TODO: '+', '-' and '.' can start the unquoted string.
-                        // unquoted -string-character : space | plain-string-character
-                        // plain-string-character : plus-sign | minus-sign | full-stop | digit | letter
-
                         var c = input[i];
                         while (Tokenizer.IsDigit(c))
                         {
@@ -676,6 +672,10 @@ namespace BasicBasic
                         // Not a number?
                         if (numValue == null)
                         {
+                            // TODO: '+', '-' and '.' can start the unquoted string.
+                            // unquoted-string-character : space | plain-string-character
+                            // plain-string-character : plus-sign | minus-sign | full-stop | digit | letter
+
                             break;
                         }
 
@@ -696,7 +696,7 @@ namespace BasicBasic
 
                         atSep = true;
                     }
-                    else
+                    else if (Tokenizer.IsPlainStringCharacter(input[i]))
                     {
                         // Missing separator.
                         if (atSep == false)
@@ -706,20 +706,32 @@ namespace BasicBasic
 
                         var strValue = string.Empty;
 
+                        var pc = (char)0;
                         var c = input[i];
                         while (c != Tokenizer.C_EOLN)
                         {
-                            // TODO: Not all characters are allowed.
-                            // unquoted -string-character : space | plain-string-character
-                            // plain-string-character : plus-sign | minus-sign | full-stop | digit | letter
-
                             if (c == ',')
                             {
                                 break;
                             }
 
+                            // Not all characters are allowed.
+                            // unquoted-string-character : space | plain-string-character
+                            // plain-string-character : plus-sign | minus-sign | full-stop | digit | letter
+                            if (Tokenizer.IsUquotedStringCharacter(c) == false)
+                            {
+                                throw _programState.ErrorAtLine("Unexpected plain string character '{0}'", c);
+                            }
+
                             strValue += c;
+                            pc = c;
                             c = input[++i];
+                        }
+
+                        // unquoted-string : plain-string-character [ { unquoted-string-character } plain-string-character ] .
+                        if ((c == Tokenizer.C_EOLN || c == ',') && Tokenizer.IsPlainStringCharacter(pc) == false)
+                        {
+                            throw _programState.ErrorAtLine("Unexpected plain string character '{0}'", c);
                         }
 
                         valuesList.Add(string.IsNullOrWhiteSpace(strValue) ? string.Empty : ("$" + strValue.Trim())); // '$' = a string value type.
@@ -728,6 +740,29 @@ namespace BasicBasic
                         i--;
 
                         atSep = false;
+                    }
+                    else
+                    {
+                        // Missing separator.
+                        if (atSep == false)
+                        {
+                            break;
+                        }
+
+                        // Skip white chars.
+                        var c = input[i];
+                        while (c != Tokenizer.C_EOLN)
+                        {
+                            if (Tokenizer.IsWhite(c) == false)
+                            {
+                                break;
+                            }
+
+                            c = input [++i];
+                        }
+
+                        // Go back one character.
+                        i--;
                     }
 
                     i++;
@@ -744,9 +779,10 @@ namespace BasicBasic
                 // Assign values.
                 if (varsList.Count != valuesList.Count)
                 {
+                    _programState.NotifyError("Not enought or too much values.");
+
                     valuesList.Clear();
 
-                    // Not enought or too much values.
                     continue;
                 }
 
@@ -768,6 +804,8 @@ namespace BasicBasic
                             // Not a string value?
                             if (value.StartsWith("$") == false)
                             {
+                                _programState.NotifyError("A string value expected for the {0} variable.", varName);
+
                                 valuesAssigned = false;
 
                                 break;
@@ -788,6 +826,8 @@ namespace BasicBasic
                             // Not a numeric value?
                             if (value.StartsWith("$"))
                             {
+                                _programState.NotifyError("A numeric value expected for the {0} variable.", varName);
+
                                 valuesAssigned = false;
 
                                 break;
@@ -801,6 +841,8 @@ namespace BasicBasic
                 // Values assignment failed.
                 if (valuesAssigned == false)
                 {
+                    _programState.NotifyError("Can not assign values.");
+
                     valuesList.Clear();
 
                     continue;

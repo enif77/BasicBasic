@@ -454,6 +454,17 @@ namespace BasicBasic
         #region errors
 
         /// <summary>
+        /// Reports an general error and ends the current program execution.
+        /// </summary>
+        /// <exception cref="InterpreterException">Thrown when an error occurs during a program execution.</exception>
+        /// <param name="message">An error message.</param>
+        /// <param name="args">Error message arguments.</param>
+        public void NotifyError(string message, params object[] args)
+        {
+            Console.Error.WriteLine(message, args);
+        }
+
+        /// <summary>
         /// Reports the unexpected token error.
         /// </summary>
         /// <param name="tok">The unexpected token.</param>
