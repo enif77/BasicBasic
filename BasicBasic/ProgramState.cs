@@ -33,7 +33,7 @@ namespace BasicBasic
     {
         #region constants
 
-        public readonly int MaxLabel = 99;
+        public readonly int MaxLabel = 9999;
         public readonly int MaxProgramLineLength = 72;  // ECMA-55
         public readonly int ReturnStackSize = 32;
 
