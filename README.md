@@ -38,7 +38,7 @@ The command prompt for the INPUT statement is "? ".
 
 All lines are passed to the interpreter for execution.
 
-If a program line starts with a label (integer 1 .. 99) it defines a new program line.
+If a program line starts with a label (integer 1 .. 9999) it defines a new program line.
 A program line can be redefined by a new program line starting with the same label.
 If a program line contains only a label, it deletes an existing program line with 
 the same label.
