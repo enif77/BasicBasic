@@ -217,26 +217,7 @@ namespace BasicBasic
                     c = NextChar();
                     wasWhite = true;
                 }
-
-                // These two tokens can be without white characters before them.
-                if (c == ',')
-                {
-                    Token = TOK_LSTSEP;
-                    return;
-                }
-
-                if (c == ';')
-                {
-                    Token = TOK_PLSTSEP;
-                    return;
-                }
-
-                // Each token should be preceeded by at least a single white character.
-                if (wasWhite == false)
-                {
-                    throw ProgramState.ErrorAtLine("No white character between tokens found");
-                }
-
+                
                 if (IsDigit(c) || c == '.')
                 {
                     ParseNumber(c);
@@ -246,7 +227,7 @@ namespace BasicBasic
 
                 if (IsLetter(c))
                 {
-                    ParseIdent(c);
+                    ParseIdent(c, wasWhite);
 
                     return;
                 }
@@ -337,6 +318,8 @@ namespace BasicBasic
                     case '^': Token = TOK_POW; return;
                     case '(': Token = TOK_LBRA; return;
                     case ')': Token = TOK_RBRA; return;
+                    case ',': Token = TOK_LSTSEP; return;
+                    case ';': Token = TOK_PLSTSEP; return;
                 }
 
                 c = NextChar();
@@ -349,7 +332,7 @@ namespace BasicBasic
         /// Parses an identifier the ECMA-55 rules.
         /// </summary>
         /// <param name="c">The first character of the parsed identifier.</param>
-        private void ParseIdent(char c)
+        private void ParseIdent(char c, bool wasWhite)
         {
             var tok = TOK_SVARIDNT;
             var strValue = c.ToString();
@@ -386,6 +369,12 @@ namespace BasicBasic
 
                 if (_keyWordsMap.ContainsKey(strValue))
                 {
+                    // Each keyword should be preceeded by at least a single white character.
+                    if (wasWhite == false)
+                    {
+                        throw ProgramState.ErrorAtLine("No white character before the {0} keyword found", strValue);
+                    }
+
                     tok = _keyWordsMap[strValue];
                 }
                 else
