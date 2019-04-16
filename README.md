@@ -146,7 +146,7 @@ statement is write it as two words <code>GO TO</code>.
 25 END
 </pre>
 
-An edless loop made by GOTO!
+An endless loop made by GOTO!
 
 ### GOSUB
 
