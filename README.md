@@ -71,6 +71,189 @@ Lists all currently defined program lines.
 
 Executes the entered program.
 
+## Language Commands
+
+### DEF
+
+Allows user to define a custom numeric function, that can be later used in a numeric 
+expression. Such a function can have up to a one parameter. 
+
+An user defined function name has the <code>FNx</code> format, where <code>x</code> 
+is a <code>'A'</code> to <code>'Z'</code> character. 
+
+An user function must be defined first, then it can be used. An user function can not 
+be redefined, once it was defined.  
+
+A paremeter of an user defined function can be a character <code>'A'</code> to 
+<code>'Z'</code>. Such parameter hides a variable with the same name inside the body 
+of the user defined function.
+
+#### Examples
+
+<pre>
+10 DEF FNA = N + 5
+15 LET N = 5
+20 PRINT FNA
+25 END
+</pre>
+
+The output of this program will be 10.
+
+<pre>
+10 DEF FNA(X) = X + 5
+20 PRINT FNA(5)
+25 END
+</pre>
+
+The output of this program will be also 10.
+
+### DIM
+
+The DIM command is used to define one dimensional arrays. Each array has a single letter 
+name from range <code>'A'</code> to <code>'Z'</code>. The default lower bound (the 
+lowest array index) is 0 by default. It can be changed by the <code>OPTION BASE 1</code> 
+command to 1. The upper bound (the highest array index) is set by the user in the array 
+definition.
+
+Arrays hides variables with same names. If an user defines an array A, such variable is
+no more accesible. The A has to be used as an array sine then.
+
+An array can not be defined more then once.
+
+If a normal variable is accessed as an array for the first time, an array of 11 cells 
+(or 10 cells if <code>OPTION BASE 1</code> command was used) is defined automatically.
+
+#### Examples
+
+<pre>
+10 DIM A(100), B(30)
+15 LET A(5) = 5
+16 LET B(4) = 44 + C(5)
+20 PRINT A(5) + B(4)
+25 END
+</pre>
+
+### GOTO
+
+Unconditional jump to an label. The other way, how to write the <code>GOTO</code> 
+statement is write it as two words <code>GO TO</code>.
+
+#### Examples
+
+<pre>
+10 PRINT "HELLO!"
+20 GOTO 10
+25 END
+</pre>
+
+An edless loop made by GOTO!
+
+### GOSUB
+
+Unconditional jump to an label with storing the current program line label as a "return
+address" for the <code>RETURN</code> statement. The other way, how to write the 
+<code>GOSUB</code> statement is write it as two words <code>GO SUB</code>.
+
+This is the BASIC languague way, how to create procedures/methods.
+
+#### Examples
+
+<pre>
+10 GOSUB 70
+20 PRINT "SOMETHING..."
+60 STOP
+70 PRINT "HELLO!"
+80 RETURN
+99 END
+</pre>
+
+### IF THEN
+
+An conditional jump to a label.
+
+An condition is evaluated and if the result is true, program execution continues on the
+label defined afther the <code>THEN</code> keyword.
+
+#### Examples
+
+<pre>
+10 LET A = 5
+20 PRINT A
+30 LET A = A - 1
+40 IF A > 0 THEN 20
+99 END
+</pre>
+
+Prints out numbers from 5 to 1.
+
+### INPUT
+
+Reads data from input and sets them to variables.
+
+#### Examples
+
+<pre>
+10 INPUT A, B$
+20 PRINT A, B$
+99 END
+</pre>
+
+### LET
+
+Allows an user to set a value to a variable.
+
+#### Examples
+
+<pre>
+10 LET A = 5
+20 LET A$ = "A string."
+30 LET A(4) = 10
+99 END
+</pre>
+
+### OPTION BASE
+
+Set the lower bound of arrays. Can be called only once and no array should be defined
+before this command is executed. The lower bound can be either 0 (the default) or 1.
+
+#### Examples
+
+<pre>
+10 OPTION BASE 1
+20 DIM A(100)
+99 END
+</pre>
+
+Will create array A with indexes from 1 to 100.
+
+### PRINT
+
+Prints a list of values to screen. Values can be separated by characters ',' or ';'.
+
+#### Examples
+
+<pre>
+10 PRINT "HELLO", 100, A$; B(30), 58 * C
+99 END
+</pre>
+
+### RANDOMIZE
+
+Reinitializes the internal random number genarator.
+
+### REMARK
+
+A remark or comment. Does nothing, but allows an user to enter whathever he/she needs
+to make the program more readable.
+
+### RETURN
+
+Returns from a subprogram called by the <code>GOSUB</code> statement.
+
+### STOP
+
+Stops immediatelly program's execution.
+
 ## Syntax
 
 <pre>
