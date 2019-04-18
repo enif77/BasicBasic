@@ -53,8 +53,11 @@ namespace BasicBasic
     {
         #region ctor
 
-        public Interpreter()
+        public Interpreter(IErrorHandler errorHandler)
         {
+            if (errorHandler == null) throw new ArgumentNullException(nameof(errorHandler));
+
+            _errorHandler = errorHandler;
         }
 
         #endregion
@@ -67,7 +70,7 @@ namespace BasicBasic
         /// </summary>
         public void Initialize()
         {
-            _programState = new ProgramState();
+            _programState = new ProgramState(_errorHandler);
             _scanner = new Scanner(_programState);
             _tokenizer = new Tokenizer(_programState);
         }
@@ -161,6 +164,7 @@ namespace BasicBasic
 
         #region private
 
+        private IErrorHandler _errorHandler;
         private ProgramState _programState;
         private Scanner _scanner;
         private Tokenizer _tokenizer;

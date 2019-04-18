@@ -53,8 +53,12 @@ namespace BasicBasic
         /// <summary>
         /// Constructor.
         /// </summary>
-        public ProgramState()
+        public ProgramState(IErrorHandler errorHandler)
         {
+            if (errorHandler == null) throw new ArgumentNullException(nameof(errorHandler));
+
+            _errorHandler = errorHandler;
+
             ProgramLines = new ProgramLine[MaxLabel + 1];
             ReturnStack = new int[ReturnStackSize];
             ReturnStackTop = -1;
@@ -453,31 +457,34 @@ namespace BasicBasic
 
         #region errors
 
+        private IErrorHandler _errorHandler;
+
         /// <summary>
-        /// Reports an general error and ends the current program execution.
+        /// Reports an general error.
         /// </summary>
-        /// <exception cref="InterpreterException">Thrown when an error occurs during a program execution.</exception>
         /// <param name="message">An error message.</param>
         /// <param name="args">Error message arguments.</param>
         public void NotifyError(string message, params object[] args)
         {
-            Console.Error.WriteLine(message, args);
+            _errorHandler.NotifyError(message, args);
         }
 
         /// <summary>
         /// Reports the unexpected token error.
         /// </summary>
         /// <param name="tok">The unexpected token.</param>
+        /// <returns>An unexpected token error on a program line as a throwable exception.</returns>
         public InterpreterException UnexpectedTokenError(int tok)
         {
             return ErrorAtLine("Unexpected token {0}", tok);
         }
 
         /// <summary>
-        /// Reports an general error on a program line.
+        /// Gets a general error on a program line and returns it as a throwable exception.
         /// </summary>
         /// <param name="message">An error message.</param>
         /// <param name="args">Error message arguments.</param>
+        /// <returns>A general error on a program line as a throwable exception.</returns>
         public InterpreterException ErrorAtLine(string message, params object[] args)
         {
             // Interactive mode?
@@ -506,14 +513,14 @@ namespace BasicBasic
         }
 
         /// <summary>
-        /// Reports an general error and ends the current program execution.
+        /// Gets a general error description with parameters and returns it as a throwable exception.
         /// </summary>
-        /// <exception cref="InterpreterException">Thrown when an error occurs during a program execution.</exception>
         /// <param name="message">An error message.</param>
         /// <param name="args">Error message arguments.</param>
+        /// <returns>A general error as a throwable exception.</returns>
         public InterpreterException Error(string message, params object[] args)
         {
-            return new InterpreterException(string.Format(message, args));
+            return _errorHandler.Error(message, args);
         }
 
         #endregion

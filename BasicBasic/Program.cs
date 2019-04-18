@@ -26,81 +26,15 @@ namespace BasicBasic
     using System.IO;
 
 
-    static class Program
+    class Program : IErrorHandler
     {
         static int Main(string[] args)
         {
             try
             {
-                var interpreter = new Interpreter();
+                var p = new Program();
 
-                interpreter.Initialize();
-
-                if (args.Length > 0 && args[0].StartsWith("!") == false)
-                {
-                    interpreter.Interpret(File.ReadAllText(args[0]));
-                }
-                else
-                {
-                    while (true)
-                    {
-                        Console.Write("> ");
-                        var input = Console.ReadLine().Trim();
-
-                        if (string.IsNullOrWhiteSpace(input))
-                        {
-                            continue;
-                        }
-
-                        if (input.StartsWith("BY", StringComparison.InvariantCultureIgnoreCase) ||
-                            input.StartsWith("QUIT", StringComparison.InvariantCultureIgnoreCase))
-                        {
-                            break;
-                        }
-                        else if (input.StartsWith("RUN", StringComparison.InvariantCultureIgnoreCase))
-                        {
-                            try
-                            {
-                                interpreter.Interpret();
-                            }
-                            catch (InterpreterException ex)
-                            {
-                                Console.WriteLine();
-                                Console.WriteLine(ex.Message);
-                            }
-                        }
-                        else if (input.StartsWith("NEW", StringComparison.InvariantCultureIgnoreCase))
-                        {
-                            interpreter.RemoveAllProgramLines();
-                        }
-                        else if (input.StartsWith("LIST", StringComparison.InvariantCultureIgnoreCase))
-                        {
-                            foreach (var line in interpreter.ListProgramLines())
-                            {
-                                Console.WriteLine(line);
-                            }
-                        }
-                        else
-                        {
-                            try
-                            {
-                                if (Tokenizer.IsDigit(input[0]))
-                                {
-                                    interpreter.AddProgramLine(input + "\n");
-                                }
-                                else
-                                {
-                                    interpreter.InterpretLine(input + "\n");
-                                }
-                            }
-                            catch (InterpreterException ex)
-                            {
-                                Console.WriteLine();
-                                Console.WriteLine(ex.Message);
-                            }
-                        }
-                    }
-                }
+                p.Run(args);
             }
             catch (Exception ex)
             {
@@ -111,6 +45,110 @@ namespace BasicBasic
 
             return 0;
         }
+
+
+        #region private
+
+        private void Run(string[] args)
+        {
+            var interpreter = new Interpreter(this);
+
+            interpreter.Initialize();
+
+            if (args.Length > 0 && args[0].StartsWith("!") == false)
+            {
+                interpreter.Interpret(File.ReadAllText(args[0]));
+
+                return;
+            }
+            
+            while (true)
+            {
+                Console.Write("> ");
+                var input = Console.ReadLine().Trim();
+
+                if (string.IsNullOrWhiteSpace(input))
+                {
+                    continue;
+                }
+
+                if (input.StartsWith("BY", StringComparison.InvariantCultureIgnoreCase) ||
+                    input.StartsWith("QUIT", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    break;
+                }
+                else if (input.StartsWith("RUN", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    try
+                    {
+                        interpreter.Interpret();
+                    }
+                    catch (InterpreterException ex)
+                    {
+                        Console.WriteLine();
+                        Console.WriteLine(ex.Message);
+                    }
+                }
+                else if (input.StartsWith("NEW", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    interpreter.RemoveAllProgramLines();
+                }
+                else if (input.StartsWith("LIST", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    foreach (var line in interpreter.ListProgramLines())
+                    {
+                        Console.WriteLine(line);
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        if (Tokenizer.IsDigit(input[0]))
+                        {
+                            interpreter.AddProgramLine(input + "\n");
+                        }
+                        else
+                        {
+                            interpreter.InterpretLine(input + "\n");
+                        }
+                    }
+                    catch (InterpreterException ex)
+                    {
+                        Console.WriteLine();
+                        Console.WriteLine(ex.Message);
+                    }
+                }
+            }
+        }
+
+        #endregion
+
+
+        #region IErrorHandler
+
+        /// <summary>
+        /// Reports an general error.
+        /// </summary>
+        /// <param name="message">An error message.</param>
+        /// <param name="args">Error message arguments.</param>
+        public void NotifyError(string message, params object[] args)
+        {
+            Console.Error.WriteLine(message, args);
+        }
+
+        /// <summary>
+        /// Gets a general error description with parameters and returns it as a throwable exception.
+        /// </summary>
+        /// <param name="message">An error message.</param>
+        /// <param name="args">Error message arguments.</param>
+        /// <returns>A general error as a throwable exception.</returns>
+        public InterpreterException Error(string message, params object[] args)
+        {
+            return new InterpreterException(string.Format(message, args));
+        }
+
+        #endregion
     }
 }
 
