@@ -254,6 +254,61 @@ Returns from a subprogram called by the <code>GOSUB</code> statement.
 
 Stops immediatelly program's execution.
 
+## Build in functions
+
+The values of the build in functions, as well as the number of arguments 
+required for each function, are described below. In all cases, X stands for 
+a numeric expression.
+
+### ABS(X)
+
+The absolute value of X.
+
+### ATN(X)
+
+The arctangent of X in radians, i.e. the angle whose tangent is X. The range of the 
+function is -(pi / 2) < ATN(X) < (pi / 2) where pi is the ratio of the circumference 
+of a circle to its diameter (3.14...).
+
+### COS(X)
+
+The cosine of X, where X is in radians.
+
+### EXP(X)
+
+The exponential of X, i.e. the value of the base of natural logarithms (e = 2,71828...)
+raised to the power X; <i>if EXP(X) is less than machine infinitesimal, then its value shall
+be replaced by zero</i>.
+
+### INT(X)
+
+The largest integer not greater than X; e.g. INT(1.3) = 1 and INT(-1.3) = -2.
+
+### LOG(X)
+
+The natural logarithm of X; X must be greater than zero.
+
+### RND
+
+The next pseudo-random  number in an implemen-tation-supplied sequence of 
+pseudo-random num-bers uniformly distributed in the range 0 <= RND < 1.
+
+### SGN(X)
+
+The sign of X: -1 if X < 0, 0 if X = 0 and +1 if X > 0.
+
+### SIN(X)
+
+The sine of X, where X is in radians.
+
+### SQR(X)
+
+The nonnegative square root of X; X must be nonnegative.
+
+### TAN(X)
+
+The tangent of X, where X  is in radians.
+
 ## Syntax
 
 <pre>
