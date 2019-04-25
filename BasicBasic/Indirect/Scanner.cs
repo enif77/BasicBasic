@@ -53,99 +53,71 @@ namespace BasicBasic.Indirect
         /// so the user can redefine it, an can be empty, so the user can delete it.</param>
         public void ScanSource(string source, bool interactiveMode = false)
         {
-            //ProgramLine programLine = null;
-            //var atLineStart = true;
-            //var line = 1;
-            //var i = 0;
-            //for (; i < source.Length; i++)
-            //{
-            //    var c = source[i];
+            if (source == null) throw new ArgumentNullException(nameof(source));
 
-            //    if (atLineStart)
-            //    {
-            //        programLine = new ProgramLine();
+            var tokenizer = new Tokenizer(ProgramState)
+            {
+                Source = source
+            };
 
-            //        // Label.
-            //        if (Tokenizer.IsDigit(c))
-            //        {
-            //            var label = 0;
-            //            while (Tokenizer.IsDigit(c))
-            //            {
-            //                label = label * 10 + (c - '0');
+            tokenizer.NextToken();
+            var line = 1;
+            var atLineStart = true;
+            ProgramLine programLine = null;
+            while (tokenizer.Token != Tokenizer.TOK_EOF)
+            {
+                if (atLineStart)
+                {
+                    if (tokenizer.Token != Tokenizer.TOK_NUM)
+                    {
+                        throw ProgramState.UnexpectedTokenError(tokenizer.Token);
+                    }
 
-            //                i++;
-            //                if (i >= source.Length)
-            //                {
-            //                    break;
-            //                }
+                    var label = (int)tokenizer.NumValue;
+                    if (label < 1 || label > ProgramState.MaxLabel)
+                    {
+                        throw ProgramState.Error("Label {0} at line {1} out of <1 ... {2}> rangle.", label, line, ProgramState.MaxLabel);
+                    }
 
-            //                c = source[i];
-            //            }
+                    //if (Tokenizer.IsWhite(c) == false)
+                    //{
+                    //    throw ProgramState.Error("Label {0} at line {1} is not separated from the statement by a white character.", label, line);
+                    //}
 
-            //            if (label < 1 || label > ProgramState.MaxLabel)
-            //            {
-            //                throw ProgramState.Error("Label {0} at line {1} out of <1 ... {2}> rangle.", label, line, ProgramState.MaxLabel);
-            //            }
+                    if (interactiveMode == false && ProgramState.GetProgramLine(label) != null)
+                    {
+                        throw ProgramState.Error("Label {0} redefinition at line {1}.", label, line);
+                    }
 
-            //            if (Tokenizer.IsWhite(c) == false)
-            //            {
-            //                throw ProgramState.Error("Label {0} at line {1} is not separated from the statement by a white character.", label, line);
-            //            }
+                    // Create a new program line.
+                    programLine = new ProgramLine()
+                    {
+                        Label = label
+                    };
 
-            //            if (interactiveMode == false && ProgramState.GetProgramLine(label) != null)
-            //            {
-            //                throw ProgramState.Error("Label {0} redefinition at line {1}.", label, line);
-            //            }
-                                               
-            //            // Remember this program line.
-            //            programLine.Source = source;
-            //            programLine.Label = label;
-            //            programLine.Start = i;
-            //            programLine.SourcePosition = programLine.Start - 1;
+                    atLineStart = false;
+                }
+                else
+                {
+                    // Save all tokens to the program line.
 
-            //            // Remember this line.
-            //            ProgramState.SetProgramLine(programLine);
+                    if (tokenizer.Token == Tokenizer.TOK_EOLN)
+                    {
+                        // Remember this line.
+                        ProgramState.SetProgramLine(programLine);
+                        programLine = null;
+                        atLineStart = true;
+                    }
+                }
 
-            //            atLineStart = false;
-            //        }
-            //        else
-            //        {
-            //            throw ProgramState.Error("Label not found at line {0}.", line);
-            //        }
-            //    }
+                tokenizer.NextToken();
+            }
 
-            //    if (c == Tokenizer.C_EOLN)
-            //    {
-            //        // The '\n' character.
-            //        programLine.End = i;
-
-            //        // Max program line length check.
-            //        if (programLine.Length > ProgramState.MaxProgramLineLength)
-            //        {
-            //            throw ProgramState.Error("The line {0} is longer than {1} characters.", line, ProgramState.MaxProgramLineLength);
-            //        }
-
-            //        // An empty line?
-            //        if (interactiveMode && string.IsNullOrWhiteSpace(programLine.Source.Substring(programLine.Start, programLine.End - programLine.Start)))
-            //        {
-            //            // Remove the existing program line.
-            //            ProgramState.RemoveProgramLine(programLine.Label);
-            //        }
-
-            //        // We are done with this line.
-            //        programLine = null;
-
-            //        // Starting the next line.
-            //        line++;
-            //        atLineStart = true;
-            //    }
-            //}
-
-            //// The last line does not ended with the '\n' character.
-            //if (programLine != null)
-            //{
-            //    throw ProgramState.Error("No line end at line {0}.", line);
-            //}
+            // The last line does not ended with the '\n' character.
+            if (programLine != null)
+            {
+                throw ProgramState.Error("No line end at line {0}.", line);
+            }
         }
     }
 }

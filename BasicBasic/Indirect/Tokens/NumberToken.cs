@@ -19,9 +19,21 @@ freely, subject to the following restrictions:
 3. This notice may not be removed or altered from any source distribution.
  
  */
-namespace BasicBasic.Indirect
+
+namespace BasicBasic.Indirect.Tokens
 {
-    public abstract class AToken : IToken
+    public class NumberToken : AToken
     {
+        public NumberToken(int tokenCode, float n)
+        {
+            TokenCode = tokenCode;
+            NumValue = n;
+        }
+
+
+        public override string ToString()
+        {
+            return NumValue.ToString();
+        }
     }
 }

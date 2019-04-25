@@ -73,6 +73,117 @@ namespace BasicBasic.Indirect
         }
 
 
+        #region program lines
+
+        private ProgramLine[] ProgramLines { get; }
+
+
+        /// <summary>
+        /// Returns a program line for a specific label.
+        /// </summary>
+        /// <param name="label">A label.</param>
+        /// <returns>A program line for a specific label.</returns>
+        public ProgramLine GetProgramLine(int label)
+        {
+            return ProgramLines[label - 1];
+        }
+
+        /// <summary>
+        /// Stores a program line for a certain label.
+        /// </summary>
+        /// <param name="programLine">A program line.</param>
+        public void SetProgramLine(ProgramLine programLine)
+        {
+            ProgramLines[programLine.Label - 1] = programLine;
+        }
+
+        ///// <summary>
+        ///// Returns the list of defined program lines.
+        ///// </summary>
+        ///// <returns>The list of defined program lines.</returns>
+        //public IEnumerable<string> GetProgramLines()
+        //{
+        //    var list = new List<string>();
+
+        //    for (var i = 0; i < ProgramLines.Length; i++)
+        //    {
+        //        if (ProgramLines[i] == null)
+        //        {
+        //            continue;
+        //        }
+
+        //        list.Add(ProgramLines[i].ToString());
+        //    }
+
+        //    return list;
+        //}
+
+        ///// <summary>
+        ///// Removes a program line from the current program.
+        ///// </summary>
+        ///// <param name="label">A program line label to be removed.</param>
+        //public void RemoveProgramLine(int label)
+        //{
+        //    ProgramLines[label - 1] = null;
+        //}
+
+        ///// <summary>
+        ///// Removes all program lines from this program.
+        ///// </summary>
+        //public void RemoveAllProgramLines()
+        //{
+        //    for (var i = 0; i < ProgramLines.Length; i++)
+        //    {
+        //        ProgramLines[i] = null;
+        //    }
+        //}
+
+        ///// <summary>
+        ///// Sets the current program line.
+        ///// </summary>
+        ///// <param name="programLine">A program line.</param>
+        ///// <param name="rewind">If true, call Rewind() on the program line to start its proccesing from its beginning.</param>
+        //public void SetCurrentProgramLine(ProgramLine programLine, bool rewind = true)
+        //{
+        //    CurrentProgramLine = programLine;
+
+        //    if (rewind)
+        //    {
+        //        CurrentProgramLine.Rewind();
+        //    }
+        //}
+
+        ///// <summary>
+        ///// Gets the next defined program line.
+        ///// </summary>
+        ///// <param name="fromLabel">From which label should we start to look for the next program line.</param>
+        ///// <returns>The next defined program line or null.</returns>
+        //public ProgramLine NextProgramLine(int fromLabel)
+        //{
+        //    // Interactive mode line.
+        //    if (fromLabel < 0)
+        //    {
+        //        return null;
+        //    }
+
+        //    // Skip program lines without code.
+        //    // NOTE: Because labels are 1 to N, but program lines are 0 to N,
+        //    // by using the fromLabel value directly, we are effectivelly starting
+        //    // one line behind the from-label program line.
+        //    for (var label = fromLabel; label < ProgramLines.Length; label++)
+        //    {
+        //        if (ProgramLines[label] != null)
+        //        {
+        //            return ProgramLines[label];
+        //        }
+        //    }
+
+        //    return null;
+        //}
+
+        #endregion
+
+
         #region errors
 
         private IErrorHandler _errorHandler;

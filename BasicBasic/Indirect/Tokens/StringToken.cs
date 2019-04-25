@@ -20,28 +20,20 @@ freely, subject to the following restrictions:
  
  */
 
-namespace BasicBasic.Indirect
+namespace BasicBasic.Indirect.Tokens
 {
-    using System.Collections.Generic;
-
-    using BasicBasic.Indirect.Tokens;
-    
-
-    /// <summary>
-    /// Holds information about a single program line.
-    /// </summary>
-    public class ProgramLine
+    public class StringToken : AToken
     {
-        /// <summary>
-        /// The label extracted from this program line.
-        /// Can be -1, if it is a program line for immediate execution from the interactive
-        /// mode. Meaning - there is no label int the source at all.
-        /// </summary>
-        public int Label { get; set; }
+        public StringToken(int tokenCode, string s)
+        {
+            TokenCode = tokenCode;
+            StrValue = s ?? string.Empty;
+        }
 
-        /// <summary>
-        /// The program line tokens.
-        /// </summary>
-        public IList<IToken> Tokens { get; } = new List<IToken>();
+
+        public override string ToString()
+        {
+            return string.Format("\"{0}\"", StrValue);
+        }
     }
 }
