@@ -20,7 +20,7 @@ freely, subject to the following restrictions:
  
  */
 
-namespace BasicBasic
+namespace BasicBasic.Direct
 {
     using System;
 

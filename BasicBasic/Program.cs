@@ -22,6 +22,7 @@ freely, subject to the following restrictions:
 
 namespace BasicBasic
 {
+    using BasicBasic.Direct;
     using System;
     using System.IO;
 

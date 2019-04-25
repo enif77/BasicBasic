@@ -45,13 +45,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="IErrorHandler.cs" />
-    <Compile Include="Interpreter.cs" />
+    <Compile Include="Direct\Interpreter.cs" />
+    <Compile Include="InterpreterException.cs" />
     <Compile Include="Program.cs" />
-    <Compile Include="ProgramLine.cs" />
-    <Compile Include="ProgramState.cs" />
+    <Compile Include="Direct\ProgramLine.cs" />
+    <Compile Include="Direct\ProgramState.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Scanner.cs" />
-    <Compile Include="Tokenizer.cs" />
+    <Compile Include="Direct\Scanner.cs" />
+    <Compile Include="Direct\Tokenizer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="ECMA-55.TXT" />

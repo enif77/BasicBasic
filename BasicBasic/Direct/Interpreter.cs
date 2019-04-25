@@ -20,30 +20,11 @@ freely, subject to the following restrictions:
  
  */
 
-namespace BasicBasic
+namespace BasicBasic.Direct
 {
     using System;
     using System.Collections.Generic;
     using System.Globalization;
-
-
-    /// <summary>
-    /// Represents and error, that occurred during the execution of a program.
-    /// </summary>
-    public class InterpreterException : Exception
-    {
-        public InterpreterException() : base()
-        {
-        }
-
-        public InterpreterException(string message) : base(message)
-        {
-        }
-
-        public InterpreterException(string message, Exception innerException) : base(message, innerException)
-        {
-        }
-    }
 
 
     /// <summary>
