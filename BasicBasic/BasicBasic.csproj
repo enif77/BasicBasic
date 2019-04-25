@@ -46,6 +46,12 @@
   <ItemGroup>
     <Compile Include="IErrorHandler.cs" />
     <Compile Include="Direct\Interpreter.cs" />
+    <Compile Include="Indirect\AToken.cs" />
+    <Compile Include="Indirect\IToken.cs" />
+    <Compile Include="Indirect\ProgramLine.cs" />
+    <Compile Include="Indirect\ProgramState.cs" />
+    <Compile Include="Indirect\Scanner.cs" />
+    <Compile Include="Indirect\Tokenizer.cs" />
     <Compile Include="InterpreterException.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Direct\ProgramLine.cs" />

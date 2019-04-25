@@ -20,7 +20,7 @@ freely, subject to the following restrictions:
  
  */
 
-namespace BasicBasic.Direct
+namespace BasicBasic.Indirect
 {
     using System;
     using System.Collections.Generic;
@@ -34,14 +34,25 @@ namespace BasicBasic.Direct
         #region tokens
 
         /// <summary>
+        /// The end of the source character.
+        /// </summary>
+        public const char C_EOF = (char)0;
+
+        /// <summary>
         /// The end of the line character.
         /// </summary>
         public const char C_EOLN = '\n';
 
+
+        /// <summary>
+        /// The end of the file token.
+        /// </summary>
+        public const int TOK_EOF = 0;
+
         /// <summary>
         /// The end of the line token.
         /// </summary>
-        public const int TOK_EOLN = 0;
+        public const int TOK_EOLN = 1;
 
         /// <summary>
         /// A simple ('A' .. 'Z') identifier token.
@@ -168,6 +179,33 @@ namespace BasicBasic.Direct
         /// </summary>
         public ProgramState ProgramState { get; }
 
+
+        private string _source;
+
+        /// <summary>
+        /// The currentlly parsed source.
+        /// </summary>
+        public string Source
+        {
+            get
+            {
+                return _source;
+            }
+
+            set
+            {
+                _source = value ?? string.Empty;
+
+                SourcePosition = -1;
+                Token = TOK_EOF;
+            }
+        }
+
+        /// <summary>
+        /// The current source position (from where was the last character).
+        /// </summary>
+        public int SourcePosition  { get; private set; }
+
         /// <summary>
         /// The last found token.
         /// </summary>
@@ -192,24 +230,24 @@ namespace BasicBasic.Direct
             if (programState == null) throw new ArgumentNullException(nameof(programState));
 
             ProgramState = programState;
-            Token = 0;
+            Token = TOK_EOF;
             NumValue = 0;
             StrValue = null;
         }
-
+                     
 
         /// <summary>
-        /// Extracts the next token found in the current program line source.
+        /// Extracts the next token found in the program source.
         /// </summary>
         public void NextToken()
         {
-            if (ProgramState.CurrentProgramLine.SourcePosition > ProgramState.CurrentProgramLine.End)
+            if (SourcePosition >= Source.Length)
             {
-                throw ProgramState.ErrorAtLine("Read beyond the line end");
+                throw ProgramState.ErrorAtLine("Read beyond the Source end");
             }
 
             var c = NextChar();
-            while (c != C_EOLN)
+            while (c != C_EOF)
             {
                 //Console.WriteLine("C[{0:00}]: {1}", _currentProgramLinePos, c);
 
@@ -220,7 +258,7 @@ namespace BasicBasic.Direct
                     c = NextChar();
                     wasWhite = true;
                 }
-                
+
                 if (IsDigit(c) || c == '.')
                 {
                     ParseNumber(c);
@@ -323,12 +361,13 @@ namespace BasicBasic.Direct
                     case ')': Token = TOK_RBRA; return;
                     case ',': Token = TOK_LSTSEP; return;
                     case ';': Token = TOK_PLSTSEP; return;
+                    case C_EOLN: Token = TOK_EOLN; return;
                 }
 
                 c = NextChar();
             }
 
-            Token = TOK_EOLN;
+            Token = TOK_EOF;
         }
 
         /// <summary>
@@ -511,7 +550,19 @@ namespace BasicBasic.Direct
         /// <returns>The next character from the current program line source.</returns>
         private char NextChar()
         {
-            return ProgramState.CurrentProgramLine.NextChar();
+            var p = SourcePosition + 1;
+            if (p >= 0 && p < Source.Length)
+            {
+                SourcePosition = p;
+
+                return Source[SourcePosition];
+            }
+            else
+            {
+                SourcePosition = Source.Length;
+
+                return C_EOF;
+            }
         }
 
         /// <summary>
@@ -520,7 +571,25 @@ namespace BasicBasic.Direct
         /// <returns>The next character from the current program line source.</returns>
         private char PreviousChar()
         {
-            return ProgramState.CurrentProgramLine.PreviousChar();
+            var p = SourcePosition;
+            if (p >= 0 && p < Source.Length)
+            {
+                SourcePosition--;
+
+                return Source[p];
+            }
+            else if (SourcePosition >= Source.Length)
+            {
+                SourcePosition = Source.Length;
+
+                return PreviousChar();
+            }
+            else
+            {
+                SourcePosition = -1;
+
+                return C_EOF;
+            }
         }
 
         /// <summary>
