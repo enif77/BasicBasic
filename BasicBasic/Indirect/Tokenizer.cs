@@ -24,7 +24,7 @@ namespace BasicBasic.Indirect
 {
     using System;
     using System.Collections.Generic;
-
+    using System.Text;
     using BasicBasic.Indirect.Tokens;
     
 
@@ -114,8 +114,42 @@ namespace BasicBasic.Indirect
 
             ProgramState = programState;
         }
-                     
 
+
+        /// <summary>
+        /// Skips everything till the next end of line or end of file.
+        /// </summary>
+        /// <returns>All skipped characters as a string.</returns>
+        public string SkipToEoln()
+        {
+            if (SourcePosition >= Source.Length)
+            {
+                throw ProgramState.ErrorAtLine("Read beyond the Source end");
+            }
+
+            var sb = new StringBuilder();
+            var c = NextChar();
+            while (c != C_EOF)
+            {
+                if (c == C_EOLN)
+                {
+                    PreviousChar();
+
+                    break;
+                }
+
+                // Ignore the CR character.
+                if (c != '\r')
+                {
+                    sb.Append(c);
+                }
+                
+                c = NextChar();
+            }
+
+            return sb.ToString();
+        }
+        
         /// <summary>
         /// Extracts the next token found in the program source.
         /// </summary>
@@ -248,12 +282,12 @@ namespace BasicBasic.Indirect
             if (IsDigit(c))
             {
                 // A numeric Ax variable.
-                return new StringToken(TokenCode.TOK_VARIDNT, (strValue + c).ToUpperInvariant());
+                return new IdentifierToken(TokenCode.TOK_VARIDNT, (strValue + c).ToUpperInvariant());
             }
             else if (c == '$')
             {
                 // A string A$ variable.
-                return new StringToken(TokenCode.TOK_STRIDNT, (strValue + c).ToUpperInvariant());
+                return new IdentifierToken(TokenCode.TOK_STRIDNT, (strValue + c).ToUpperInvariant());
             }
             else if (IsLetter(c))
             {
@@ -288,8 +322,8 @@ namespace BasicBasic.Indirect
                     }
 
                     return strValue.StartsWith("FN")
-                        ? new StringToken(TokenCode.TOK_UFN, strValue)
-                        : new StringToken(TokenCode.TOK_FN, strValue);
+                        ? new IdentifierToken(TokenCode.TOK_UFN, strValue)
+                        : new IdentifierToken(TokenCode.TOK_FN, strValue);
                 }
             }
             else
@@ -297,7 +331,7 @@ namespace BasicBasic.Indirect
                 // Go one char back, so the next time we will read the character behind this identifier.
                 PreviousChar();
 
-                return new StringToken(TokenCode.TOK_SVARIDNT, strValue.ToUpperInvariant());
+                return new IdentifierToken(TokenCode.TOK_SVARIDNT, strValue.ToUpperInvariant());
             }
         }
 

@@ -102,17 +102,33 @@ namespace BasicBasic.Indirect
                 else
                 {
                     // Save all tokens to the program line.
-
                     if (token.TokenCode == TokenCode.TOK_EOLN)
                     {
                         // Remember this line.
                         ProgramState.SetProgramLine(programLine);
                         programLine = null;
                         atLineStart = true;
+                        line++;
+                    }
+                    else if (token.TokenCode == TokenCode.TOK_KEY_REM)
+                    {
+                        // Skip the remark.
+                        programLine.Tokens.Add(new RemToken(tokenizer.SkipToEoln()));
+                    }
+                    else
+                    {
+                        programLine.Tokens.Add(token);
                     }
                 }
 
                 token = tokenizer.NextToken();
+            }
+
+            if (interactiveMode && programLine != null)
+            {
+                // Remember this line.
+                ProgramState.SetProgramLine(programLine);
+                programLine = null;
             }
 
             // The last line does not ended with the '\n' character.

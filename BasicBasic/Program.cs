@@ -22,10 +22,11 @@ freely, subject to the following restrictions:
 
 namespace BasicBasic
 {
-    using BasicBasic.Direct;
     using System;
     using System.IO;
 
+    using BasicBasic.Direct;
+    
 
     class Program : IErrorHandler
     {
@@ -35,7 +36,8 @@ namespace BasicBasic
             {
                 var p = new Program();
 
-                p.Run(args);
+                //p.Run(args);
+                p.RunIndirect(args);
             }
             catch (Exception ex)
             {
@@ -49,6 +51,32 @@ namespace BasicBasic
 
 
         #region private
+
+        private void RunIndirect(string[] args)
+        {
+            string source = null;
+            var pstate = new Indirect.ProgramState(this);
+            if (args.Length > 0 && args[0].StartsWith("!") == false)
+            {
+                source = File.ReadAllText(args[0]);
+            }
+
+            if (string.IsNullOrEmpty(source))
+            {
+                Console.Error.WriteLine("No source.");
+
+                return;
+            }
+
+            var scanner = new Indirect.Scanner(pstate);
+            scanner.ScanSource(source, false);
+
+            foreach (var ln in pstate.GetProgramLines())
+            {
+                Console.WriteLine(ln);
+            }
+        }
+
 
         private void Run(string[] args)
         {

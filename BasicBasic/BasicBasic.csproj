@@ -48,6 +48,8 @@
     <Compile Include="Direct\Interpreter.cs" />
     <Compile Include="Indirect\Tokens\AToken.cs" />
     <Compile Include="Indirect\Tokens\IToken.cs" />
+    <Compile Include="Indirect\Tokens\RemToken.cs" />
+    <Compile Include="Indirect\Tokens\IdentifierToken.cs" />
     <Compile Include="Indirect\Tokens\StringToken.cs" />
     <Compile Include="Indirect\ProgramLine.cs" />
     <Compile Include="Indirect\ProgramState.cs" />

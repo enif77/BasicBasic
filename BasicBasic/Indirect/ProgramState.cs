@@ -23,6 +23,7 @@ freely, subject to the following restrictions:
 namespace BasicBasic.Indirect
 {
     using System;
+    using System.Collections.Generic;
 
     using BasicBasic.Indirect.Tokens;
     
@@ -60,7 +61,7 @@ namespace BasicBasic.Indirect
 
             _errorHandler = errorHandler;
 
-            //ProgramLines = new ProgramLine[MaxLabel + 1];
+            ProgramLines = new ProgramLine[MaxLabel + 1];
             //ReturnStack = new int[ReturnStackSize];
             //ReturnStackTop = -1;
             //UserFns = new int[('Z' - 'A') + 1];
@@ -99,26 +100,26 @@ namespace BasicBasic.Indirect
             ProgramLines[programLine.Label - 1] = programLine;
         }
 
-        ///// <summary>
-        ///// Returns the list of defined program lines.
-        ///// </summary>
-        ///// <returns>The list of defined program lines.</returns>
-        //public IEnumerable<string> GetProgramLines()
-        //{
-        //    var list = new List<string>();
+        /// <summary>
+        /// Returns the list of defined program lines.
+        /// </summary>
+        /// <returns>The list of defined program lines.</returns>
+        public IEnumerable<string> GetProgramLines()
+        {
+            var list = new List<string>();
 
-        //    for (var i = 0; i < ProgramLines.Length; i++)
-        //    {
-        //        if (ProgramLines[i] == null)
-        //        {
-        //            continue;
-        //        }
+            for (var i = 0; i < ProgramLines.Length; i++)
+            {
+                if (ProgramLines[i] == null)
+                {
+                    continue;
+                }
 
-        //        list.Add(ProgramLines[i].ToString());
-        //    }
+                list.Add(ProgramLines[i].ToString());
+            }
 
-        //    return list;
-        //}
+            return list;
+        }
 
         ///// <summary>
         ///// Removes a program line from the current program.
