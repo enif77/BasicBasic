@@ -28,7 +28,7 @@ namespace BasicBasic.Direct
     public class Scanner
     {
         /// <summary>
-        /// The program state instance this tokenizer works with.
+        /// The program state instance this scanner works with.
         /// </summary>
         public ProgramState ProgramState { get; }
 
@@ -50,7 +50,7 @@ namespace BasicBasic.Direct
         /// </summary>
         /// <param name="source">The source.</param>
         /// <param name="interactiveMode">A program line in the interactive mode can exist, 
-        /// so the user can redefine it, an can be empty, so the user can delete it.</param>
+        /// so the user can redefine it, and can be empty, so the user can delete it.</param>
         public void ScanSource(string source, bool interactiveMode = false)
         {
             ProgramLine programLine = null;
