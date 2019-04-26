@@ -39,13 +39,6 @@ namespace BasicBasic.Indirect.Tokens
         {
             switch (TokenCode)
             {
-                case TokenCode.TOK_SVARIDNT:
-                case TokenCode.TOK_VARIDNT:
-                case TokenCode.TOK_STRIDNT:
-                case TokenCode.TOK_FN:
-                case TokenCode.TOK_UFN:
-                    return StrValue;
-
                 case TokenCode.TOK_PLSTSEP: return ";";
                 case TokenCode.TOK_LSTSEP: return ",";
                 case TokenCode.TOK_EQL: return "="; 
