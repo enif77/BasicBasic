@@ -60,20 +60,20 @@ namespace BasicBasic.Indirect
                 Source = source
             };
 
-            tokenizer.NextToken();
+            var token = tokenizer.NextToken();
             var line = 1;
             var atLineStart = true;
             ProgramLine programLine = null;
-            while (tokenizer.Token != Tokenizer.TOK_EOF)
+            while (token.TokenCode != Tokenizer.TOK_EOF)
             {
                 if (atLineStart)
                 {
-                    if (tokenizer.Token != Tokenizer.TOK_NUM)
+                    if (token.TokenCode != Tokenizer.TOK_NUM)
                     {
-                        throw ProgramState.UnexpectedTokenError(tokenizer.Token);
+                        throw ProgramState.UnexpectedTokenError(token.TokenCode);
                     }
 
-                    var label = (int)tokenizer.NumValue;
+                    var label = (int)token.NumValue;
                     if (label < 1 || label > ProgramState.MaxLabel)
                     {
                         throw ProgramState.Error("Label {0} at line {1} out of <1 ... {2}> rangle.", label, line, ProgramState.MaxLabel);
@@ -101,7 +101,7 @@ namespace BasicBasic.Indirect
                 {
                     // Save all tokens to the program line.
 
-                    if (tokenizer.Token == Tokenizer.TOK_EOLN)
+                    if (token.TokenCode == Tokenizer.TOK_EOLN)
                     {
                         // Remember this line.
                         ProgramState.SetProgramLine(programLine);
@@ -110,7 +110,7 @@ namespace BasicBasic.Indirect
                     }
                 }
 
-                tokenizer.NextToken();
+                token = tokenizer.NextToken();
             }
 
             // The last line does not ended with the '\n' character.

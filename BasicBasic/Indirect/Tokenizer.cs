@@ -22,6 +22,7 @@ freely, subject to the following restrictions:
 
 namespace BasicBasic.Indirect
 {
+    using BasicBasic.Indirect.Tokens;
     using System;
     using System.Collections.Generic;
 
@@ -197,7 +198,6 @@ namespace BasicBasic.Indirect
                 _source = value ?? string.Empty;
 
                 SourcePosition = -1;
-                Token = TOK_EOF;
             }
         }
 
@@ -207,22 +207,6 @@ namespace BasicBasic.Indirect
         public int SourcePosition  { get; private set; }
 
         /// <summary>
-        /// The last found token.
-        /// </summary>
-        public int Token { get; private set; }
-
-        /// <summary>
-        /// A value of the TOK_NUM.
-        /// </summary>
-        public float NumValue { get; private set; }
-
-        /// <summary>
-        /// A value of TOK_QSTR, TOK_SVARIDNT, TOK_VARIDNT, TOK_STRIDNT, TOK_FN and TOK_UFN tokens.
-        /// </summary>
-        public string StrValue { get; private set; }
-
-
-        /// <summary>
         /// Constructor.
         /// </summary>
         public Tokenizer(ProgramState programState)
@@ -230,16 +214,13 @@ namespace BasicBasic.Indirect
             if (programState == null) throw new ArgumentNullException(nameof(programState));
 
             ProgramState = programState;
-            Token = TOK_EOF;
-            NumValue = 0;
-            StrValue = null;
         }
                      
 
         /// <summary>
         /// Extracts the next token found in the program source.
         /// </summary>
-        public void NextToken()
+        public IToken NextToken()
         {
             if (SourcePosition >= Source.Length)
             {
@@ -261,47 +242,39 @@ namespace BasicBasic.Indirect
 
                 if (IsDigit(c) || c == '.')
                 {
-                    ParseNumber(c);
-
-                    return;
+                    return ParseNumber(c);
                 }
 
                 if (IsLetter(c))
                 {
-                    ParseIdent(c, wasWhite);
-
-                    return;
+                    return ParseIdent(c, wasWhite);
                 }
 
                 if (c == '"')
                 {
-                    ParseQuotedString();
-
-                    return;
+                    return ParseQuotedString();
                 }
 
                 switch (c)
                 {
-                    case '=': Token = TOK_EQL; return;
+                    case '=': return new SimpleToken(TOK_EQL);
 
                     case '<':
                         {
                             var cc = NextChar();
                             if (cc == '>')
                             {
-                                Token = TOK_NEQL;
+                                return new SimpleToken(TOK_NEQL);
                             }
                             else if (cc == '=')
                             {
-                                Token = TOK_LTE;
+                                return new SimpleToken(TOK_LTE);
                             }
                             else
                             {
                                 PreviousChar();
-                                Token = TOK_LT;
+                                return new SimpleToken(TOK_LT);
                             }
-
-                            return;
                         }
 
                     case '>':
@@ -309,15 +282,13 @@ namespace BasicBasic.Indirect
                             var cc = NextChar();
                             if (cc == '=')
                             {
-                                Token = TOK_GTE;
+                                return new SimpleToken(TOK_GTE);
                             }
                             else
                             {
                                 PreviousChar();
-                                Token = TOK_GT;
+                                return new SimpleToken(TOK_GT);
                             }
-
-                            return;
                         }
 
                     case '+':
@@ -327,14 +298,12 @@ namespace BasicBasic.Indirect
 
                             if (IsDigit(cc) || cc == '.')
                             {
-                                ParseNumber(c);
+                                return ParseNumber(c);
                             }
                             else
                             {
-                                Token = TOK_PLUS;
+                                return new SimpleToken(TOK_PLUS);
                             }
-
-                            return;
                         }
 
                     case '-':
@@ -344,55 +313,48 @@ namespace BasicBasic.Indirect
 
                             if (IsDigit(cc) || cc == '.')
                             {
-                                ParseNumber(c);
+                                return ParseNumber(c);
                             }
                             else
                             {
-                                Token = TOK_MINUS;
+                                return new SimpleToken(TOK_MINUS);
                             }
-
-                            return;
                         }
 
-                    case '*': Token = TOK_MULT; return;
-                    case '/': Token = TOK_DIV; return;
-                    case '^': Token = TOK_POW; return;
-                    case '(': Token = TOK_LBRA; return;
-                    case ')': Token = TOK_RBRA; return;
-                    case ',': Token = TOK_LSTSEP; return;
-                    case ';': Token = TOK_PLSTSEP; return;
-                    case C_EOLN: Token = TOK_EOLN; return;
+                    case '*': return new SimpleToken(TOK_MULT);
+                    case '/': return new SimpleToken(TOK_DIV);
+                    case '^': return new SimpleToken(TOK_POW);
+                    case '(': return new SimpleToken(TOK_LBRA);
+                    case ')': return new SimpleToken(TOK_RBRA);
+                    case ',': return new SimpleToken(TOK_LSTSEP);
+                    case ';': return new SimpleToken(TOK_PLSTSEP);
+                    case C_EOLN: return new SimpleToken(TOK_EOLN);
                 }
 
                 c = NextChar();
             }
 
-            Token = TOK_EOF;
+            return new SimpleToken(TOK_EOF);
         }
 
         /// <summary>
         /// Parses an identifier the ECMA-55 rules.
         /// </summary>
         /// <param name="c">The first character of the parsed identifier.</param>
-        private void ParseIdent(char c, bool wasWhite)
+        private IToken ParseIdent(char c, bool wasWhite)
         {
-            var tok = TOK_SVARIDNT;
             var strValue = c.ToString();
 
             c = NextChar();
-
             if (IsDigit(c))
             {
                 // A numeric Ax variable.
-                StrValue = (strValue + c).ToUpperInvariant();
-                tok = TOK_VARIDNT;
+                return new StringToken(TOK_VARIDNT, (strValue + c).ToUpperInvariant());
             }
             else if (c == '$')
             {
                 // A string A$ variable.
-                tok = TOK_STRIDNT;
-
-                StrValue = (strValue + c).ToUpperInvariant();
+                return new StringToken(TOK_STRIDNT, (strValue + c).ToUpperInvariant());
             }
             else if (IsLetter(c))
             {
@@ -417,7 +379,7 @@ namespace BasicBasic.Indirect
                         throw ProgramState.ErrorAtLine("No white character before the {0} keyword found", strValue);
                     }
 
-                    tok = _keyWordsMap[strValue];
+                    return new SimpleToken(_keyWordsMap[strValue]);
                 }
                 else
                 {
@@ -426,30 +388,25 @@ namespace BasicBasic.Indirect
                         throw ProgramState.ErrorAtLine("Unknown token '{0}'", strValue);
                     }
 
-                    tok = strValue.StartsWith("FN")
-                        ? TOK_UFN
-                        : TOK_FN;
+                    return strValue.StartsWith("FN")
+                        ? new StringToken(TOK_UFN, strValue)
+                        : new StringToken(TOK_FN, strValue);
                 }
-
-                StrValue = strValue;
             }
             else
             {
-                // A simple variable A.
-                StrValue = strValue.ToUpperInvariant();
-
                 // Go one char back, so the next time we will read the character behind this identifier.
                 PreviousChar();
-            }
 
-            Token = tok;
+                return new StringToken(TOK_SVARIDNT, strValue.ToUpperInvariant());
+            }
         }
 
         /// <summary>
         /// Parses the quoted string using the ECMA-55 rules.
         /// </summary>
         /// <param name="c">The first character ('"') of the parsed string literal.</param>
-        private void ParseQuotedString()
+        private IToken ParseQuotedString()
         {
             var strValue = string.Empty;
 
@@ -466,15 +423,14 @@ namespace BasicBasic.Indirect
                 throw ProgramState.ErrorAtLine("Unexpected end of quoted string");
             }
 
-            Token = TOK_QSTR;
-            StrValue = strValue;
+            return new StringToken(TOK_QSTR, strValue);
         }
 
         /// <summary>
         /// Parses the number using the ECMA-55 rules.
         /// </summary>
         /// <param name="c">The first character of the parsed number.</param>
-        private void ParseNumber(char c)
+        private IToken ParseNumber(char c)
         {
             var negate = false;
             if (c == '+')
@@ -537,11 +493,10 @@ namespace BasicBasic.Indirect
                 numValue = (float)(numValue * Math.Pow(10.0, exp));
             }
 
-            Token = TOK_NUM;
-            NumValue = negate ? -numValue : numValue;
-
             // Go one char back, so the next time we will read the character right behind this number.
             PreviousChar();
+
+            return new NumberToken(TOK_NUM, negate ? -numValue : numValue);
         }
 
         /// <summary>
