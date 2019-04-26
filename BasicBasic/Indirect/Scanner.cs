@@ -24,6 +24,8 @@ namespace BasicBasic.Indirect
 {
     using System;
 
+    using BasicBasic.Indirect.Tokens;
+    
 
     public class Scanner
     {
@@ -64,13 +66,13 @@ namespace BasicBasic.Indirect
             var line = 1;
             var atLineStart = true;
             ProgramLine programLine = null;
-            while (token.TokenCode != Tokenizer.TOK_EOF)
+            while (token.TokenCode != TokenCode.TOK_EOF)
             {
                 if (atLineStart)
                 {
-                    if (token.TokenCode != Tokenizer.TOK_NUM)
+                    if (token.TokenCode != TokenCode.TOK_NUM)
                     {
-                        throw ProgramState.UnexpectedTokenError(token.TokenCode);
+                        throw ProgramState.UnexpectedTokenError(token);
                     }
 
                     var label = (int)token.NumValue;
@@ -101,7 +103,7 @@ namespace BasicBasic.Indirect
                 {
                     // Save all tokens to the program line.
 
-                    if (token.TokenCode == Tokenizer.TOK_EOLN)
+                    if (token.TokenCode == TokenCode.TOK_EOLN)
                     {
                         // Remember this line.
                         ProgramState.SetProgramLine(programLine);

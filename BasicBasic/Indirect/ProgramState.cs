@@ -24,6 +24,8 @@ namespace BasicBasic.Indirect
 {
     using System;
 
+    using BasicBasic.Indirect.Tokens;
+    
 
     /// <summary>
     /// The global program state.
@@ -203,7 +205,7 @@ namespace BasicBasic.Indirect
         /// </summary>
         /// <param name="tok">The unexpected token.</param>
         /// <returns>An unexpected token error on a program line as a throwable exception.</returns>
-        public InterpreterException UnexpectedTokenError(int tok)
+        public InterpreterException UnexpectedTokenError(IToken tok)
         {
             return ErrorAtLine("Unexpected token {0}", tok);
         }
