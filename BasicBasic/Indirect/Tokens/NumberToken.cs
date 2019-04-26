@@ -24,7 +24,7 @@ namespace BasicBasic.Indirect.Tokens
 {
     public class NumberToken : AToken
     {
-        public NumberToken(int tokenCode, float n)
+        public NumberToken(TokenCode tokenCode, float n)
         {
             TokenCode = tokenCode;
             NumValue = n;

@@ -23,7 +23,7 @@ namespace BasicBasic.Indirect.Tokens
 {
     public abstract class AToken : IToken
     {
-        public int TokenCode { get; protected set; }
+        public TokenCode TokenCode { get; protected set; }
 
         public float NumValue { get; protected set; }
 
@@ -39,58 +39,58 @@ namespace BasicBasic.Indirect.Tokens
         {
             switch (TokenCode)
             {
-                case Tokenizer.TOK_SVARIDNT:
-                case Tokenizer.TOK_VARIDNT:
-                case Tokenizer.TOK_STRIDNT:
-                case Tokenizer.TOK_FN:
-                case Tokenizer.TOK_UFN:
+                case TokenCode.TOK_SVARIDNT:
+                case TokenCode.TOK_VARIDNT:
+                case TokenCode.TOK_STRIDNT:
+                case TokenCode.TOK_FN:
+                case TokenCode.TOK_UFN:
                     return StrValue;
 
-                case Tokenizer.TOK_PLSTSEP: return ";";
-                case Tokenizer.TOK_LSTSEP: return ",";
-                case Tokenizer.TOK_EQL: return "="; 
-                case Tokenizer.TOK_NEQL: return "<>";
-                case Tokenizer.TOK_LT: return "<"; 
-                case Tokenizer.TOK_LTE: return "<=";
-                case Tokenizer.TOK_GT: return ">"; 
-                case Tokenizer.TOK_GTE: return ">=";
-                case Tokenizer.TOK_PLUS: return "+";
-                case Tokenizer.TOK_MINUS: return "-";
-                case Tokenizer.TOK_MULT: return "*";
-                case Tokenizer.TOK_DIV: return "/";
-                case Tokenizer.TOK_POW: return "^";
-                case Tokenizer.TOK_LBRA: return "(";
-                case Tokenizer.TOK_RBRA: return ")";
+                case TokenCode.TOK_PLSTSEP: return ";";
+                case TokenCode.TOK_LSTSEP: return ",";
+                case TokenCode.TOK_EQL: return "="; 
+                case TokenCode.TOK_NEQL: return "<>";
+                case TokenCode.TOK_LT: return "<"; 
+                case TokenCode.TOK_LTE: return "<=";
+                case TokenCode.TOK_GT: return ">"; 
+                case TokenCode.TOK_GTE: return ">=";
+                case TokenCode.TOK_PLUS: return "+";
+                case TokenCode.TOK_MINUS: return "-";
+                case TokenCode.TOK_MULT: return "*";
+                case TokenCode.TOK_DIV: return "/";
+                case TokenCode.TOK_POW: return "^";
+                case TokenCode.TOK_LBRA: return "(";
+                case TokenCode.TOK_RBRA: return ")";
 
-                case Tokenizer.TOK_KEY_BASE: return "BASE";
-                //case Tokenizer.TOK_KEY_DATA: return "DATA";
-                case Tokenizer.TOK_KEY_DEF: return "DEF";
-                case Tokenizer.TOK_KEY_DIM: return "DIM";
-                case Tokenizer.TOK_KEY_END: return "END";
-                //case Tokenizer.TOK_KEY_FOR: return "FOR";
-                case Tokenizer.TOK_KEY_GO: return "GO";
-                case Tokenizer.TOK_KEY_GOSUB: return "GOSUB";
-                case Tokenizer.TOK_KEY_GOTO: return "GOTO";
-                case Tokenizer.TOK_KEY_IF: return "IF";
-                case Tokenizer.TOK_KEY_INPUT: return "INPUT";
-                case Tokenizer.TOK_KEY_LET: return "LET";
-                //case Tokenizer.TOK_KEY_NEXT: return "NEXT";
-                //case Tokenizer.TOK_KEY_ON: return "ON";
-                case Tokenizer.TOK_KEY_OPTION: return "OPTION";
-                case Tokenizer.TOK_KEY_PRINT: return "PRINT";
-                case Tokenizer.TOK_KEY_RANDOMIZE: return "RANDOMIZE";
-                //case Tokenizer.TOK_KEY_READ: return "READ";
-                case Tokenizer.TOK_KEY_REM: return "REM";
-                //case Tokenizer.TOK_KEY_RESTORE: return "RESTORE";
-                case Tokenizer.TOK_KEY_RETURN: return "RETURN";
-                //case Tokenizer.TOK_KEY_STEP: return "STEP";
-                case Tokenizer.TOK_KEY_STOP: return "STOP";
-                case Tokenizer.TOK_KEY_SUB: return "SUB";
-                case Tokenizer.TOK_KEY_THEN: return "THEN";
-                case Tokenizer.TOK_KEY_TO: return "TO";
+                case TokenCode.TOK_KEY_BASE: return "BASE";
+                //case TokenCode.TOK_KEY_DATA: return "DATA";
+                case TokenCode.TOK_KEY_DEF: return "DEF";
+                case TokenCode.TOK_KEY_DIM: return "DIM";
+                case TokenCode.TOK_KEY_END: return "END";
+                //case TokenCode.TOK_KEY_FOR: return "FOR";
+                case TokenCode.TOK_KEY_GO: return "GO";
+                case TokenCode.TOK_KEY_GOSUB: return "GOSUB";
+                case TokenCode.TOK_KEY_GOTO: return "GOTO";
+                case TokenCode.TOK_KEY_IF: return "IF";
+                case TokenCode.TOK_KEY_INPUT: return "INPUT";
+                case TokenCode.TOK_KEY_LET: return "LET";
+                //case TokenCode.TOK_KEY_NEXT: return "NEXT";
+                //case TokenCode.TOK_KEY_ON: return "ON";
+                case TokenCode.TOK_KEY_OPTION: return "OPTION";
+                case TokenCode.TOK_KEY_PRINT: return "PRINT";
+                case TokenCode.TOK_KEY_RANDOMIZE: return "RANDOMIZE";
+                //case TokenCode.TOK_KEY_READ: return "READ";
+                case TokenCode.TOK_KEY_REM: return "REM";
+                //case TokenCode.TOK_KEY_RESTORE: return "RESTORE";
+                case TokenCode.TOK_KEY_RETURN: return "RETURN";
+                //case TokenCode.TOK_KEY_STEP: return "STEP";
+                case TokenCode.TOK_KEY_STOP: return "STOP";
+                case TokenCode.TOK_KEY_SUB: return "SUB";
+                case TokenCode.TOK_KEY_THEN: return "THEN";
+                case TokenCode.TOK_KEY_TO: return "TO";
 
-                case Tokenizer.TOK_EOF: return "@EOF";
-                case Tokenizer.TOK_EOLN: return "@EOLN";
+                case TokenCode.TOK_EOF: return "@EOF";
+                case TokenCode.TOK_EOLN: return "@EOLN";
             }
 
             throw new InterpreterException("Unknown token " + TokenCode + ".");

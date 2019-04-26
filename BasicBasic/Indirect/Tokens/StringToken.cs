@@ -24,7 +24,7 @@ namespace BasicBasic.Indirect.Tokens
 {
     public class StringToken : AToken
     {
-        public StringToken(int tokenCode, string s)
+        public StringToken(TokenCode tokenCode, string s)
         {
             TokenCode = tokenCode;
             StrValue = s ?? string.Empty;

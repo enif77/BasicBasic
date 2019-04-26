@@ -22,10 +22,11 @@ freely, subject to the following restrictions:
 
 namespace BasicBasic.Indirect
 {
-    using BasicBasic.Indirect.Tokens;
     using System;
     using System.Collections.Generic;
 
+    using BasicBasic.Indirect.Tokens;
+    
 
     /// <summary>
     /// Breaks a program source into tokens.
@@ -44,132 +45,30 @@ namespace BasicBasic.Indirect
         /// </summary>
         public const char C_EOLN = '\n';
 
-
-        /// <summary>
-        /// The end of the file token.
-        /// </summary>
-        public const int TOK_EOF = 0;
-
-        /// <summary>
-        /// The end of the line token.
-        /// </summary>
-        public const int TOK_EOLN = 1;
-
-        /// <summary>
-        /// A simple ('A' .. 'Z') identifier token.
-        /// used for variables, arrays and user function parameters.
-        /// </summary>
-        public const int TOK_SVARIDNT = 4;
-
-        /// <summary>
-        /// A numeric variable ("A0" .. "Z9") identifier token.
-        /// </summary>
-        public const int TOK_VARIDNT = 5;
-
-        /// <summary>
-        /// A string variable ("A$" .. "Z$") identifier token.
-        /// </summary>
-        public const int TOK_STRIDNT = 6;
-
-        /// <summary>
-        /// A number token.
-        /// </summary>
-        public const int TOK_NUM = 10;
-
-        /// <summary>
-        /// A quoted string token.
-        /// </summary>
-        public const int TOK_QSTR = 11;
-
-        /// <summary>
-        /// A build in function name token.
-        /// </summary>
-        public const int TOK_FN = 12;
-
-        /// <summary>
-        /// An user defined function name ("FN?") token.
-        /// </summary>
-        public const int TOK_UFN = 13;
-
-        /// <summary>
-        /// A PRINT statement values list separator (';') token.
-        /// </summary>
-        public const int TOK_PLSTSEP = 20;
-
-        /// <summary>
-        /// A list separator (',') token.
-        /// </summary>
-        public const int TOK_LSTSEP = 21;
-
-        public const int TOK_EQL = 30;   // =
-        public const int TOK_NEQL = 31;  // <>
-        public const int TOK_LT = 32;    // <
-        public const int TOK_LTE = 33;   // <=
-        public const int TOK_GT = 34;    // >
-        public const int TOK_GTE = 35;   // >=
-
-        // + - * / ^ ( )
-        public const int TOK_PLUS = 40;
-        public const int TOK_MINUS = 41;
-        public const int TOK_MULT = 42;
-        public const int TOK_DIV = 43;
-        public const int TOK_POW = 44;
-        public const int TOK_LBRA = 45;
-        public const int TOK_RBRA = 46;
-
-        // Keywords tokens.
-
-        public const int TOK_KEY_BASE = 100;
-        //public const int TOK_KEY_DATA = 101;
-        public const int TOK_KEY_DEF = 102;
-        public const int TOK_KEY_DIM = 103;
-        public const int TOK_KEY_END = 104;
-        //public const int TOK_KEY_FOR = 105;
-        public const int TOK_KEY_GO = 106;
-        public const int TOK_KEY_GOSUB = 107;
-        public const int TOK_KEY_GOTO = 108;
-        public const int TOK_KEY_IF = 109;
-        public const int TOK_KEY_INPUT = 110;
-        public const int TOK_KEY_LET = 111;
-        //public const int TOK_KEY_NEXT = 112;
-        //public const int TOK_KEY_ON = 113;
-        public const int TOK_KEY_OPTION = 114;
-        public const int TOK_KEY_PRINT = 115;
-        public const int TOK_KEY_RANDOMIZE = 116;
-        //public const int TOK_KEY_READ = 117;
-        public const int TOK_KEY_REM = 118;
-        //public const int TOK_KEY_RESTORE = 119;
-        public const int TOK_KEY_RETURN = 120;
-        //public const int TOK_KEY_STEP = 121;
-        public const int TOK_KEY_STOP = 122;
-        public const int TOK_KEY_SUB = 123;
-        public const int TOK_KEY_THEN = 124;
-        public const int TOK_KEY_TO = 125;
-
         /// <summary>
         /// The keyword - token map.
         /// </summary>
-        private readonly Dictionary<string, int> _keyWordsMap = new Dictionary<string, int>()
+        private readonly Dictionary<string, TokenCode> _keyWordsMap = new Dictionary<string, TokenCode>()
         {
-            { "BASE", TOK_KEY_BASE },
-            { "DEF", TOK_KEY_DEF },
-            { "DIM", TOK_KEY_DIM },
-            { "END", TOK_KEY_END },
-            { "GO", TOK_KEY_GO },
-            { "GOSUB", TOK_KEY_GOSUB },
-            { "GOTO", TOK_KEY_GOTO },
-            { "IF", TOK_KEY_IF },
-            { "INPUT", TOK_KEY_INPUT },
-            { "LET", TOK_KEY_LET },
-            { "OPTION", TOK_KEY_OPTION },
-            { "PRINT", TOK_KEY_PRINT },
-            { "RANDOMIZE", TOK_KEY_RANDOMIZE },
-            { "REM", TOK_KEY_REM },
-            { "RETURN", TOK_KEY_RETURN },
-            { "STOP", TOK_KEY_STOP },
-            { "SUB", TOK_KEY_SUB },
-            { "THEN", TOK_KEY_THEN },
-            { "TO", TOK_KEY_TO },
+            { "BASE", TokenCode.TOK_KEY_BASE },
+            { "DEF", TokenCode.TOK_KEY_DEF },
+            { "DIM", TokenCode.TOK_KEY_DIM },
+            { "END", TokenCode.TOK_KEY_END },
+            { "GO", TokenCode.TOK_KEY_GO },
+            { "GOSUB", TokenCode.TOK_KEY_GOSUB },
+            { "GOTO", TokenCode.TOK_KEY_GOTO },
+            { "IF", TokenCode.TOK_KEY_IF },
+            { "INPUT", TokenCode.TOK_KEY_INPUT },
+            { "LET", TokenCode.TOK_KEY_LET },
+            { "OPTION", TokenCode.TOK_KEY_OPTION },
+            { "PRINT", TokenCode.TOK_KEY_PRINT },
+            { "RANDOMIZE", TokenCode.TOK_KEY_RANDOMIZE },
+            { "REM", TokenCode.TOK_KEY_REM },
+            { "RETURN", TokenCode.TOK_KEY_RETURN },
+            { "STOP", TokenCode.TOK_KEY_STOP },
+            { "SUB", TokenCode.TOK_KEY_SUB },
+            { "THEN", TokenCode.TOK_KEY_THEN },
+            { "TO", TokenCode.TOK_KEY_TO },
         };
 
         #endregion
@@ -257,23 +156,23 @@ namespace BasicBasic.Indirect
 
                 switch (c)
                 {
-                    case '=': return new SimpleToken(TOK_EQL);
+                    case '=': return new SimpleToken(TokenCode.TOK_EQL);
 
                     case '<':
                         {
                             var cc = NextChar();
                             if (cc == '>')
                             {
-                                return new SimpleToken(TOK_NEQL);
+                                return new SimpleToken(TokenCode.TOK_NEQL);
                             }
                             else if (cc == '=')
                             {
-                                return new SimpleToken(TOK_LTE);
+                                return new SimpleToken(TokenCode.TOK_LTE);
                             }
                             else
                             {
                                 PreviousChar();
-                                return new SimpleToken(TOK_LT);
+                                return new SimpleToken(TokenCode.TOK_LT);
                             }
                         }
 
@@ -282,12 +181,12 @@ namespace BasicBasic.Indirect
                             var cc = NextChar();
                             if (cc == '=')
                             {
-                                return new SimpleToken(TOK_GTE);
+                                return new SimpleToken(TokenCode.TOK_GTE);
                             }
                             else
                             {
                                 PreviousChar();
-                                return new SimpleToken(TOK_GT);
+                                return new SimpleToken(TokenCode.TOK_GT);
                             }
                         }
 
@@ -302,7 +201,7 @@ namespace BasicBasic.Indirect
                             }
                             else
                             {
-                                return new SimpleToken(TOK_PLUS);
+                                return new SimpleToken(TokenCode.TOK_PLUS);
                             }
                         }
 
@@ -317,24 +216,24 @@ namespace BasicBasic.Indirect
                             }
                             else
                             {
-                                return new SimpleToken(TOK_MINUS);
+                                return new SimpleToken(TokenCode.TOK_MINUS);
                             }
                         }
 
-                    case '*': return new SimpleToken(TOK_MULT);
-                    case '/': return new SimpleToken(TOK_DIV);
-                    case '^': return new SimpleToken(TOK_POW);
-                    case '(': return new SimpleToken(TOK_LBRA);
-                    case ')': return new SimpleToken(TOK_RBRA);
-                    case ',': return new SimpleToken(TOK_LSTSEP);
-                    case ';': return new SimpleToken(TOK_PLSTSEP);
-                    case C_EOLN: return new SimpleToken(TOK_EOLN);
+                    case '*': return new SimpleToken(TokenCode.TOK_MULT);
+                    case '/': return new SimpleToken(TokenCode.TOK_DIV);
+                    case '^': return new SimpleToken(TokenCode.TOK_POW);
+                    case '(': return new SimpleToken(TokenCode.TOK_LBRA);
+                    case ')': return new SimpleToken(TokenCode.TOK_RBRA);
+                    case ',': return new SimpleToken(TokenCode.TOK_LSTSEP);
+                    case ';': return new SimpleToken(TokenCode.TOK_PLSTSEP);
+                    case C_EOLN: return new SimpleToken(TokenCode.TOK_EOLN);
                 }
 
                 c = NextChar();
             }
 
-            return new SimpleToken(TOK_EOF);
+            return new SimpleToken(TokenCode.TOK_EOF);
         }
 
         /// <summary>
@@ -349,12 +248,12 @@ namespace BasicBasic.Indirect
             if (IsDigit(c))
             {
                 // A numeric Ax variable.
-                return new StringToken(TOK_VARIDNT, (strValue + c).ToUpperInvariant());
+                return new StringToken(TokenCode.TOK_VARIDNT, (strValue + c).ToUpperInvariant());
             }
             else if (c == '$')
             {
                 // A string A$ variable.
-                return new StringToken(TOK_STRIDNT, (strValue + c).ToUpperInvariant());
+                return new StringToken(TokenCode.TOK_STRIDNT, (strValue + c).ToUpperInvariant());
             }
             else if (IsLetter(c))
             {
@@ -389,8 +288,8 @@ namespace BasicBasic.Indirect
                     }
 
                     return strValue.StartsWith("FN")
-                        ? new StringToken(TOK_UFN, strValue)
-                        : new StringToken(TOK_FN, strValue);
+                        ? new StringToken(TokenCode.TOK_UFN, strValue)
+                        : new StringToken(TokenCode.TOK_FN, strValue);
                 }
             }
             else
@@ -398,7 +297,7 @@ namespace BasicBasic.Indirect
                 // Go one char back, so the next time we will read the character behind this identifier.
                 PreviousChar();
 
-                return new StringToken(TOK_SVARIDNT, strValue.ToUpperInvariant());
+                return new StringToken(TokenCode.TOK_SVARIDNT, strValue.ToUpperInvariant());
             }
         }
 
@@ -423,7 +322,7 @@ namespace BasicBasic.Indirect
                 throw ProgramState.ErrorAtLine("Unexpected end of quoted string");
             }
 
-            return new StringToken(TOK_QSTR, strValue);
+            return new StringToken(TokenCode.TOK_QSTR, strValue);
         }
 
         /// <summary>
@@ -496,7 +395,7 @@ namespace BasicBasic.Indirect
             // Go one char back, so the next time we will read the character right behind this number.
             PreviousChar();
 
-            return new NumberToken(TOK_NUM, negate ? -numValue : numValue);
+            return new NumberToken(TokenCode.TOK_NUM, negate ? -numValue : numValue);
         }
 
         /// <summary>

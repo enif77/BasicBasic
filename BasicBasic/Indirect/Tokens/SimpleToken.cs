@@ -24,7 +24,7 @@ namespace BasicBasic.Indirect.Tokens
 {
     public class SimpleToken : AToken
     {
-        public SimpleToken(int tokenCode)
+        public SimpleToken(TokenCode tokenCode)
         {
             TokenCode = tokenCode;
         }
