@@ -46,6 +46,7 @@
   <ItemGroup>
     <Compile Include="IErrorHandler.cs" />
     <Compile Include="Direct\Interpreter.cs" />
+    <Compile Include="Indirect\Interpreter.cs" />
     <Compile Include="Indirect\Tokens\AToken.cs" />
     <Compile Include="Indirect\Tokens\IToken.cs" />
     <Compile Include="Indirect\Tokens\RemToken.cs" />

@@ -47,6 +47,27 @@ namespace BasicBasic.Indirect
         public IList<IToken> Tokens { get; } = new List<IToken>();
 
 
+        public void AddToken(IToken token)
+        {
+        }
+
+
+        public IToken ThisToken()
+        {
+            return new SimpleToken(TokenCode.TOK_EOF);
+        }
+
+
+        public IToken NextToken()
+        {
+            return new SimpleToken(TokenCode.TOK_EOF);
+        }
+
+
+        public void Rewind()
+        {
+        }
+        
         /// <summary>
         /// Returns the string representation of this program line.
         /// </summary>
