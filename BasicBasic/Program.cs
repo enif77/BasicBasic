@@ -55,7 +55,6 @@ namespace BasicBasic
         private void RunIndirect(string[] args)
         {
             string source = null;
-            var pstate = new Indirect.ProgramState(this);
             if (args.Length > 0 && args[0].StartsWith("!") == false)
             {
                 source = File.ReadAllText(args[0]);
@@ -68,6 +67,7 @@ namespace BasicBasic
                 return;
             }
 
+            var pstate = new Indirect.ProgramState(this);
             var scanner = new Indirect.Scanner(pstate);
             scanner.ScanSource(source, false);
 
