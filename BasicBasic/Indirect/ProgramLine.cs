@@ -22,7 +22,7 @@ freely, subject to the following restrictions:
 
 namespace BasicBasic.Indirect
 {
-    using System.Collections.Generic;
+    using System;
     using System.Globalization;
     using System.Text;
 
@@ -41,31 +41,81 @@ namespace BasicBasic.Indirect
         /// </summary>
         public int Label { get; set; }
 
+
+        public ProgramLine()
+        {
+            _thisTokenPos = -1;
+            _tokens = new IToken[10]; 
+        }
+
+
+        #region public
+
         /// <summary>
-        /// The program line tokens.
+        /// Adds a token to this program line.
         /// </summary>
-        public IList<IToken> Tokens { get; } = new List<IToken>();
-
-
+        /// <param name="token">A token.</param>
         public void AddToken(IToken token)
         {
+            if (token == null) throw new ArgumentNullException(nameof(token));
+
+            var newTokPos = _thisTokenPos + 1;
+            if (newTokPos >= _tokens.Length)
+            {
+                var newTokens = new IToken[_tokens.Length + 10];
+                for (var i = 0; i < _tokens.Length; i++)
+                {
+                    newTokens[i] = _tokens[i];
+                }
+
+                _tokens = newTokens;
+            }
+
+            _thisTokenPos = newTokPos;
+
+            _tokens[_thisTokenPos] = token;          
         }
 
-
+        /// <summary>
+        /// Returns the current (last returned) token from this program line.
+        /// Returns the end-of-file token, before the NextToken() was ever called or, 
+        /// when no (more) tokens are available.
+        /// </summary>
+        /// <returns>The current token from this program line.</returns>
         public IToken ThisToken()
         {
-            return new SimpleToken(TokenCode.TOK_EOF);
+            if (_thisTokenPos < 0 || _thisTokenPos >= _tokens.Length)
+            {
+                return new SimpleToken(TokenCode.TOK_EOF);
+            }
+
+            return _tokens[_thisTokenPos];
         }
 
-
+        /// <summary>
+        /// Returns the next token from this program line.
+        /// Returns the end-of-file token, when no more tokens are available.
+        /// </summary>
+        /// <returns>The next token from this program line.</returns>
         public IToken NextToken()
         {
-            return new SimpleToken(TokenCode.TOK_EOF);
+            var newTokPos = _thisTokenPos + 1;
+            if (newTokPos >= _tokens.Length || _tokens[newTokPos] == null)
+            {
+                return new SimpleToken(TokenCode.TOK_EOF);
+            }
+
+            _thisTokenPos = newTokPos;
+
+            return _tokens[_thisTokenPos];
         }
 
-
+        /// <summary>
+        /// Returns to the first token in this program line.
+        /// </summary>
         public void Rewind()
         {
+            _thisTokenPos = -1;
         }
         
         /// <summary>
@@ -74,23 +124,41 @@ namespace BasicBasic.Indirect
         /// <returns>The string representation of this program line.</returns>
         public override string ToString()
         {
-            if (Tokens.Count == 0)
+            if (_thisTokenPos < 0)
             {
                 return string.Empty;
             }
 
             var sb = new StringBuilder();
 
-            sb.Append(Label.ToString(CultureInfo.InvariantCulture));
-            sb.Append(" ");
-
-            foreach (var t in Tokens)
+            if (Label > 0)
             {
-                sb.Append(t);
+                sb.Append(Label.ToString(CultureInfo.InvariantCulture));
+                sb.Append(" ");
+            }
+           
+            for (var i = 0; i < _tokens.Length; i++)
+            {
+                if (_tokens[i] == null)
+                {
+                    break;
+                }
+
+                sb.Append(_tokens[i]);
                 sb.Append(" ");
             }
 
             return sb.ToString();
         }
+
+        #endregion
+
+
+        #region private
+
+        private int _thisTokenPos;
+        private IToken[] _tokens;
+
+        #endregion
     }
 }

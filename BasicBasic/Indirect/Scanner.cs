@@ -112,11 +112,11 @@ namespace BasicBasic.Indirect
                     else if (token.TokenCode == TokenCode.TOK_KEY_REM)
                     {
                         // Skip the remark.
-                        programLine.Tokens.Add(new RemToken(tokenizer.SkipToEoln()));
+                        programLine.AddToken(new RemToken(tokenizer.SkipToEoln()));
                     }
                     else
                     {
-                        programLine.Tokens.Add(token);
+                        programLine.AddToken(token);
                     }
                 }
 
