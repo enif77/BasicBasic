@@ -141,20 +141,20 @@ namespace BasicBasic.Indirect
             }
         }
 
-        ///// <summary>
-        ///// Sets the current program line.
-        ///// </summary>
-        ///// <param name="programLine">A program line.</param>
-        ///// <param name="rewind">If true, call Rewind() on the program line to start its proccesing from its beginning.</param>
-        //public void SetCurrentProgramLine(ProgramLine programLine, bool rewind = true)
-        //{
-        //    CurrentProgramLine = programLine;
+        /// <summary>
+        /// Sets the current program line.
+        /// </summary>
+        /// <param name="programLine">A program line.</param>
+        /// <param name="rewind">If true, call Rewind() on the program line to start its proccesing from its beginning.</param>
+        public void SetCurrentProgramLine(ProgramLine programLine, bool rewind = true)
+        {
+            CurrentProgramLine = programLine;
 
-        //    if (rewind)
-        //    {
-        //        CurrentProgramLine.Rewind();
-        //    }
-        //}
+            if (rewind)
+            {
+                CurrentProgramLine.Rewind();
+            }
+        }
 
         /// <summary>
         /// Gets the next defined program line.
