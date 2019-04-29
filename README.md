@@ -21,18 +21,18 @@ More interesting informations and implementations of the Minimal Basic can be fo
 
 ## Implementation
 
-There are multiple implementations of the Minimal Basic interpreter. Eaxh shows a different
-aproach how to interpret a program source.
+There are multiple implementations of the Minimal BASIC System interpreter. 
+Each shows a different approach to how to interpret a program source.
 
 ### Direct interpreter
 
-Does no "compilation" at all. It reads the program source, splits it into tokens
+Does no compilation at all. It reads the program source, splits it into tokens
 and interprets each token directly. This happens all the time, so it is siple, but
 very "slow" way of doing it. Dont worry, our computers are fast enough to handle it. :-)
 
 ### Indirect interpreter
 
-No real compilation here still, but atleast it translates the program source into tokens
+Still no real compilation here, but atleast it translates the program source into tokens
 only once (during the scanner phase). It makes the interpretation much faster and allows
 more error checks to happen before the run time (aka the interpretation phase).
 
