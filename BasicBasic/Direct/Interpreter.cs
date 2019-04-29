@@ -30,7 +30,7 @@ namespace BasicBasic.Direct
     /// <summary>
     /// The basic Basic interpreter.
     /// </summary>
-    public class Interpreter
+    public class Interpreter : IInterpreter
     {
         #region ctor
 

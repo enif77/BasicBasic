@@ -36,8 +36,7 @@ namespace BasicBasic
             {
                 var p = new Program();
 
-                //p.Run(args);
-                p.RunIndirect(args);
+                p.Run(args, new Indirect.Interpreter(p));
             }
             catch (Exception ex)
             {
@@ -52,36 +51,8 @@ namespace BasicBasic
 
         #region private
 
-        private void RunIndirect(string[] args)
+        private void Run(string[] args, IInterpreter interpreter)
         {
-            string source = null;
-            if (args.Length > 0 && args[0].StartsWith("!") == false)
-            {
-                source = File.ReadAllText(args[0]);
-            }
-
-            if (string.IsNullOrEmpty(source))
-            {
-                Console.Error.WriteLine("No source.");
-
-                return;
-            }
-
-            var pstate = new Indirect.ProgramState(this);
-            var scanner = new Indirect.Scanner(pstate);
-            scanner.ScanSource(source, false);
-
-            foreach (var ln in pstate.GetProgramLines())
-            {
-                Console.WriteLine(ln);
-            }
-        }
-
-
-        private void Run(string[] args)
-        {
-            var interpreter = new Interpreter(this);
-
             interpreter.Initialize();
 
             if (args.Length > 0 && args[0].StartsWith("!") == false)

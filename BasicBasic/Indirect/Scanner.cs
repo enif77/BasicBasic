@@ -52,7 +52,7 @@ namespace BasicBasic.Indirect
         /// <param name="source">The source.</param>
         /// <param name="interactiveMode">A program line in the interactive mode can exist, 
         /// so the user can redefine it, and can be empty, so the user can delete it.</param>
-        public void ScanSource(string source, bool interactiveMode = false)
+        public ProgramLine ScanSource(string source, bool interactiveMode = false)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
 
@@ -69,17 +69,26 @@ namespace BasicBasic.Indirect
             {
                 if (atLineStart)
                 {
+                    int label;
                     if (token.TokenCode != TokenCode.TOK_NUM)
                     {
-                        throw ProgramState.UnexpectedTokenError(token);
-                    }
+                        if (interactiveMode == false)
+                        {
+                            throw ProgramState.UnexpectedTokenError(token);
+                        }
 
-                    var label = (int)token.NumValue;
-                    if (label < 1 || label > ProgramState.MaxLabel)
+                        // Interactive mode program line.
+                        label = -1;
+                    }
+                    else
                     {
-                        throw ProgramState.Error("Label {0} at line {1} out of <1 ... {2}> rangle.", label, line, ProgramState.MaxLabel);
+                        label = (int)token.NumValue;
+                        if (label < 1 || label > ProgramState.MaxLabel)
+                        {
+                            throw ProgramState.Error("Label {0} at line {1} out of <1 ... {2}> rangle.", label, line, ProgramState.MaxLabel);
+                        }
                     }
-
+                    
                     //if (Tokenizer.IsWhite(c) == false)
                     //{
                     //    throw ProgramState.Error("Label {0} at line {1} is not separated from the statement by a white character.", label, line);
@@ -96,6 +105,13 @@ namespace BasicBasic.Indirect
                         Label = label
                     };
 
+                    // An interactive mode program line?
+                    if (label == -1)
+                    {
+                        // Remember the current token (a command).
+                        programLine.AddToken(token);
+                    }
+
                     atLineStart = false;
                 }
                 else
@@ -103,6 +119,15 @@ namespace BasicBasic.Indirect
                     // Save all tokens to the program line.
                     if (token.TokenCode == TokenCode.TOK_EOLN)
                     {
+                        // EOLN is a part of a program line.
+                        programLine.AddToken(token);
+
+                        if (interactiveMode && programLine.Label == -1)
+                        {
+                            // Return the scanned program line.
+                            return programLine;
+                        }
+
                         // Remember this line.
                         ProgramState.SetProgramLine(programLine);
                         programLine = null;
@@ -125,6 +150,11 @@ namespace BasicBasic.Indirect
 
             if (interactiveMode && programLine != null)
             {
+                if (programLine.Label == -1)
+                {
+                    throw ProgramState.Error("A line end expected at the interactive line.");
+                }
+
                 // Remember this line.
                 ProgramState.SetProgramLine(programLine);
                 programLine = null;
@@ -135,6 +165,8 @@ namespace BasicBasic.Indirect
             {
                 throw ProgramState.Error("No line end at line {0}.", line);
             }
+
+            return null;
         }
     }
 }

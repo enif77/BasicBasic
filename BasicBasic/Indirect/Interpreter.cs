@@ -31,7 +31,7 @@ namespace BasicBasic.Indirect
     /// <summary>
     /// The basic Basic interpreter.
     /// </summary>
-    public class Interpreter
+    public class Interpreter : IInterpreter
     {
         #region ctor
 
@@ -76,6 +76,24 @@ namespace BasicBasic.Indirect
 
             _scanner.ScanSource(source);
             InterpretImpl();
+        }
+
+        /// <summary>
+        /// Interprets a single program line.
+        /// </summary>
+        /// <param name="source">A program line source.</param>
+        public void InterpretLine(string source)
+        {
+            if (source == null) throw _programState.Error("A source expected.");
+
+            // Each token should be preceeded by at least a single white character.
+            // So we have to add one here, if user do not inserted one.
+            if (Tokenizer.IsWhite(source[0]) == false)
+            {
+                source = " " + source;
+            }
+
+            InterpretLine(_scanner.ScanSource(source, true));
         }
 
         /// <summary>
@@ -166,18 +184,18 @@ namespace BasicBasic.Indirect
             var token = NextToken();
             switch (token.TokenCode)
             {
-                //case Tokenizer.TOK_KEY_DEF: return DefStatement();
-                //case Tokenizer.TOK_KEY_DIM: return DimStatement();
+                case TokenCode.TOK_KEY_DEF: return DefStatement();
+                case TokenCode.TOK_KEY_DIM: return DimStatement();
                 case TokenCode.TOK_KEY_END: return EndStatement();
                 case TokenCode.TOK_KEY_GO:
                 case TokenCode.TOK_KEY_GOSUB:
                 case TokenCode.TOK_KEY_GOTO:
                     return GoToStatement();
-                //case Tokenizer.TOK_KEY_IF: return IfStatement();
-                //case Tokenizer.TOK_KEY_INPUT: return InputStatement();
-                //case Tokenizer.TOK_KEY_LET: return LetStatement();
-                //case Tokenizer.TOK_KEY_OPTION: return OptionStatement();
-                //case Tokenizer.TOK_KEY_PRINT: return PrintStatement();
+                case TokenCode.TOK_KEY_IF: return IfStatement();
+                //case TokenCode.TOK_KEY_INPUT: return InputStatement();
+                case TokenCode.TOK_KEY_LET: return LetStatement();
+                case TokenCode.TOK_KEY_OPTION: return OptionStatement();
+                case TokenCode.TOK_KEY_PRINT: return PrintStatement();
                 case TokenCode.TOK_KEY_RANDOMIZE: return RandomizeStatement();
                 case TokenCode.TOK_KEY_REM: return RemStatement();
                 case TokenCode.TOK_KEY_RETURN: return ReturnStatement();
@@ -190,6 +208,78 @@ namespace BasicBasic.Indirect
 
 
         #region statements
+
+        // An user defined function.
+        // DEF FNx = numeric-expression EOLN
+        private ProgramLine DefStatement()
+        {
+            if (IsInteractiveModeProgramLine())
+            {
+                throw _programState.Error("DEF statement is not supported in the interactive mode.");
+            }
+
+            EatToken(TokenCode.TOK_KEY_DEF);
+
+            // Get the function name.
+            ExpToken(TokenCode.TOK_UFN, ThisToken());
+            var fname = ThisToken().StrValue;
+
+            // Do not redefine user functions.
+            if (_programState.IsUserFnDefined(fname))
+            {
+                throw _programState.ErrorAtLine("{0} function redefinition", fname);
+            }
+
+            // Save this function definition.
+            _programState.DefineUserFn(fname, _programState.CurrentProgramLine.Label);
+
+            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+        }
+
+        // An array definition.
+        // DIM array-declaration { ',' array-declaration } EOLN
+        private ProgramLine DimStatement()
+        {
+            EatToken(TokenCode.TOK_KEY_DIM);
+
+            ArrayDeclaration();
+
+            // ','
+            while (ThisToken().TokenCode == TokenCode.TOK_LSTSEP)
+            {
+                EatToken(TokenCode.TOK_LSTSEP);
+
+                ArrayDeclaration();
+            }
+
+            ExpToken(TokenCode.TOK_EOLN, ThisToken());
+
+            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+        }
+
+        // array-declaration : letter '(' integer ')' .
+        private void ArrayDeclaration()
+        {
+            // Get the function name.
+            ExpToken(TokenCode.TOK_SVARIDNT, ThisToken());
+
+            var arrayName = ThisToken().StrValue;
+
+            // Eat array name.
+            NextToken();
+
+            EatToken(TokenCode.TOK_LBRA);
+            ExpToken(TokenCode.TOK_NUM, ThisToken());
+
+            var topBound = (int)ThisToken().NumValue;
+
+            CheckArray(arrayName, topBound, topBound, false);
+
+            // Eat array upper bound.
+            NextToken();
+
+            EatToken(TokenCode.TOK_RBRA);
+        }
 
         // The end of program.
         // END EOLN
@@ -270,6 +360,249 @@ namespace BasicBasic.Indirect
             }
 
             return _programState.GetProgramLine(label);
+        }
+
+        // IF exp1 rel exp2 THEN line-number
+        // rel-num :: = <> >= <=
+        // rel-str :: = <>
+        private ProgramLine IfStatement()
+        {
+            if (IsInteractiveModeProgramLine())
+            {
+                throw _programState.Error("IF statement is not supported in the interactive mode.");
+            }
+
+            EatToken(TokenCode.TOK_KEY_IF);
+
+            // Do not jump.
+            var jump = false;
+
+            // String or numeric conditional jump?
+            if (IsStringExpression(ThisToken()))
+            {
+                var v1 = StringExpression(ThisToken());
+                NextToken();
+
+                var relTok = ThisToken();
+                NextToken();
+
+                var v2 = StringExpression(ThisToken());
+                NextToken();
+
+                jump = StringComparison(relTok, v1, v2);
+            }
+            else
+            {
+                var v1 = NumericExpression();
+
+                var relTok = ThisToken();
+                NextToken();
+
+                var v2 = NumericExpression();
+
+                jump = NumericComparison(relTok, v1, v2);
+            }
+
+            EatToken(TokenCode.TOK_KEY_THEN);
+
+            // Get the label.
+            var label = ExpLabel();
+
+            // EOLN.
+            NextToken();
+            ExpToken(TokenCode.TOK_EOLN, ThisToken());
+
+            return jump
+                ? _programState.GetProgramLine(label)
+                : _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+        }
+
+
+        private bool NumericComparison(IToken relTok, float v1, float v2)
+        {
+            switch (relTok.TokenCode)
+            {
+                case TokenCode.TOK_EQL: return v1 == v2; // =
+                case TokenCode.TOK_NEQL: return v1 != v2; // <>
+                case TokenCode.TOK_LT: return v1 < v2; // <
+                case TokenCode.TOK_LTE: return v1 <= v2; // <=
+                case TokenCode.TOK_GT: return v1 > v2; // >
+                case TokenCode.TOK_GTE: return v1 >= v2; // >=
+
+                default:
+                    throw _programState.UnexpectedTokenError(relTok);
+            }
+        }
+
+
+        private bool StringComparison(IToken relTok, string v1, string v2)
+        {
+            switch (relTok.TokenCode)
+            {
+                case TokenCode.TOK_EQL: return v1 == v2; // =
+                case TokenCode.TOK_NEQL: return v1 != v2; // <>
+
+                default:
+                    throw _programState.UnexpectedTokenError(relTok);
+            }
+        }
+
+
+        // Sets the array bottom dimension.
+        // OPTION BASE 1
+        private ProgramLine OptionStatement()
+        {
+            if (_programState.ArrayBase >= 0)
+            {
+                throw _programState.ErrorAtLine("The OPTION BASE command already executed. Can not change the arrays lower bound");
+            }
+
+            // Eat "OPTION".
+            NextToken();
+
+            EatToken(TokenCode.TOK_KEY_BASE);
+
+            // Array lower bound can not be changed, when an array is already defined.
+            if (_programState.IsArrayDefined())
+            {
+                throw _programState.ErrorAtLine("An array is already defined. Can not change the arrays lower bound");
+            }
+
+            // 0 or 1.
+            ExpToken(TokenCode.TOK_NUM, ThisToken());
+
+            var option = (int)ThisToken().NumValue;
+            if (option < 0 || option > 1)
+            {
+                throw _programState.ErrorAtLine("Array base out of allowed range 0 .. 1");
+            }
+
+            _programState.ArrayBase = option;
+
+            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+        }
+
+        // LET var = expr EOLN
+        // var :: num-var | string-var
+        private ProgramLine LetStatement()
+        {
+            EatToken(TokenCode.TOK_KEY_LET);
+
+            // var
+            if (ThisToken().TokenCode == TokenCode.TOK_SVARIDNT)
+            {
+                var varName = ThisToken().StrValue;
+
+                // Eat the variable identifier.
+                NextToken();
+
+                // Array subscript.
+                if (ThisToken().TokenCode == TokenCode.TOK_LBRA)
+                {
+                    NextToken();
+
+                    var index = (int)NumericExpression();
+
+                    EatToken(TokenCode.TOK_RBRA);
+
+                    CheckArray(varName, 10, index, true);
+
+                    EatToken(TokenCode.TOK_EQL);
+
+                    _programState.SetArray(varName, index, NumericExpression());
+                }
+                else
+                {
+                    CheckSubsription(varName);
+
+                    EatToken(TokenCode.TOK_EQL);
+
+                    _programState.SetNVar(varName, NumericExpression());
+                }
+            }
+            else if (ThisToken().TokenCode == TokenCode.TOK_VARIDNT)
+            {
+                var varName = ThisToken().StrValue;
+
+                // Eat the variable identifier.
+                NextToken();
+
+                EatToken(TokenCode.TOK_EQL);
+
+                _programState.SetNVar(varName, NumericExpression());
+            }
+            else if (ThisToken().TokenCode == TokenCode.TOK_STRIDNT)
+            {
+                var varName = ThisToken().StrValue;
+
+                // Eat the variable identifier.
+                NextToken();
+
+                EatToken(TokenCode.TOK_EQL);
+
+                _programState.SetSVar(varName, StringExpression(ThisToken()));
+
+                // Eat the string expression.
+                NextToken();
+            }
+            else
+            {
+                throw _programState.UnexpectedTokenError(ThisToken());
+            }
+
+            // EOLN
+            ExpToken(TokenCode.TOK_EOLN, ThisToken());
+
+            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+        }
+
+        // PRINT [ expr { print-sep expr } ] EOLN
+        // print-sep :: ';' | ','
+        private ProgramLine PrintStatement()
+        {
+            // Eat PRINT.
+            NextToken();
+
+            bool atSep = true;
+            while (ThisToken().TokenCode != TokenCode.TOK_EOLN)
+            {
+                switch (ThisToken().TokenCode)
+                {
+                    // Consume these.
+                    case TokenCode.TOK_LSTSEP:
+                    case TokenCode.TOK_PLSTSEP:
+                        atSep = true;
+                        NextToken();
+                        break;
+
+                    default:
+                        if (atSep == false)
+                        {
+                            throw _programState.ErrorAtLine("A list separator expected");
+                        }
+
+                        if (IsStringExpression(ThisToken()))
+                        {
+                            Console.Write(StringExpression(ThisToken()));
+
+                            // Eat the string expression.
+                            NextToken();
+                        }
+                        else
+                        {
+                            Console.Write(FormatNumber(NumericExpression()));
+                        }
+
+                        atSep = false;
+                        break;
+                }
+            }
+
+            ExpToken(TokenCode.TOK_EOLN, ThisToken());
+
+            Console.WriteLine();
+
+            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // Reseeds the random number generator.
