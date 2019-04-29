@@ -64,8 +64,6 @@
     <Compile Include="Direct\ProgramLine.cs" />
     <Compile Include="Direct\ProgramState.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Direct\Scanner.cs" />
-    <Compile Include="Direct\Tokenizer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="ECMA-55.TXT" />
