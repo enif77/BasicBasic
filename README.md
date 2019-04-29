@@ -1,8 +1,8 @@
 # BasicBasic Interpreter
 
-BasicBasic is a basic implementation of the ECMA-55 Minimal BASIC System. It is a direct 
-interpreter without any compilation phase. Can execute a script in a file or work directly 
-as a "super smart calculator thingy". :-)
+BasicBasic is a basic implementation of the ECMA-55 Minimal BASIC System. 
+
+Can execute a script in a file or work directly as a "super smart calculator thingy". :-)
 
 Right now it is a bit incomplete. Bigest missing parts are:
 
