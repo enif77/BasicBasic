@@ -56,6 +56,7 @@ namespace BasicBasic.Indirect
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
 
+            // TODO: Create a tokenizer once and reuse it.
             var tokenizer = new Tokenizer(ProgramState)
             {
                 Source = source

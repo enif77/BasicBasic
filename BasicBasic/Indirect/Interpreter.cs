@@ -192,7 +192,7 @@ namespace BasicBasic.Indirect
                 case TokenCode.TOK_KEY_GOTO:
                     return GoToStatement();
                 case TokenCode.TOK_KEY_IF: return IfStatement();
-                //case TokenCode.TOK_KEY_INPUT: return InputStatement();
+                case TokenCode.TOK_KEY_INPUT: return InputStatement();
                 case TokenCode.TOK_KEY_LET: return LetStatement();
                 case TokenCode.TOK_KEY_OPTION: return OptionStatement();
                 case TokenCode.TOK_KEY_PRINT: return PrintStatement();
@@ -446,8 +446,390 @@ namespace BasicBasic.Indirect
                     throw _programState.UnexpectedTokenError(relTok);
             }
         }
+        
 
+        // INPUT variable { ',' variable } EOLN
+        private ProgramLine InputStatement()
+        {
+            // Eat INPUT.
+            NextToken();
 
+            var varsList = new List<string>();
+
+            bool atSep = true;
+            while (ThisToken().TokenCode != TokenCode.TOK_EOLN)
+            {
+                switch (ThisToken().TokenCode)
+                {
+                    // Consume these.
+                    case TokenCode.TOK_LSTSEP:
+                        atSep = true;
+                        NextToken();
+                        break;
+
+                    default:
+                        if (atSep == false)
+                        {
+                            throw _programState.ErrorAtLine("A list separator expected");
+                        }
+
+                        if (ThisToken().TokenCode == TokenCode.TOK_STRIDNT || ThisToken().TokenCode == TokenCode.TOK_SVARIDNT || ThisToken().TokenCode == TokenCode.TOK_VARIDNT)
+                        {
+                            varsList.Add(ThisToken().StrValue);
+
+                            // Eat the variable.
+                            NextToken();
+                        }
+                        else
+                        {
+                            throw _programState.UnexpectedTokenError(ThisToken());
+                        }
+
+                        atSep = false;
+                        break;
+                }
+            }
+
+            ExpToken(TokenCode.TOK_EOLN, ThisToken());
+
+            if (varsList.Count == 0)
+            {
+                throw _programState.ErrorAtLine("The INPUT statement variables list can not be empty");
+            }
+
+            ReadUserInput(varsList);
+
+            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+        }
+
+        /// <summary>
+        /// Reads the user's inputs and assigns it to selected variables.
+        /// </summary>
+        /// <param name="varsList">Variables, for which we need values.</param>
+        private void ReadUserInput(List<string> varsList)
+        {
+            var valuesList = new List<string>();
+
+            while (true)
+            {
+                Console.Write("? ");
+
+                var input = Console.ReadLine() + Tokenizer.C_EOLN;
+                var inputParsed = false;
+
+                // Remove this!
+                if (string.IsNullOrWhiteSpace(input))
+                {
+                    break;
+                }
+
+                // Parse th input.
+                // input : data { ',' data } .
+                // data : number | quoted-string
+                var i = 0;
+                bool atSep = true;
+                while (true)
+                {
+                    if (i >= input.Length || input[i] == Tokenizer.C_EOLN)
+                    {
+                        inputParsed = true;
+
+                        break;
+                    }
+
+                    // A quoted string.
+                    if (input[i] == '\"')
+                    {
+                        // Missing separator.
+                        if (atSep == false)
+                        {
+                            break;
+                        }
+
+                        var strValue = "$"; // '$' = a string value type.
+
+                        // Eat '"'.
+                        var c = input[++i];
+                        while (c != Tokenizer.C_EOLN)
+                        {
+                            if (c == '\"')
+                            {
+                                break;
+                            }
+
+                            strValue += c;
+                            c = input[++i];
+                        }
+
+                        if (c != '"')
+                        {
+                            // Unfinished quoted string.
+                            break;
+                        }
+
+                        valuesList.Add(c == 0 ? string.Empty : strValue);
+
+                        atSep = false;
+                    }
+                    // A number.
+                    else if (input[i] == '+' || input[i] == '-' || Tokenizer.IsDigit(input[i]))
+                    {
+                        // Missing separator.
+                        if (atSep == false)
+                        {
+                            break;
+                        }
+
+                        var sign = '+';
+                        var numValue = (string)null;
+
+                        if (input[i] == '+')
+                        {
+                            i++;
+                        }
+                        else if (input[i] == '-')
+                        {
+                            sign = '-';
+                            i++;
+                        }
+
+                        var c = input[i];
+                        while (Tokenizer.IsDigit(c))
+                        {
+                            if (numValue == null)
+                            {
+                                numValue = sign.ToString();
+                            }
+
+                            numValue += c;
+                            c = input[++i];
+                        }
+
+                        if (c == '.')
+                        {
+                            if (numValue == null)
+                            {
+                                numValue = sign.ToString();
+                            }
+
+                            numValue += c;
+
+                            c = input[++i];
+                            while (Tokenizer.IsDigit(c))
+                            {
+                                numValue += c;
+                                c = input[++i];
+                            }
+                        }
+
+                        if (c == 'E')
+                        {
+                            if (numValue == null)
+                            {
+                                // A number should not start with the exponent.
+                                break;
+                            }
+
+                            numValue += c;
+
+                            c = input[++i];
+                            if (c == '+' || c == '-')
+                            {
+                                numValue += c;
+                                c = input[++i];
+                            }
+
+                            while (Tokenizer.IsDigit(c))
+                            {
+                                numValue += c;
+
+                                c = input[++i];
+                            }
+                        }
+
+                        // Not a number?
+                        if (numValue == null)
+                        {
+                            // TODO: '+', '-' and '.' can start the unquoted string.
+                            // unquoted-string-character : space | plain-string-character
+                            // plain-string-character : plus-sign | minus-sign | full-stop | digit | letter
+
+                            break;
+                        }
+
+                        valuesList.Add(numValue);
+
+                        // Go back one character.
+                        i--;
+
+                        atSep = false;
+                    }
+                    else if (input[i] == ',')
+                    {
+                        // Missing value.
+                        if (atSep)
+                        {
+                            break;
+                        }
+
+                        atSep = true;
+                    }
+                    else if (Tokenizer.IsPlainStringCharacter(input[i]))
+                    {
+                        // Missing separator.
+                        if (atSep == false)
+                        {
+                            break;
+                        }
+
+                        var strValue = string.Empty;
+
+                        var pc = (char)0;
+                        var c = input[i];
+                        while (c != Tokenizer.C_EOLN)
+                        {
+                            if (c == ',')
+                            {
+                                break;
+                            }
+
+                            // Not all characters are allowed.
+                            // unquoted-string-character : space | plain-string-character
+                            // plain-string-character : plus-sign | minus-sign | full-stop | digit | letter
+                            if (Tokenizer.IsUquotedStringCharacter(c) == false)
+                            {
+                                throw _programState.ErrorAtLine("Unexpected plain string character '{0}'", c);
+                            }
+
+                            strValue += c;
+                            pc = c;
+                            c = input[++i];
+                        }
+
+                        // unquoted-string : plain-string-character [ { unquoted-string-character } plain-string-character ] .
+                        if ((c == Tokenizer.C_EOLN || c == ',') && Tokenizer.IsPlainStringCharacter(pc) == false)
+                        {
+                            throw _programState.ErrorAtLine("Unexpected plain string character '{0}'", c);
+                        }
+
+                        valuesList.Add(string.IsNullOrWhiteSpace(strValue) ? string.Empty : ("$" + strValue.Trim())); // '$' = a string value type.
+
+                        // Go back one character.
+                        i--;
+
+                        atSep = false;
+                    }
+                    else
+                    {
+                        // Missing separator.
+                        if (atSep == false)
+                        {
+                            break;
+                        }
+
+                        // Skip white chars.
+                        var c = input[i];
+                        while (c != Tokenizer.C_EOLN)
+                        {
+                            if (Tokenizer.IsWhite(c) == false)
+                            {
+                                break;
+                            }
+
+                            c = input[++i];
+                        }
+
+                        // Go back one character.
+                        i--;
+                    }
+
+                    i++;
+                }
+
+                // Something wrong?
+                if (inputParsed == false || atSep)
+                {
+                    valuesList.Clear();
+
+                    continue;
+                }
+
+                // Assign values.
+                if (varsList.Count != valuesList.Count)
+                {
+                    _programState.NotifyError("Not enought or too much values.");
+
+                    valuesList.Clear();
+
+                    continue;
+                }
+
+                var valuesAssigned = true;
+                for (i = 0; i < varsList.Count; i++)
+                {
+                    var varName = varsList[i];
+                    var value = valuesList[i];
+
+                    // A string variable?
+                    if (varName.EndsWith("$"))
+                    {
+                        if (string.IsNullOrWhiteSpace(value))
+                        {
+                            _programState.SetSVar(varName, string.Empty);
+                        }
+                        else
+                        {
+                            // Not a string value?
+                            if (value.StartsWith("$") == false)
+                            {
+                                _programState.NotifyError("A string value expected for the {0} variable.", varName);
+
+                                valuesAssigned = false;
+
+                                break;
+                            }
+
+                            _programState.SetSVar(varName, value.Substring(1));
+                        }
+                    }
+                    // A numeric variable.
+                    else
+                    {
+                        if (string.IsNullOrWhiteSpace(value))
+                        {
+                            _programState.SetNVar(varName, 0);
+                        }
+                        else
+                        {
+                            // Not a numeric value?
+                            if (value.StartsWith("$"))
+                            {
+                                _programState.NotifyError("A numeric value expected for the {0} variable.", varName);
+
+                                valuesAssigned = false;
+
+                                break;
+                            }
+
+                            _programState.SetNVar(varName, float.Parse(value, NumberStyles.Number, CultureInfo.InvariantCulture));
+                        }
+                    }
+                }
+
+                // Values assignment failed.
+                if (valuesAssigned == false)
+                {
+                    _programState.NotifyError("Can not assign values.");
+
+                    valuesList.Clear();
+
+                    continue;
+                }
+
+                break;
+            }
+        }
+                     
         // Sets the array bottom dimension.
         // OPTION BASE 1
         private ProgramLine OptionStatement()
