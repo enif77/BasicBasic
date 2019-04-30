@@ -105,6 +105,12 @@ namespace BasicBasic.Indirect
                         atLineStart = true;
                         line++;
                     }
+                    else if (token.TokenCode == TokenCode.TOK_KEY_DATA)
+                    {
+                        // TODO: Read all data into the programState.Data.
+
+                        programLine.AddToken(token);
+                    }
                     else if (token.TokenCode == TokenCode.TOK_KEY_REM)
                     {
                         // Skip the remark.

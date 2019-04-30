@@ -67,6 +67,7 @@ namespace BasicBasic.Indirect
             UserFns = new int[('Z' - 'A') + 1];
             Arrays = new float[('Z' - 'A') + 1][];
             ArrayBase = -1;                  // -1 = not yet user defined = 0.
+            Data = new TokensList();
             Random = new Random(20170327);
 
             NVars = new float[(('Z' - 'A') + 1) * 10]; // A or A0 .. A9;
@@ -474,6 +475,13 @@ namespace BasicBasic.Indirect
             Arrays[arrayName[0] - 'A'][index - bottomBound] = v;
         }
 
+        #endregion
+
+
+        #region data
+
+        private TokensList Data { get; set; }
+                     
         #endregion
 
 
