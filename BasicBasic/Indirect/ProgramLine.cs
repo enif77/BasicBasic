@@ -22,7 +22,6 @@ freely, subject to the following restrictions:
 
 namespace BasicBasic.Indirect
 {
-    using System;
     using System.Globalization;
     using System.Text;
 
@@ -44,8 +43,7 @@ namespace BasicBasic.Indirect
 
         public ProgramLine()
         {
-            _thisTokenPos = -1;
-            _tokens = new IToken[10]; 
+            _tokens = new TokensList(); 
         }
 
 
@@ -57,7 +55,7 @@ namespace BasicBasic.Indirect
         /// <returns>The number of tokens in this program line.</returns>
         public int TokensCount()
         {
-            return _thisTokenPos + 1;
+            return _tokens.Count;
         }
 
         /// <summary>
@@ -66,23 +64,7 @@ namespace BasicBasic.Indirect
         /// <param name="token">A token.</param>
         public void AddToken(IToken token)
         {
-            if (token == null) throw new ArgumentNullException(nameof(token));
-
-            var newTokPos = _thisTokenPos + 1;
-            if (newTokPos >= _tokens.Length)
-            {
-                var newTokens = new IToken[_tokens.Length + 10];
-                for (var i = 0; i < _tokens.Length; i++)
-                {
-                    newTokens[i] = _tokens[i];
-                }
-
-                _tokens = newTokens;
-            }
-
-            _thisTokenPos = newTokPos;
-
-            _tokens[_thisTokenPos] = token;          
+            _tokens.Add(token);
         }
 
         /// <summary>
@@ -93,12 +75,7 @@ namespace BasicBasic.Indirect
         /// <returns>The current token from this program line.</returns>
         public IToken ThisToken()
         {
-            if (_thisTokenPos < 0 || _thisTokenPos >= _tokens.Length)
-            {
-                return new SimpleToken(TokenCode.TOK_EOF);
-            }
-
-            return _tokens[_thisTokenPos];
+            return _tokens.Current;
         }
 
         /// <summary>
@@ -108,15 +85,7 @@ namespace BasicBasic.Indirect
         /// <returns>The next token from this program line.</returns>
         public IToken NextToken()
         {
-            var newTokPos = _thisTokenPos + 1;
-            if (newTokPos >= _tokens.Length || _tokens[newTokPos] == null)
-            {
-                return new SimpleToken(TokenCode.TOK_EOF);
-            }
-
-            _thisTokenPos = newTokPos;
-
-            return _tokens[_thisTokenPos];
+            return _tokens.Next();
         }
 
         /// <summary>
@@ -124,7 +93,7 @@ namespace BasicBasic.Indirect
         /// </summary>
         public void Rewind()
         {
-            _thisTokenPos = -1;
+            _tokens.Rewind();
         }
         
         /// <summary>
@@ -133,7 +102,7 @@ namespace BasicBasic.Indirect
         /// <returns>The string representation of this program line.</returns>
         public override string ToString()
         {
-            if (_thisTokenPos < 0)
+            if (_tokens.Count == 0)
             {
                 return string.Empty;
             }
@@ -146,14 +115,9 @@ namespace BasicBasic.Indirect
                 sb.Append(" ");
             }
            
-            for (var i = 0; i < _tokens.Length; i++)
+            foreach (var t in _tokens.ToList())
             {
-                if (_tokens[i] == null)
-                {
-                    break;
-                }
-
-                sb.Append(_tokens[i]);
+                sb.Append(t);
                 sb.Append(" ");
             }
 
@@ -165,8 +129,7 @@ namespace BasicBasic.Indirect
 
         #region private
 
-        private int _thisTokenPos;
-        private IToken[] _tokens;
+        private TokensList _tokens;
 
         #endregion
     }
