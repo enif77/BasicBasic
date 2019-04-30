@@ -51,6 +51,7 @@ namespace BasicBasic.Indirect
         private readonly Dictionary<string, TokenCode> _keyWordsMap = new Dictionary<string, TokenCode>()
         {
             { "BASE", TokenCode.TOK_KEY_BASE },
+            { "DATA", TokenCode.TOK_KEY_DATA },
             { "DEF", TokenCode.TOK_KEY_DEF },
             { "DIM", TokenCode.TOK_KEY_DIM },
             { "END", TokenCode.TOK_KEY_END },
@@ -60,10 +61,13 @@ namespace BasicBasic.Indirect
             { "IF", TokenCode.TOK_KEY_IF },
             { "INPUT", TokenCode.TOK_KEY_INPUT },
             { "LET", TokenCode.TOK_KEY_LET },
+            { "ON", TokenCode.TOK_KEY_ON },
             { "OPTION", TokenCode.TOK_KEY_OPTION },
             { "PRINT", TokenCode.TOK_KEY_PRINT },
             { "RANDOMIZE", TokenCode.TOK_KEY_RANDOMIZE },
+            { "READ", TokenCode.TOK_KEY_READ },
             { "REM", TokenCode.TOK_KEY_REM },
+            { "RESTORE", TokenCode.TOK_KEY_RESTORE },
             { "RETURN", TokenCode.TOK_KEY_RETURN },
             { "STOP", TokenCode.TOK_KEY_STOP },
             { "SUB", TokenCode.TOK_KEY_SUB },

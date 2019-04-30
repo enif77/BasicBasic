@@ -56,7 +56,7 @@ namespace BasicBasic.Indirect.Tokens
                 case TokenCode.TOK_RBRA: return ")";
 
                 case TokenCode.TOK_KEY_BASE: return "BASE";
-                //case TokenCode.TOK_KEY_DATA: return "DATA";
+                case TokenCode.TOK_KEY_DATA: return "DATA";
                 case TokenCode.TOK_KEY_DEF: return "DEF";
                 case TokenCode.TOK_KEY_DIM: return "DIM";
                 case TokenCode.TOK_KEY_END: return "END";
@@ -68,13 +68,13 @@ namespace BasicBasic.Indirect.Tokens
                 case TokenCode.TOK_KEY_INPUT: return "INPUT";
                 case TokenCode.TOK_KEY_LET: return "LET";
                 //case TokenCode.TOK_KEY_NEXT: return "NEXT";
-                //case TokenCode.TOK_KEY_ON: return "ON";
+                case TokenCode.TOK_KEY_ON: return "ON";
                 case TokenCode.TOK_KEY_OPTION: return "OPTION";
                 case TokenCode.TOK_KEY_PRINT: return "PRINT";
                 case TokenCode.TOK_KEY_RANDOMIZE: return "RANDOMIZE";
-                //case TokenCode.TOK_KEY_READ: return "READ";
+                case TokenCode.TOK_KEY_READ: return "READ";
                 case TokenCode.TOK_KEY_REM: return "REM";
-                //case TokenCode.TOK_KEY_RESTORE: return "RESTORE";
+                case TokenCode.TOK_KEY_RESTORE: return "RESTORE";
                 case TokenCode.TOK_KEY_RETURN: return "RETURN";
                 //case TokenCode.TOK_KEY_STEP: return "STEP";
                 case TokenCode.TOK_KEY_STOP: return "STOP";

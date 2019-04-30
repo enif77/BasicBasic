@@ -52,6 +52,15 @@ namespace BasicBasic.Indirect
         #region public
 
         /// <summary>
+        /// Returns the number of tokens in this program line.
+        /// </summary>
+        /// <returns>The number of tokens in this program line.</returns>
+        public int TokensCount()
+        {
+            return _thisTokenPos + 1;
+        }
+
+        /// <summary>
         /// Adds a token to this program line.
         /// </summary>
         /// <param name="token">A token.</param>

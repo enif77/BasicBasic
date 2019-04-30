@@ -184,6 +184,7 @@ namespace BasicBasic.Indirect
             var token = NextToken();
             switch (token.TokenCode)
             {
+                case TokenCode.TOK_KEY_DATA: return DataStatement();
                 case TokenCode.TOK_KEY_DEF: return DefStatement();
                 case TokenCode.TOK_KEY_DIM: return DimStatement();
                 case TokenCode.TOK_KEY_END: return EndStatement();
@@ -194,6 +195,7 @@ namespace BasicBasic.Indirect
                 case TokenCode.TOK_KEY_IF: return IfStatement();
                 case TokenCode.TOK_KEY_INPUT: return InputStatement();
                 case TokenCode.TOK_KEY_LET: return LetStatement();
+                case TokenCode.TOK_KEY_ON: return OnStatement();
                 case TokenCode.TOK_KEY_OPTION: return OptionStatement();
                 case TokenCode.TOK_KEY_PRINT: return PrintStatement();
                 case TokenCode.TOK_KEY_RANDOMIZE: return RandomizeStatement();
@@ -208,6 +210,18 @@ namespace BasicBasic.Indirect
 
 
         #region statements
+
+        // The data.
+        // DATA ...
+        private ProgramLine DataStatement()
+        {
+            if (IsInteractiveModeProgramLine())
+            {
+                throw _programState.Error("DATA statement is not supported in the interactive mode.");
+            }
+
+            return NextProgramLine();
+        }
 
         // An user defined function.
         // DEF FNx = numeric-expression EOLN
@@ -319,7 +333,7 @@ namespace BasicBasic.Indirect
             // GO TO or GO SUB ...
             if (ThisToken().TokenCode == TokenCode.TOK_KEY_GO)
             {
-                // Eat TO.
+                // Eat GO.
                 NextToken();
 
                 // GO SUB?
@@ -829,7 +843,78 @@ namespace BasicBasic.Indirect
                 break;
             }
         }
-                     
+
+        // on-goto-statement = ON numeric-expression GO space* TO line-number ( comma line-number )*
+        private ProgramLine OnStatement()
+        {
+            if (IsInteractiveModeProgramLine())
+            {
+                throw _programState.Error("ON statement are not supported in the interactive mode.");
+            }
+
+            // Eat ON.
+            NextToken();
+
+            // The label position to jump to.
+            var v = (int)NumericExpression();
+            if (v < 1)
+            {
+                _programState.ErrorAtLine("GOTO label index < 1");
+            }
+
+            if (ThisToken().TokenCode == TokenCode.TOK_KEY_GO)
+            {
+                // Eat GO.
+                NextToken();
+
+                EatToken(TokenCode.TOK_KEY_TO);
+            }
+            else if (ThisToken().TokenCode == TokenCode.TOK_KEY_GOTO)
+            {
+                // Eat GOTO.
+                NextToken();
+            }
+            else
+            {
+                _programState.UnexpectedTokenError(ThisToken());
+            }
+
+            var labelIndex = 0;
+            var labels = new IToken[_programState.CurrentProgramLine.TokensCount()];
+
+            // At least one label is expected.
+            ExpToken(TokenCode.TOK_NUM, ThisToken());
+
+            while (ThisToken().TokenCode != TokenCode.TOK_EOF)
+            {
+                if (ThisToken().TokenCode == TokenCode.TOK_EOLN)
+                {
+                    break;
+                }
+
+                if (ThisToken().TokenCode == TokenCode.TOK_NUM)
+                {
+                    labels[labelIndex++] = ThisToken();
+
+                    NextToken();
+
+                    if (ThisToken().TokenCode == TokenCode.TOK_EOLN)
+                    {
+                        break;
+                    }
+
+                    EatToken(TokenCode.TOK_LSTSEP);
+                }
+            }
+
+            if (v > labelIndex)
+            {
+                throw _programState.ErrorAtLine("Not enought labels to go to");
+            }
+
+            return _programState.GetProgramLine((int)labels[v - 1].NumValue);
+        }
+
         // Sets the array bottom dimension.
         // OPTION BASE 1
         private ProgramLine OptionStatement()
