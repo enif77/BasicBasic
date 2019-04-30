@@ -93,7 +93,7 @@ namespace BasicBasic.Indirect
                 source = " " + source;
             }
 
-            InterpretLine(_scanner.ScanSource(source, true));
+            InterpretLine(_scanner.ScanInteractiveModeSourceLine(source));
         }
 
         /// <summary>
@@ -113,7 +113,7 @@ namespace BasicBasic.Indirect
         {
             if (source == null) throw _programState.Error("A program line source expected.");
 
-            _scanner.ScanSource(source, true);
+            _scanner.ScanInteractiveModeSourceLine(source);
         }
 
         /// <summary>
