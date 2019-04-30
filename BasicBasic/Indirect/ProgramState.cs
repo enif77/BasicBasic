@@ -82,6 +82,26 @@ namespace BasicBasic.Indirect
 
 
         /// <summary>
+        /// Checks, if a label is from allowed range.
+        /// </summary>
+        /// <param name="label">A label.</param>
+        /// <param name="line">At which source line.</param>
+        public void CheckLabel(int label, int line = -1)
+        {
+            if (label < 1 || label > MaxLabel)
+            {
+                if (line > 0)
+                {
+                    throw Error("Label {0} at line {1} out of <1 ... {2}> rangle.", label, line, MaxLabel);
+                }
+                else
+                {
+                    throw Error("The label {0} is out of <1 ... {2}> rangle.", label, MaxLabel);
+                }
+            }
+        }
+        
+        /// <summary>
         /// Returns a program line for a specific label.
         /// </summary>
         /// <param name="label">A label.</param>

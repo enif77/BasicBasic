@@ -75,10 +75,8 @@ namespace BasicBasic.Indirect
                     }
                                         
                     label = (int)token.NumValue;
-                    if (label < 1 || label > ProgramState.MaxLabel)
-                    {
-                        throw ProgramState.Error("Label {0} at line {1} out of <1 ... {2}> rangle.", label, line, ProgramState.MaxLabel);
-                    }
+
+                    ProgramState.CheckLabel(label, line);
                                         
                     if (ProgramState.GetProgramLine(label) != null)
                     {
@@ -149,30 +147,26 @@ namespace BasicBasic.Indirect
             {
                 if (atLineStart)
                 {
-                    int label;
-                    if (token.TokenCode != TokenCode.TOK_NUM)
+                    if (token.TokenCode == TokenCode.TOK_NUM)
                     {
-                        // Interactive mode program line.
-                        label = -1;
+                        var label = (int)token.NumValue;
+
+                        ProgramState.CheckLabel(label);
+
+                        // Create a new program line.
+                        programLine = new ProgramLine()
+                        {
+                            Label = label
+                        };
                     }
                     else
                     {
-                        label = (int)token.NumValue;
-                        if (label < 1 || label > ProgramState.MaxLabel)
+                        // Interactive mode program line.
+                        programLine = new ProgramLine()
                         {
-                            throw ProgramState.Error("The label {0} is out of <1 ... {2}> rangle.", label, ProgramState.MaxLabel);
-                        }
-                    }
+                            Label = -1
+                        };
 
-                    // Create a new program line.
-                    programLine = new ProgramLine()
-                    {
-                        Label = label
-                    };
-
-                    // An interactive mode program line not starting with a label?
-                    if (label == -1)
-                    {
                         // Remember the current token (a command).
                         programLine.AddToken(token);
                     }
