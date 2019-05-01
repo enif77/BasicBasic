@@ -1095,6 +1095,11 @@ namespace BasicBasic.Indirect
         // RESTORE EOLN
         private ProgramLine RestoreStatement()
         {
+            if (IsInteractiveModeProgramLine())
+            {
+                throw _programState.Error("RESTORE statement is not supported in the interactive mode.");
+            }
+
             _programState.RestoreData();
 
             return NextProgramLine();
