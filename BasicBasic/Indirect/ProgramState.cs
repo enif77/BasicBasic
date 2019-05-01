@@ -481,7 +481,19 @@ namespace BasicBasic.Indirect
         #region data
 
         private TokensList Data { get; set; }
-                     
+
+
+        public void AddData(IToken token)
+        {
+            Data.Add(token);
+        }
+
+
+        public void RestoreData()
+        {
+            Data.Rewind();
+        }
+
         #endregion
 
 

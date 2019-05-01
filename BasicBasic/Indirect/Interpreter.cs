@@ -200,6 +200,7 @@ namespace BasicBasic.Indirect
                 case TokenCode.TOK_KEY_PRINT: return PrintStatement();
                 case TokenCode.TOK_KEY_RANDOMIZE: return RandomizeStatement();
                 case TokenCode.TOK_KEY_REM: return RemStatement();
+                case TokenCode.TOK_KEY_RESTORE: return RestoreStatement();
                 case TokenCode.TOK_KEY_RETURN: return ReturnStatement();
                 case TokenCode.TOK_KEY_STOP: return StopStatement();
 
@@ -1084,9 +1085,18 @@ namespace BasicBasic.Indirect
         }
 
         // The comment.
-        // REM ...
+        // REM ... EOLN
         private ProgramLine RemStatement()
         {
+            return NextProgramLine();
+        }
+
+        // Allows re-readind data.
+        // RESTORE EOLN
+        private ProgramLine RestoreStatement()
+        {
+            _programState.RestoreData();
+
             return NextProgramLine();
         }
 
