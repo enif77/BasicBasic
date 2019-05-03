@@ -232,6 +232,14 @@ namespace BasicBasic.Indirect
             return ReturnStack[ReturnStackTop--];
         }
 
+        /// <summary>
+        /// Removes all labels from the the return stack.
+        /// </summary>
+        public void ReturnStackClear()
+        {
+            ReturnStackTop = -1;
+        }
+
         #endregion
 
 
@@ -270,6 +278,15 @@ namespace BasicBasic.Indirect
             return UserFns[fname[2] - 'A'];
         }
 
+        /// <summary>
+        /// Undefines all user defined functions.
+        /// </summary>
+        public void ClearUserFunctions()
+        {
+            UserFns = new int[('Z' - 'A') + 1];
+        }
+
+
         #endregion
 
 
@@ -306,12 +323,12 @@ namespace BasicBasic.Indirect
         /// <summary>
         /// Numeric variables values.
         /// </summary>
-        private float[] NVars { get; }
+        private float[] NVars { get; set; }
 
         /// <summary>
         /// String variables values.
         /// </summary>
-        private string[] SVars { get; }
+        private string[] SVars { get; set; }
 
 
         /// <summary>
@@ -366,6 +383,15 @@ namespace BasicBasic.Indirect
         public void SetSVar(string varName, string v)
         {
             SVars[varName[0] - 'A'] = v;
+        }
+
+        /// <summary>
+        /// Removes values from all variables.
+        /// </summary>
+        public void ClearVariables()
+        {
+            NVars = new float[(('Z' - 'A') + 1) * 10]; // A or A0 .. A9;
+            SVars = new string[('Z' - 'A') + 1];      // A$ .. Z$
         }
 
         #endregion
@@ -475,6 +501,15 @@ namespace BasicBasic.Indirect
             Arrays[arrayName[0] - 'A'][index - bottomBound] = v;
         }
 
+        /// <summary>
+        /// Undefines all arrays.
+        /// </summary>
+        public void ClearArrays()
+        {
+            Arrays = new float[('Z' - 'A') + 1][];
+            ArrayBase = -1;                  // -1 = not yet user defined = 0.
+        }
+
         #endregion
 
 
@@ -486,6 +521,30 @@ namespace BasicBasic.Indirect
         public void AddData(IToken token)
         {
             Data.Add(token);
+        }
+
+
+        public float NextNumericData()
+        {
+            var tok = Data.Next();
+            if (tok.TokenCode == TokenCode.TOK_NUM)
+            {
+                return tok.NumValue;
+            }
+
+            throw ErrorAtLine("A numeric value in data expected");
+        }
+
+
+        public string NextStringData()
+        {
+            var tok = Data.Next();
+            if (tok.TokenCode == TokenCode.TOK_QSTR)
+            {
+                return tok.StrValue;
+            }
+
+            throw ErrorAtLine("A string value in data expected");
         }
 
 

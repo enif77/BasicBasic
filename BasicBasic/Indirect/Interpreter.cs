@@ -159,6 +159,12 @@ namespace BasicBasic.Indirect
         /// </summary>
         private void InterpretImpl()
         {
+            _programState.ReturnStackClear();
+            _programState.ClearVariables();
+            _programState.ClearArrays();
+            _programState.ClearUserFunctions();
+            _programState.RestoreData();
+
             var programLine = _programState.NextProgramLine(0);
             while (programLine != null)
             {
@@ -199,6 +205,7 @@ namespace BasicBasic.Indirect
                 case TokenCode.TOK_KEY_OPTION: return OptionStatement();
                 case TokenCode.TOK_KEY_PRINT: return PrintStatement();
                 case TokenCode.TOK_KEY_RANDOMIZE: return RandomizeStatement();
+                case TokenCode.TOK_KEY_READ: return ReadStatement();
                 case TokenCode.TOK_KEY_REM: return RemStatement();
                 case TokenCode.TOK_KEY_RESTORE: return RestoreStatement();
                 case TokenCode.TOK_KEY_RETURN: return ReturnStatement();
@@ -951,7 +958,7 @@ namespace BasicBasic.Indirect
         }
 
         // LET var = expr EOLN
-        // var :: num-var | string-var
+        // var :: num-var | string-var | array-var
         private ProgramLine LetStatement()
         {
             EatToken(TokenCode.TOK_KEY_LET);
@@ -1021,7 +1028,7 @@ namespace BasicBasic.Indirect
             // EOLN
             ExpToken(TokenCode.TOK_EOLN, ThisToken());
 
-            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return NextProgramLine(); 
         }
 
         // PRINT [ expr { print-sep expr } ] EOLN
@@ -1080,6 +1087,91 @@ namespace BasicBasic.Indirect
             ExpToken(TokenCode.TOK_EOLN, NextToken());
 
             _programState.Randomize();
+
+            return NextProgramLine();
+        }
+
+        // The READ statement.
+        // READ var { ',' var } EOLN
+        // var :: num-var | string-var | array-var
+        private ProgramLine ReadStatement()
+        {
+            EatToken(TokenCode.TOK_KEY_READ);
+
+            var wasVar = false;
+            while (true)
+            {
+                // var
+                if (ThisToken().TokenCode == TokenCode.TOK_SVARIDNT)
+                {
+                    var varName = ThisToken().StrValue;
+                                       
+                    // Eat the variable identifier.
+                    NextToken();
+
+                    // Array subscript.
+                    if (ThisToken().TokenCode == TokenCode.TOK_LBRA)
+                    {
+                        NextToken();
+
+                        var index = (int)NumericExpression();
+
+                        EatToken(TokenCode.TOK_RBRA);
+
+                        CheckArray(varName, 10, index, true);
+                        
+                        _programState.SetArray(varName, index, _programState.NextNumericData());
+                    }
+                    else
+                    {
+                        CheckSubsription(varName);
+
+                        _programState.SetNVar(varName, _programState.NextNumericData());
+                    }
+
+                    wasVar = true;
+                }
+                else if (ThisToken().TokenCode == TokenCode.TOK_VARIDNT)
+                {
+                    var varName = ThisToken().StrValue;
+
+                    // Eat the variable identifier.
+                    NextToken();
+                                        
+                    _programState.SetNVar(varName, _programState.NextNumericData());
+
+                    wasVar = true;
+                }
+                else if (ThisToken().TokenCode == TokenCode.TOK_STRIDNT)
+                {
+                    var varName = ThisToken().StrValue;
+
+                    // Eat the variable identifier.
+                    NextToken();
+
+                    _programState.SetSVar(varName, _programState.NextStringData());
+
+                    wasVar = true;
+                }
+
+                if (ThisToken().TokenCode == TokenCode.TOK_LSTSEP)
+                {
+                    // Eat ','.
+                    NextToken();
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            // EOLN
+            ExpToken(TokenCode.TOK_EOLN, ThisToken());
+
+            if (wasVar == false)
+            {
+                throw _programState.ErrorAtLine("At least one variable expected");
+            }
 
             return NextProgramLine();
         }

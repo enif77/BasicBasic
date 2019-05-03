@@ -169,6 +169,7 @@ namespace BasicBasic.Indirect
 
             var token = tokenizer.NextToken();
             var atLineStart = true;
+            var inData = false;
             ProgramLine programLine = null;
             while (token.TokenCode != TokenCode.TOK_EOF)
             {
@@ -222,6 +223,11 @@ namespace BasicBasic.Indirect
                         programLine = null;
                         break;
                     }
+                    else if (token.TokenCode == TokenCode.TOK_KEY_DATA)
+                    {
+                        programLine.AddToken(token);
+                        inData = true;
+                    }
                     else if (token.TokenCode == TokenCode.TOK_KEY_REM)
                     {
                         // Skip the remark.
@@ -229,6 +235,26 @@ namespace BasicBasic.Indirect
                     }
                     else
                     {
+                        if (inData)
+                        {
+                            // TODO: Add support for unquoted strings.
+                            if (token.TokenCode == TokenCode.TOK_NUM || token.TokenCode == TokenCode.TOK_QSTR)
+                            {
+                                ProgramState.AddData(token);
+                            }
+                            else if (token.TokenCode == TokenCode.TOK_LSTSEP)
+                            {
+                                ; // The comma is OK here.
+                            }
+                            else
+                            {
+                                // Make sure, that supported tokens are in the list only.
+                                throw ProgramState.UnexpectedTokenError(token);
+                            }
+
+                            // TODO: Check, if each datum is separated by a comma.
+                        }
+
                         programLine.AddToken(token);
                     }
                 }

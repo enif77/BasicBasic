@@ -6,7 +6,6 @@ Can execute a script in a file or work directly as a "super smart calculator thi
 
 Right now it is a bit incomplete. Bigest missing parts are:
 
-  - DATA, READ and RESTORE commands.
   - PRINT statement output formatting.
   - FOR loop.
   - Two dimensional arrays.
@@ -30,11 +29,15 @@ Does no compilation at all. It reads the program source, splits it into tokens
 and interprets each token directly. This happens all the time, so it is siple, but
 very "slow" way of doing it. Dont worry, our computers are fast enough to handle it. :-)
 
+Does NOT support - DATA, READ and RESTORE commands.
+
 ### Indirect interpreter
 
 Still no real compilation here, but atleast it translates the program source into tokens
 only once (during the scanner phase). It makes the interpretation much faster and allows
 more error checks to happen before the run time (aka the interpretation phase).
+
+Supports DATA, READ and RESTORE commands.
 
 ## Usage
 
@@ -88,6 +91,22 @@ Lists all currently defined program lines.
 Executes the entered program.
 
 ## Language Commands
+
+### DATA
+
+Can be used to define a list of numeric or string constants.
+
+#### Examples
+
+<pre>
+5  REM A list of data to be read into A, B$ and C variables.
+10 DATA 1, "2", 3
+15 READ A, B$, C
+20 PRINT A, B$, C
+25 END
+</pre>
+
+The output of this program will be "1 2 3".
 
 ### DEF
 
@@ -257,10 +276,31 @@ Prints a list of values to screen. Values can be separated by characters ',' or 
 
 Reinitializes the internal random number genarator.
 
+### READ
+
+Reads data into a variable(s).
+
+<pre>
+10 DATA 1, "2", 3
+15 READ A, B$, C
+20 RESTORE
+35 READ D
+40 PRINT A, B$, C, D
+25 END
+</pre>
+
+The output of this program will be "1 2 3 1".
+
 ### REMARK
 
 A remark or comment. Does nothing, but allows an user to enter whathever he/she needs
 to make the program more readable.
+
+### RESTORE
+
+Starts reading data from the first item again.
+
+See the example for the READ command.
 
 ### RETURN
 

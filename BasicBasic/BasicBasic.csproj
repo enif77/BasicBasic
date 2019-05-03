@@ -69,6 +69,7 @@
   <ItemGroup>
     <Content Include="ECMA-55.TXT" />
     <Content Include="BasicBasicCore.csproj" />
+    <None Include="Tests\data.bb" />
     <None Include="Tests\hammurabi.bb" />
   </ItemGroup>
   <ItemGroup>
