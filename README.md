@@ -29,15 +29,13 @@ Does no compilation at all. It reads the program source, splits it into tokens
 and interprets each token directly. This happens all the time, so it is siple, but
 very "slow" way of doing it. Dont worry, our computers are fast enough to handle it. :-)
 
-Does NOT support - DATA, READ and RESTORE commands.
+Does NOT support - ON, DATA, READ and RESTORE commands. They are silently ignored.
 
 ### Indirect interpreter
 
 Still no real compilation here, but atleast it translates the program source into tokens
 only once (during the scanner phase). It makes the interpretation much faster and allows
 more error checks to happen before the run time (aka the interpretation phase).
-
-Supports DATA, READ and RESTORE commands.
 
 ## Usage
 
@@ -244,6 +242,23 @@ Allows an user to set a value to a variable.
 20 LET A$ = "A string."
 30 LET A(4) = 10
 99 END
+</pre>
+
+### ON ... GOTO ...
+
+Jups to a label based on a value.
+
+#### Examples
+
+<pre>
+10  INPUT A
+20  ON A GOTO 100, 200
+30  REM We should not ever get here, because the ON statement will fail,
+40  REM if user enters anything else, then 1 or 2.
+100 PRINT "first"
+110 GOTO 999
+200 PRINT "second"
+999 END
 </pre>
 
 ### OPTION BASE

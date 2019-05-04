@@ -64,6 +64,7 @@ namespace BasicBasic.Indirect
             var line = 1;
             var atLineStart = true;
             var inData = false;
+            var wasValue = false;
             ProgramLine programLine = null;
             while (token.TokenCode != TokenCode.TOK_EOF)
             {
@@ -105,6 +106,7 @@ namespace BasicBasic.Indirect
                         programLine = null;
                         atLineStart = true;
                         inData = false;
+                        wasValue = false;
                         line++;
                     }
                     else if (token.TokenCode == TokenCode.TOK_KEY_DATA)
@@ -124,19 +126,31 @@ namespace BasicBasic.Indirect
                             // TODO: Add support for unquoted strings.
                             if (token.TokenCode == TokenCode.TOK_NUM || token.TokenCode == TokenCode.TOK_QSTR)
                             {
+                                if (wasValue)
+                                {
+                                    // Two values in a row is bad here.
+                                    throw ProgramState.UnexpectedTokenError(token);
+                                }
+
                                 ProgramState.AddData(token);
+                                wasValue = true;
                             }
                             else if (token.TokenCode == TokenCode.TOK_LSTSEP)
                             {
-                                ; // The comma is OK here.
+                                if (wasValue == false)
+                                {
+                                    // Two commas in a row or no value before this comma is bad here.
+                                    throw ProgramState.UnexpectedTokenError(token);
+                                }
+
+                                // The comma is OK here.
+                                wasValue = false; 
                             }
                             else
                             {
                                 // Make sure, that supported tokens are in the list only.
                                 throw ProgramState.UnexpectedTokenError(token);
                             }
-
-                            // TODO: Check, if each datum is separated by a comma.
                         }
                         
                         programLine.AddToken(token);
@@ -170,6 +184,7 @@ namespace BasicBasic.Indirect
             var token = tokenizer.NextToken();
             var atLineStart = true;
             var inData = false;
+            var wasValue = false;
             ProgramLine programLine = null;
             while (token.TokenCode != TokenCode.TOK_EOF)
             {
@@ -240,19 +255,31 @@ namespace BasicBasic.Indirect
                             // TODO: Add support for unquoted strings.
                             if (token.TokenCode == TokenCode.TOK_NUM || token.TokenCode == TokenCode.TOK_QSTR)
                             {
+                                if (wasValue)
+                                {
+                                    // Two values in a row is bad here.
+                                    throw ProgramState.UnexpectedTokenError(token);
+                                }
+
                                 ProgramState.AddData(token);
+                                wasValue = true;
                             }
                             else if (token.TokenCode == TokenCode.TOK_LSTSEP)
                             {
-                                ; // The comma is OK here.
+                                if (wasValue == false)
+                                {
+                                    // Two commas in a row or no value before this comma is bad here.
+                                    throw ProgramState.UnexpectedTokenError(token);
+                                }
+
+                                // The comma is OK here.
+                                wasValue = false;
                             }
                             else
                             {
                                 // Make sure, that supported tokens are in the list only.
                                 throw ProgramState.UnexpectedTokenError(token);
                             }
-
-                            // TODO: Check, if each datum is separated by a comma.
                         }
 
                         programLine.AddToken(token);

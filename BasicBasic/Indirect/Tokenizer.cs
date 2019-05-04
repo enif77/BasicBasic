@@ -171,7 +171,7 @@ namespace BasicBasic.Indirect
 
                 // Skip white chars.
                 bool wasWhite = false;
-                if (IsWhite(c))
+                while (IsWhite(c))
                 {
                     c = NextChar();
                     wasWhite = true;
