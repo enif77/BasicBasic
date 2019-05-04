@@ -190,6 +190,7 @@ namespace BasicBasic.Direct
             // The statement.
             switch (_token)
             {
+                case TOK_KEY_DATA: return DataStatement();
                 case TOK_KEY_DEF: return DefStatement();
                 case TOK_KEY_DIM: return DimStatement();
                 case TOK_KEY_END: return EndStatement();
@@ -200,10 +201,13 @@ namespace BasicBasic.Direct
                 case TOK_KEY_IF: return IfStatement();
                 case TOK_KEY_INPUT: return InputStatement();
                 case TOK_KEY_LET: return LetStatement();
+                case TOK_KEY_ON: return OnStatement();
                 case TOK_KEY_OPTION: return OptionStatement();
                 case TOK_KEY_PRINT: return PrintStatement();
                 case TOK_KEY_RANDOMIZE: return RandomizeStatement();
+                case TOK_KEY_READ: return ReadStatement();
                 case TOK_KEY_REM: return RemStatement();
+                case TOK_KEY_RESTORE: return RestoreStatement();
                 case TOK_KEY_RETURN: return ReturnStatement();
                 case TOK_KEY_STOP: return StopStatement();
 
@@ -214,6 +218,17 @@ namespace BasicBasic.Direct
 
 
         #region statements
+
+        // DATA ...
+        private ProgramLine DataStatement()
+        {
+            if (IsInteractiveModeProgramLine())
+            {
+                throw _programState.Error("DATA statement is not supported in the interactive mode.");
+            }
+
+            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+        }
 
         // An user defined function.
         // DEF FNx = numeric-expression EOLN
@@ -945,7 +960,20 @@ namespace BasicBasic.Direct
 
             return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
-        
+
+        // ON ...
+        private ProgramLine OnStatement()
+        {
+            if (IsInteractiveModeProgramLine())
+            {
+                throw _programState.Error("ON statement is not supported in the interactive mode.");
+            }
+
+            // This statement does nothing in this implementation.
+
+            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+        }
+
         // PRINT [ expr { print-sep expr } ] EOLN
         // print-sep :: ';' | ','
         private ProgramLine PrintStatement()
@@ -1007,10 +1035,36 @@ namespace BasicBasic.Direct
             return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
+        // READ ...
+        private ProgramLine ReadStatement()
+        {
+            if (IsInteractiveModeProgramLine())
+            {
+                throw _programState.Error("READ statement is not supported in the interactive mode.");
+            }
+
+            // This statement does nothing in this implementation.
+
+            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+        }
+
         // The comment.
         // REM ...
         private ProgramLine RemStatement()
         {
+            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+        }
+
+        // RESTORE ...
+        private ProgramLine RestoreStatement()
+        {
+            if (IsInteractiveModeProgramLine())
+            {
+                throw _programState.Error("RESTORE statement is not supported in the interactive mode.");
+            }
+
+            // This statement does nothing in this implementation.
+
             return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
@@ -1548,7 +1602,7 @@ namespace BasicBasic.Direct
         // Keywords tokens.
 
         public const int TOK_KEY_BASE = 100;
-        //public const int TOK_KEY_DATA = 101;
+        public const int TOK_KEY_DATA = 101;
         public const int TOK_KEY_DEF = 102;
         public const int TOK_KEY_DIM = 103;
         public const int TOK_KEY_END = 104;
@@ -1560,13 +1614,13 @@ namespace BasicBasic.Direct
         public const int TOK_KEY_INPUT = 110;
         public const int TOK_KEY_LET = 111;
         //public const int TOK_KEY_NEXT = 112;
-        //public const int TOK_KEY_ON = 113;
+        public const int TOK_KEY_ON = 113;
         public const int TOK_KEY_OPTION = 114;
         public const int TOK_KEY_PRINT = 115;
         public const int TOK_KEY_RANDOMIZE = 116;
-        //public const int TOK_KEY_READ = 117;
+        public const int TOK_KEY_READ = 117;
         public const int TOK_KEY_REM = 118;
-        //public const int TOK_KEY_RESTORE = 119;
+        public const int TOK_KEY_RESTORE = 119;
         public const int TOK_KEY_RETURN = 120;
         //public const int TOK_KEY_STEP = 121;
         public const int TOK_KEY_STOP = 122;
@@ -1580,6 +1634,7 @@ namespace BasicBasic.Direct
         private readonly Dictionary<string, int> _keyWordsMap = new Dictionary<string, int>()
         {
             { "BASE", TOK_KEY_BASE },
+            { "DATA", TOK_KEY_DATA },
             { "DEF", TOK_KEY_DEF },
             { "DIM", TOK_KEY_DIM },
             { "END", TOK_KEY_END },
@@ -1589,10 +1644,13 @@ namespace BasicBasic.Direct
             { "IF", TOK_KEY_IF },
             { "INPUT", TOK_KEY_INPUT },
             { "LET", TOK_KEY_LET },
+            { "ON", TOK_KEY_ON },
             { "OPTION", TOK_KEY_OPTION },
             { "PRINT", TOK_KEY_PRINT },
             { "RANDOMIZE", TOK_KEY_RANDOMIZE },
+            { "READ", TOK_KEY_READ },
             { "REM", TOK_KEY_REM },
+            { "RESTORE", TOK_KEY_RESTORE },
             { "RETURN", TOK_KEY_RETURN },
             { "STOP", TOK_KEY_STOP },
             { "SUB", TOK_KEY_SUB },
