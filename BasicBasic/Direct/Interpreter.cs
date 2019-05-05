@@ -93,6 +93,12 @@ namespace BasicBasic.Direct
                 source = " " + source;
             }
 
+            // We require the EOLN character...
+            if (source.EndsWith("\n") == false)
+            {
+                source += "\n";
+            }
+
             var programLine = new ProgramLine()
             {
                 Source = source,
@@ -121,6 +127,12 @@ namespace BasicBasic.Direct
         public void AddProgramLine(string source)
         {
             if (source == null) throw _programState.Error("A program line source expected.");
+
+            // We require the EOLN character...
+            if (source.EndsWith("\n") == false)
+            {
+                source += "\n";
+            }
 
             ScanSource(source, true);
         }

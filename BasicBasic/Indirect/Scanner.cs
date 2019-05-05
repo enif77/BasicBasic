@@ -123,34 +123,7 @@ namespace BasicBasic.Indirect
                     {
                         if (inData)
                         {
-                            // TODO: Add support for unquoted strings.
-                            if (token.TokenCode == TokenCode.TOK_NUM || token.TokenCode == TokenCode.TOK_QSTR)
-                            {
-                                if (wasValue)
-                                {
-                                    // Two values in a row is bad here.
-                                    throw ProgramState.UnexpectedTokenError(token);
-                                }
-
-                                ProgramState.AddData(token);
-                                wasValue = true;
-                            }
-                            else if (token.TokenCode == TokenCode.TOK_LSTSEP)
-                            {
-                                if (wasValue == false)
-                                {
-                                    // Two commas in a row or no value before this comma is bad here.
-                                    throw ProgramState.UnexpectedTokenError(token);
-                                }
-
-                                // The comma is OK here.
-                                wasValue = false; 
-                            }
-                            else
-                            {
-                                // Make sure, that supported tokens are in the list only.
-                                throw ProgramState.UnexpectedTokenError(token);
-                            }
+                            wasValue = ScanData(token, wasValue);
                         }
                         
                         programLine.AddToken(token);
@@ -252,34 +225,7 @@ namespace BasicBasic.Indirect
                     {
                         if (inData)
                         {
-                            // TODO: Add support for unquoted strings.
-                            if (token.TokenCode == TokenCode.TOK_NUM || token.TokenCode == TokenCode.TOK_QSTR)
-                            {
-                                if (wasValue)
-                                {
-                                    // Two values in a row is bad here.
-                                    throw ProgramState.UnexpectedTokenError(token);
-                                }
-
-                                ProgramState.AddData(token);
-                                wasValue = true;
-                            }
-                            else if (token.TokenCode == TokenCode.TOK_LSTSEP)
-                            {
-                                if (wasValue == false)
-                                {
-                                    // Two commas in a row or no value before this comma is bad here.
-                                    throw ProgramState.UnexpectedTokenError(token);
-                                }
-
-                                // The comma is OK here.
-                                wasValue = false;
-                            }
-                            else
-                            {
-                                // Make sure, that supported tokens are in the list only.
-                                throw ProgramState.UnexpectedTokenError(token);
-                            }
+                            wasValue = ScanData(token, wasValue);
                         }
 
                         programLine.AddToken(token);
@@ -295,11 +241,57 @@ namespace BasicBasic.Indirect
                 // So we add one.
                 programLine.AddToken(new SimpleToken(TokenCode.TOK_EOLN));
 
+                // This program line is executed immediatelly. It is not a part of a program.
+                if (programLine.Label == -1)
+                {
+                    // Return the scanned program line.
+                    return programLine;
+                }
+
                 // Remember this line.
                 ProgramState.SetProgramLine(programLine);
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Validates tokens representing data constants.
+        /// </summary>
+        /// <param name="token">The current token.</param>
+        /// <param name="wasValue">True, if the previous token was a value/constant.</param>
+        /// <returns>True, if the current token is a value.</returns>
+        private bool ScanData(IToken token, bool wasValue)
+        {
+            // TODO: Add support for unquoted strings.
+            if (token.TokenCode == TokenCode.TOK_NUM || token.TokenCode == TokenCode.TOK_QSTR)
+            {
+                if (wasValue)
+                {
+                    // Two values in a row is bad here.
+                    throw ProgramState.UnexpectedTokenError(token);
+                }
+
+                ProgramState.AddData(token);
+
+                return true;
+            }
+            else if (token.TokenCode == TokenCode.TOK_LSTSEP)
+            {
+                if (wasValue == false)
+                {
+                    // Two commas in a row or no value before this comma is bad here.
+                    throw ProgramState.UnexpectedTokenError(token);
+                }
+
+                // The comma is OK here.
+                return false;
+            }
+            else
+            {
+                // Make sure, that supported tokens are in the list only.
+                throw ProgramState.UnexpectedTokenError(token);
+            }
         }
     }
 }

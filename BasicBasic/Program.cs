@@ -108,11 +108,11 @@ namespace BasicBasic
                     {
                         if (Interpreter.IsDigit(input[0]))
                         {
-                            interpreter.AddProgramLine(input + "\n");
+                            interpreter.AddProgramLine(input);
                         }
                         else
                         {
-                            interpreter.InterpretLine(input + "\n");
+                            interpreter.InterpretLine(input);
                         }
                     }
                     catch (InterpreterException ex)

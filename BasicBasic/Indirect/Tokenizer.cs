@@ -463,18 +463,17 @@ namespace BasicBasic.Indirect
         /// <returns>The next character from the current program line source.</returns>
         private char PreviousChar()
         {
-            var p = SourcePosition;
-            if (p >= 0 && p < Source.Length)
+            if (SourcePosition > 0 && SourcePosition <= Source.Length)
             {
                 SourcePosition--;
 
-                return Source[p];
+                return Source[SourcePosition];
             }
-            else if (SourcePosition >= Source.Length)
+            else if (SourcePosition > Source.Length)
             {
                 SourcePosition = Source.Length;
 
-                return PreviousChar();
+                return C_EOF;
             }
             else
             {
