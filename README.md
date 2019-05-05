@@ -423,6 +423,7 @@ end-line : label end-statement end-of-line .
 end-statement : "END" .
 
 statement :
+  data-statement |
   def-statement |
   dim-statement |
   goto-statement | 
@@ -430,12 +431,22 @@ statement :
   if-then-statement |
   input-statement |
   let-statement |
+  on-statement |
   option-statement |
   print-statement |
   randomize-statement |
+  def-statement |
+  read-statement |
   remark-statement |
+  restore-statement |
   return-statement |
   stop statement .
+
+data-statement : "DATA" datum { ',' datum } .
+
+datum : number | quoted-string .
+
+### NOTE: The DATA statement should support unquoted strings too.
 
 def-statement : "DEF" user-function-name [ '(' parameter-name ')' ] '=' numeric-expression
 
@@ -461,6 +472,8 @@ input-statement : "INPUT" variable { ',' variable } .
 
 let-statement : "LET" variable '=' expression .
 
+on-statement : "ON" numeric-variable "GOTO" label { ',' label } .
+
 option-statement : "OPTION" "BASE" ( '0' | '1' ) .
 
 print-statement : [ print-list ] .
@@ -473,7 +486,11 @@ print-separator : ',' | ';' .
 
 randomize-statement : "RANDOMIZE" .
 
+read-statement : "READ" variable { ',' variable } .
+
 remark-statement : "REM" { any-character } .
+
+restore-statement : "RESTORE" .
 
 return-statement : "RETURN" .
 
