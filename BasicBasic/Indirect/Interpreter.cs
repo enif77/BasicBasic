@@ -1192,6 +1192,8 @@ namespace BasicBasic.Indirect
                 throw _programState.Error("RESTORE statement is not supported in the interactive mode.");
             }
 
+            ExpToken(TokenCode.TOK_EOLN, NextToken());
+
             _programState.RestoreData();
 
             return NextProgramLine();
