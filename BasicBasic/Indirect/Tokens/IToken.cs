@@ -123,7 +123,14 @@ namespace BasicBasic.Indirect.Tokens
         TOK_KEY_STOP = 122,
         TOK_KEY_SUB = 123,
         TOK_KEY_THEN = 124,
-        TOK_KEY_TO = 125
+        TOK_KEY_TO = 125,
+
+        // Controll commands of the interactive mode.
+        TOK_KEY_BY = 200,
+        TOK_KEY_QUIT = 201,
+        TOK_KEY_RUN = 202,
+        TOK_KEY_NEW = 203,
+        TOK_KEY_LIST = 204
     }
 
 

@@ -223,10 +223,70 @@ namespace BasicBasic.Direct
                 case TOK_KEY_RETURN: return ReturnStatement();
                 case TOK_KEY_STOP: return StopStatement();
 
+                case TOK_KEY_LIST: return ListCommand();
+                case TOK_KEY_NEW: return NewCommand();
+                case TOK_KEY_RUN: return RunCommand();
+
                 default:
                     throw _programState.UnexpectedTokenError(_token);
             }
         }
+
+
+        #region interactive mode controll commands
+
+        // LIST EOLN
+        private ProgramLine ListCommand()
+        {
+            if (IsInteractiveModeProgramLine() == false)
+            {
+                throw _programState.Error("LIST command is not supported outside of the interactive mode.");
+            }
+
+            NextToken();
+            ExpToken(TOK_EOLN);
+
+            foreach (var line in ListProgramLines())
+            {
+                Console.WriteLine(line);
+            }
+
+            return null;
+        }
+
+        // NEW EOLN
+        private ProgramLine NewCommand()
+        {
+            if (IsInteractiveModeProgramLine() == false)
+            {
+                throw _programState.Error("NEW command is not supported outside of the interactive mode.");
+            }
+
+            NextToken();
+            ExpToken(TOK_EOLN);
+
+            RemoveAllProgramLines();
+
+            return null;
+        }
+
+        // RUN EOLN
+        private ProgramLine RunCommand()
+        {
+            if (IsInteractiveModeProgramLine() == false)
+            {
+                throw _programState.Error("RUN command is not supported outside of the interactive mode.");
+            }
+
+            NextToken();
+            ExpToken(TOK_EOLN);
+
+            Interpret();
+
+            return null;
+        }
+
+        #endregion
 
 
         #region statements
@@ -1640,6 +1700,13 @@ namespace BasicBasic.Direct
         public const int TOK_KEY_THEN = 124;
         public const int TOK_KEY_TO = 125;
 
+        // Controll commands of the interactive mode.
+        public const int TOK_KEY_BY = 200;
+        public const int TOK_KEY_QUIT = 201;
+        public const int TOK_KEY_RUN = 202;
+        public const int TOK_KEY_NEW = 203;
+        public const int TOK_KEY_LIST = 204;
+
         /// <summary>
         /// The keyword - token map.
         /// </summary>
@@ -1668,6 +1735,13 @@ namespace BasicBasic.Direct
             { "SUB", TOK_KEY_SUB },
             { "THEN", TOK_KEY_THEN },
             { "TO", TOK_KEY_TO },
+
+            // Controll commands of the interactive mode.
+            { "BY", TOK_KEY_BY },
+            { "QUIT", TOK_KEY_QUIT },
+            { "RUN", TOK_KEY_RUN },
+            { "NEW", TOK_KEY_NEW },
+            { "LIST", TOK_KEY_LIST }
         };
 
         #endregion

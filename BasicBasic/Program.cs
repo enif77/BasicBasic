@@ -74,34 +74,37 @@ namespace BasicBasic
                     continue;
                 }
 
+
                 if (input.StartsWith("BY", StringComparison.InvariantCultureIgnoreCase) ||
                     input.StartsWith("QUIT", StringComparison.InvariantCultureIgnoreCase))
                 {
                     break;
                 }
-                else if (input.StartsWith("RUN", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    try
-                    {
-                        interpreter.Interpret();
-                    }
-                    catch (InterpreterException ex)
-                    {
-                        Console.WriteLine();
-                        Console.WriteLine(ex.Message);
-                    }
-                }
-                else if (input.StartsWith("NEW", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    interpreter.RemoveAllProgramLines();
-                }
-                else if (input.StartsWith("LIST", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    foreach (var line in interpreter.ListProgramLines())
-                    {
-                        Console.WriteLine(line);
-                    }
-                }
+                //else if (input.StartsWith("RUN", StringComparison.InvariantCultureIgnoreCase))
+                //{
+                //    try
+                //    {
+                //        interpreter.Interpret();
+                //    }
+                //    catch (InterpreterException ex)
+                //    {
+                //        Console.WriteLine();
+                //        Console.WriteLine(ex.Message);
+                //    }
+                //}
+                //else if (input.StartsWith("NEW", StringComparison.InvariantCultureIgnoreCase))
+                //{
+                //    interpreter.RemoveAllProgramLines();
+                //}
+                //else if (input.StartsWith("LIST", StringComparison.InvariantCultureIgnoreCase))
+                //{
+                //    foreach (var line in interpreter.ListProgramLines())
+                //    {
+                //        Console.WriteLine(line);
+                //    }
+                //}
+
+
                 else
                 {
                     try

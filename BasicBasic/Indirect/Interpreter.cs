@@ -211,10 +211,67 @@ namespace BasicBasic.Indirect
                 case TokenCode.TOK_KEY_RETURN: return ReturnStatement();
                 case TokenCode.TOK_KEY_STOP: return StopStatement();
 
+                case TokenCode.TOK_KEY_LIST: return ListCommand();
+                case TokenCode.TOK_KEY_NEW: return NewCommand();
+                case TokenCode.TOK_KEY_RUN: return RunCommand();
+
                 default:
                     throw _programState.UnexpectedTokenError(token);
             }
         }
+
+
+        #region interactive mode controll commands
+
+        // LIST EOLN
+        private ProgramLine ListCommand()
+        {
+            if (IsInteractiveModeProgramLine() == false)
+            {
+                throw _programState.Error("LIST command is not supported outside of the interactive mode.");
+            }
+
+            ExpToken(TokenCode.TOK_EOLN, NextToken());
+
+            foreach (var line in ListProgramLines())
+            {
+                Console.WriteLine(line);
+            }
+
+            return null;
+        }
+
+        // NEW EOLN
+        private ProgramLine NewCommand()
+        {
+            if (IsInteractiveModeProgramLine() == false)
+            {
+                throw _programState.Error("NEW command is not supported outside of the interactive mode.");
+            }
+
+            ExpToken(TokenCode.TOK_EOLN, NextToken());
+
+            RemoveAllProgramLines();
+
+            return null;
+        }
+
+        // RUN EOLN
+        private ProgramLine RunCommand()
+        {
+            if (IsInteractiveModeProgramLine() == false)
+            {
+                throw _programState.Error("RUN command is not supported outside of the interactive mode.");
+            }
+
+            ExpToken(TokenCode.TOK_EOLN, NextToken());
+
+            Interpret();
+
+            return null;
+        }
+
+        #endregion
 
 
         #region statements

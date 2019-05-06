@@ -73,6 +73,13 @@ namespace BasicBasic.Indirect
             { "SUB", TokenCode.TOK_KEY_SUB },
             { "THEN", TokenCode.TOK_KEY_THEN },
             { "TO", TokenCode.TOK_KEY_TO },
+
+            // Controll commands of the interactive mode.
+            { "BY", TokenCode.TOK_KEY_BY },
+            { "QUIT", TokenCode.TOK_KEY_QUIT },
+            { "RUN", TokenCode.TOK_KEY_RUN },
+            { "NEW", TokenCode.TOK_KEY_NEW },
+            { "LIST", TokenCode.TOK_KEY_LIST }
         };
 
         #endregion
