@@ -54,8 +54,6 @@ namespace BasicBasic.Indirect
         {
             _programState = new ProgramState(_errorHandler);
             _scanner = new Scanner(_programState);
-
-
         }
 
         /// <summary>
@@ -82,9 +80,15 @@ namespace BasicBasic.Indirect
         /// Interprets a single program line.
         /// </summary>
         /// <param name="source">A program line source.</param>
-        public void InterpretLine(string source)
+        /// <returns>True, if program exit was requested. (BY/QUIT commands executed.)</returns>
+        public bool InterpretLine(string source)
         {
             if (source == null) throw _programState.Error("A source expected.");
+
+            if (_programState.QuitRequested)
+            {
+                throw _programState.Error("Quit requested.");
+            }
 
             // Each token should be preceeded by at least a single white character.
             // So we have to add one here, if user do not inserted one.
@@ -94,6 +98,8 @@ namespace BasicBasic.Indirect
             }
 
             InterpretLine(_scanner.ScanInteractiveModeSourceLine(source));
+
+            return _programState.QuitRequested;
         }
 
         /// <summary>
@@ -159,6 +165,11 @@ namespace BasicBasic.Indirect
         /// </summary>
         private void InterpretImpl()
         {
+            if (_programState.QuitRequested)
+            {
+                throw _programState.Error("Quit requested.");
+            }
+
             _programState.ReturnStackClear();
             _programState.ClearVariables();
             _programState.ClearArrays();
@@ -214,6 +225,9 @@ namespace BasicBasic.Indirect
                 case TokenCode.TOK_KEY_LIST: return ListCommand();
                 case TokenCode.TOK_KEY_NEW: return NewCommand();
                 case TokenCode.TOK_KEY_RUN: return RunCommand();
+                case TokenCode.TOK_KEY_BY:
+                case TokenCode.TOK_KEY_QUIT:
+                    return QuitCommand();
 
                 default:
                     throw _programState.UnexpectedTokenError(token);
@@ -267,6 +281,22 @@ namespace BasicBasic.Indirect
             ExpToken(TokenCode.TOK_EOLN, NextToken());
 
             Interpret();
+
+            return null;
+        }
+
+        // BY EOLN
+        // QUIT EOLN
+        private ProgramLine QuitCommand()
+        {
+            if (IsInteractiveModeProgramLine() == false)
+            {
+                throw _programState.Error("BY or QUIT commands are not supported outside of the interactive mode.");
+            }
+
+            ExpToken(TokenCode.TOK_EOLN, NextToken());
+
+            _programState.QuitRequested = true;
 
             return null;
         }

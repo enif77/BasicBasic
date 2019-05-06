@@ -26,7 +26,7 @@ namespace BasicBasic.Indirect
     using System.Collections.Generic;
 
     using BasicBasic.Indirect.Tokens;
-    
+
 
     /// <summary>
     /// The global program state.
@@ -51,6 +51,11 @@ namespace BasicBasic.Indirect
         /// </summary>
         public bool WasEnd { get; set; }
 
+        /// <summary>
+        /// If true, a BY or QUIT commands were executed, so the program should end.
+        /// </summary>
+        public bool QuitRequested { get; set; }
+
 
         /// <summary>
         /// Constructor.
@@ -74,6 +79,7 @@ namespace BasicBasic.Indirect
             SVars = new string[('Z' - 'A') + 1];      // A$ .. Z$
 
             WasEnd = false;
+            QuitRequested = false;
         }
 
 

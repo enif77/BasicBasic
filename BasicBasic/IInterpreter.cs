@@ -25,6 +25,9 @@ namespace BasicBasic
     using System.Collections.Generic;
 
 
+    /// <summary>
+    /// Defines an interpreter interface.
+    /// </summary>
     public interface IInterpreter
     {
         /// <summary>
@@ -47,7 +50,8 @@ namespace BasicBasic
         /// Interprets a single program line.
         /// </summary>
         /// <param name="source">A program line source.</param>
-        void InterpretLine(string source);
+        /// <returns>True, if program exit was requested. (BY/QUIT commands executed.)</returns>
+        bool InterpretLine(string source);
 
         /// <summary>
         /// Returns the list of defined program lines.
