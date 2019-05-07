@@ -72,6 +72,10 @@ INPUT command was never executed. No variable values are changed.
 
 ### Interactive Mode Commands
 
+#### CLS
+
+Clears all the text from the console window.
+
 #### BY or QUIT
 
 Ends this app.
