@@ -79,7 +79,8 @@ namespace BasicBasic.Indirect
             { "QUIT", TokenCode.TOK_KEY_QUIT },
             { "RUN", TokenCode.TOK_KEY_RUN },
             { "NEW", TokenCode.TOK_KEY_NEW },
-            { "LIST", TokenCode.TOK_KEY_LIST }
+            { "LIST", TokenCode.TOK_KEY_LIST },
+            { "CLS", TokenCode.TOK_KEY_CLS }
         };
 
         #endregion

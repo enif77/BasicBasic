@@ -63,8 +63,9 @@ namespace BasicBasic
 
                 return;
             }
-            
-            while (true)
+
+            var quitRequested = false;
+            while (quitRequested == false)
             {
                 Console.Write("> ");
                 var input = Console.ReadLine().Trim();
@@ -74,55 +75,21 @@ namespace BasicBasic
                     continue;
                 }
 
-
-                if (input.StartsWith("BY", StringComparison.InvariantCultureIgnoreCase) ||
-                    input.StartsWith("QUIT", StringComparison.InvariantCultureIgnoreCase))
+                try
                 {
-                    break;
+                    if (Interpreter.IsDigit(input[0]))
+                    {
+                        interpreter.AddProgramLine(input);
+                    }
+                    else
+                    {
+                        quitRequested = interpreter.InterpretLine(input);
+                    }
                 }
-                //else if (input.StartsWith("RUN", StringComparison.InvariantCultureIgnoreCase))
-                //{
-                //    try
-                //    {
-                //        interpreter.Interpret();
-                //    }
-                //    catch (InterpreterException ex)
-                //    {
-                //        Console.WriteLine();
-                //        Console.WriteLine(ex.Message);
-                //    }
-                //}
-                //else if (input.StartsWith("NEW", StringComparison.InvariantCultureIgnoreCase))
-                //{
-                //    interpreter.RemoveAllProgramLines();
-                //}
-                //else if (input.StartsWith("LIST", StringComparison.InvariantCultureIgnoreCase))
-                //{
-                //    foreach (var line in interpreter.ListProgramLines())
-                //    {
-                //        Console.WriteLine(line);
-                //    }
-                //}
-
-
-                else
+                catch (InterpreterException ex)
                 {
-                    try
-                    {
-                        if (Interpreter.IsDigit(input[0]))
-                        {
-                            interpreter.AddProgramLine(input);
-                        }
-                        else
-                        {
-                            interpreter.InterpretLine(input);
-                        }
-                    }
-                    catch (InterpreterException ex)
-                    {
-                        Console.WriteLine();
-                        Console.WriteLine(ex.Message);
-                    }
+                    Console.WriteLine();
+                    Console.WriteLine(ex.Message);
                 }
             }
         }

@@ -595,7 +595,7 @@ namespace BasicBasic.Indirect
         public InterpreterException ErrorAtLine(string message, params object[] args)
         {
             // Interactive mode?
-            if (CurrentProgramLine.Label < 1)
+            if (CurrentProgramLine == null ||CurrentProgramLine.Label < 1)
             {
                 if (args == null || args.Length == 0)
                 {

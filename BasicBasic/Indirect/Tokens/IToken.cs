@@ -130,7 +130,8 @@ namespace BasicBasic.Indirect.Tokens
         TOK_KEY_QUIT = 201,
         TOK_KEY_RUN = 202,
         TOK_KEY_NEW = 203,
-        TOK_KEY_LIST = 204
+        TOK_KEY_LIST = 204,
+        TOK_KEY_CLS = 205
     }
 
 

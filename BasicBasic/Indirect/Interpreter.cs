@@ -48,6 +48,31 @@ namespace BasicBasic.Indirect
         #region public
 
         /// <summary>
+        /// If true, a BY or QUIT commands were executed, so the program should end.
+        /// </summary>
+        public bool QuitRequested
+        {
+            get
+            {
+                if (_programState != null)
+                {
+                    return _programState.QuitRequested;
+                }
+
+                return true;
+            }
+
+            set
+            {
+                if (_programState != null)
+                {
+                    _programState.QuitRequested = value;
+                }
+            }
+        }
+
+
+        /// <summary>
         /// Initializes this interpereter instance.
         /// </summary>
         public void Initialize()
@@ -61,6 +86,11 @@ namespace BasicBasic.Indirect
         /// </summary>
         public void Interpret()
         {
+            if (QuitRequested)
+            {
+                throw _programState.Error("Quit requested.");
+            }
+
             InterpretImpl();
         }
 
@@ -71,6 +101,11 @@ namespace BasicBasic.Indirect
         public void Interpret(string source)
         {
             if (source == null) throw _programState.Error("A source expected.");
+
+            if (QuitRequested)
+            {
+                throw _programState.Error("Quit requested.");
+            }
 
             _scanner.ScanSource(source);
             InterpretImpl();
@@ -85,7 +120,7 @@ namespace BasicBasic.Indirect
         {
             if (source == null) throw _programState.Error("A source expected.");
 
-            if (_programState.QuitRequested)
+            if (QuitRequested)
             {
                 throw _programState.Error("Quit requested.");
             }
@@ -99,7 +134,7 @@ namespace BasicBasic.Indirect
 
             InterpretLine(_scanner.ScanInteractiveModeSourceLine(source));
 
-            return _programState.QuitRequested;
+            return QuitRequested;
         }
 
         /// <summary>
@@ -165,10 +200,7 @@ namespace BasicBasic.Indirect
         /// </summary>
         private void InterpretImpl()
         {
-            if (_programState.QuitRequested)
-            {
-                throw _programState.Error("Quit requested.");
-            }
+            QuitRequested = false;
 
             _programState.ReturnStackClear();
             _programState.ClearVariables();
@@ -222,6 +254,7 @@ namespace BasicBasic.Indirect
                 case TokenCode.TOK_KEY_RETURN: return ReturnStatement();
                 case TokenCode.TOK_KEY_STOP: return StopStatement();
 
+                case TokenCode.TOK_KEY_CLS: return ClsCommand();
                 case TokenCode.TOK_KEY_LIST: return ListCommand();
                 case TokenCode.TOK_KEY_NEW: return NewCommand();
                 case TokenCode.TOK_KEY_RUN: return RunCommand();
@@ -236,6 +269,21 @@ namespace BasicBasic.Indirect
 
 
         #region interactive mode controll commands
+
+        // CLS EOLN
+        private ProgramLine ClsCommand()
+        {
+            if (IsInteractiveModeProgramLine() == false)
+            {
+                throw _programState.Error("CLS command is not supported outside of the interactive mode.");
+            }
+
+            ExpToken(TokenCode.TOK_EOLN, NextToken());
+
+            Console.Clear();
+
+            return null;
+        }
 
         // LIST EOLN
         private ProgramLine ListCommand()
@@ -296,7 +344,7 @@ namespace BasicBasic.Indirect
 
             ExpToken(TokenCode.TOK_EOLN, NextToken());
 
-            _programState.QuitRequested = true;
+            QuitRequested = true;
 
             return null;
         }

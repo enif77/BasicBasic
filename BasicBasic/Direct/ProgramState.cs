@@ -48,7 +48,12 @@ namespace BasicBasic.Direct
         /// True, it this program reaced the end line.
         /// </summary>
         public bool WasEnd { get; set; }
-               
+
+        /// <summary>
+        /// If true, a BY or QUIT commands were executed, so the program should end.
+        /// </summary>
+        public bool QuitRequested { get; set; }
+
 
         /// <summary>
         /// Constructor.
@@ -71,6 +76,7 @@ namespace BasicBasic.Direct
             SVars = new string[('Z' - 'A') + 1];      // A$ .. Z$
 
             WasEnd = false;
+            QuitRequested = false;
         }
 
 

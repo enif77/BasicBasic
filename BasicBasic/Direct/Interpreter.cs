@@ -47,6 +47,31 @@ namespace BasicBasic.Direct
         #region public
 
         /// <summary>
+        /// If true, a BY or QUIT commands were executed, so the program should end.
+        /// </summary>
+        public bool QuitRequested
+        {
+            get
+            {
+                if (_programState != null)
+                {
+                    return _programState.QuitRequested;
+                }
+
+                return true;
+            }
+
+            set
+            {
+                if (_programState != null)
+                {
+                    _programState.QuitRequested = value;
+                }
+            }
+        }
+
+
+        /// <summary>
         /// Initializes this interpereter instance.
         /// </summary>
         public void Initialize()
@@ -63,6 +88,11 @@ namespace BasicBasic.Direct
         /// </summary>
         public void Interpret()
         {
+            if (QuitRequested)
+            {
+                throw _programState.Error("Quit requested.");
+            }
+
             InterpretImpl();
         }
 
@@ -74,6 +104,11 @@ namespace BasicBasic.Direct
         {
             if (source == null) throw _programState.Error("A source expected.");
 
+            if (QuitRequested)
+            {
+                throw _programState.Error("Quit requested.");
+            }
+
             ScanSource(source);
             InterpretImpl();
         }
@@ -82,9 +117,14 @@ namespace BasicBasic.Direct
         /// Interprets a single program line.
         /// </summary>
         /// <param name="source">A program line source.</param>
-        public void InterpretLine(string source)
+        public bool InterpretLine(string source)
         {
             if (source == null) throw _programState.Error("A source expected.");
+
+            if (QuitRequested)
+            {
+                throw _programState.Error("Quit requested.");
+            }
 
             // Each token should be preceeded by at least a single white character.
             // So we have to add one here, if user do not inserted one.
@@ -109,6 +149,8 @@ namespace BasicBasic.Direct
             };
 
             InterpretLine(programLine);
+
+            return QuitRequested;
         }
 
         /// <summary>
@@ -223,9 +265,13 @@ namespace BasicBasic.Direct
                 case TOK_KEY_RETURN: return ReturnStatement();
                 case TOK_KEY_STOP: return StopStatement();
 
+                case TOK_KEY_CLS: return ClsCommand();
                 case TOK_KEY_LIST: return ListCommand();
                 case TOK_KEY_NEW: return NewCommand();
                 case TOK_KEY_RUN: return RunCommand();
+                case TOK_KEY_BY:
+                case TOK_KEY_QUIT:
+                    return QuitCommand();
 
                 default:
                     throw _programState.UnexpectedTokenError(_token);
@@ -234,6 +280,22 @@ namespace BasicBasic.Direct
 
 
         #region interactive mode controll commands
+
+        // CLS EOLN
+        private ProgramLine ClsCommand()
+        {
+            if (IsInteractiveModeProgramLine() == false)
+            {
+                throw _programState.Error("CLS command is not supported outside of the interactive mode.");
+            }
+
+            NextToken();
+            ExpToken(TOK_EOLN);
+
+            Console.Clear();
+
+            return null;
+        }
 
         // LIST EOLN
         private ProgramLine ListCommand()
@@ -286,6 +348,23 @@ namespace BasicBasic.Direct
             return null;
         }
 
+        // BY EOLN
+        // QUIT EOLN
+        private ProgramLine QuitCommand()
+        {
+            if (IsInteractiveModeProgramLine() == false)
+            {
+                throw _programState.Error("BY or QUIT commands are not supported outside of the interactive mode.");
+            }
+
+            NextToken();
+            ExpToken(TOK_EOLN);
+
+            QuitRequested = true;
+
+            return null;
+        }
+        
         #endregion
 
 
@@ -1706,6 +1785,7 @@ namespace BasicBasic.Direct
         public const int TOK_KEY_RUN = 202;
         public const int TOK_KEY_NEW = 203;
         public const int TOK_KEY_LIST = 204;
+        public const int TOK_KEY_CLS = 205;
 
         /// <summary>
         /// The keyword - token map.
@@ -1741,7 +1821,8 @@ namespace BasicBasic.Direct
             { "QUIT", TOK_KEY_QUIT },
             { "RUN", TOK_KEY_RUN },
             { "NEW", TOK_KEY_NEW },
-            { "LIST", TOK_KEY_LIST }
+            { "LIST", TOK_KEY_LIST },
+            { "CLS", TOK_KEY_CLS }
         };
 
         #endregion
