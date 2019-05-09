@@ -264,7 +264,7 @@ namespace BasicBasic.Indirect
         private bool ScanData(IToken token, bool wasValue)
         {
             // TODO: Add support for unquoted strings.
-            if (token.TokenCode == TokenCode.TOK_NUM || token.TokenCode == TokenCode.TOK_QSTR)
+            if (token.TokenCode == TokenCode.TOK_NUM || token.TokenCode == TokenCode.TOK_QSTR || token.TokenCode == TokenCode.TOK_UQSTR)
             {
                 if (wasValue)
                 {

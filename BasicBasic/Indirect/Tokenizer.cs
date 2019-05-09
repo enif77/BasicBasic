@@ -276,6 +276,11 @@ namespace BasicBasic.Indirect
                     case C_EOLN: return new SimpleToken(TokenCode.TOK_EOLN);
                 }
 
+                if (IsPlainStringCharacter(c))
+                {
+                    return ParseUnquotedString(c);
+                }
+
                 c = NextChar();
             }
 
@@ -328,14 +333,14 @@ namespace BasicBasic.Indirect
                 }
                 else
                 {
-                    if (strValue.Length != 3)
+                    if (strValue.Length == 3)
                     {
-                        throw ProgramState.ErrorAtLine("Unknown token '{0}'", strValue);
+                        return strValue.StartsWith("FN")
+                            ? new IdentifierToken(TokenCode.TOK_UFN, strValue)
+                            : new IdentifierToken(TokenCode.TOK_FN, strValue);
                     }
 
-                    return strValue.StartsWith("FN")
-                        ? new IdentifierToken(TokenCode.TOK_UFN, strValue)
-                        : new IdentifierToken(TokenCode.TOK_FN, strValue);
+                    return new StringToken(TokenCode.TOK_UQSTR, strValue);
                 }
             }
             else
@@ -350,7 +355,6 @@ namespace BasicBasic.Indirect
         /// <summary>
         /// Parses the quoted string using the ECMA-55 rules.
         /// </summary>
-        /// <param name="c">The first character ('"') of the parsed string literal.</param>
         private IToken ParseQuotedString()
         {
             var strValue = string.Empty;
@@ -369,6 +373,34 @@ namespace BasicBasic.Indirect
             }
 
             return new StringToken(TokenCode.TOK_QSTR, strValue);
+        }
+
+        /// <summary>
+        /// Parses the unquoted string using the ECMA-55 rules.
+        /// </summary>
+        private IToken ParseUnquotedString(char c)
+        {
+            var strValue = c.ToString();
+
+            var pc = (char)0;
+            c = NextChar();
+            while (c != C_EOF)
+            {
+                // Not all characters are allowed.
+                // unquoted-string-character : space | plain-string-character
+                // plain-string-character : plus-sign | minus-sign | full-stop | digit | letter
+                if (IsUnquotedStringCharacter(c) == false)
+                {
+                    break;
+                }
+
+                strValue += c;
+                pc = c;
+                c = NextChar();
+            }
+
+            // unquoted-string : plain-string-character [ { unquoted-string-character } plain-string-character ] .
+            return new StringToken(TokenCode.TOK_UQSTR, strValue);
         }
 
         /// <summary>
@@ -539,7 +571,7 @@ namespace BasicBasic.Indirect
         /// </summary>
         /// <param name="c">A character.</param>
         /// <returns>True, if a character is an unquoted-string-character.</returns>
-        public static bool IsUquotedStringCharacter(char c)
+        public static bool IsUnquotedStringCharacter(char c)
         {
             return c == ' ' || IsPlainStringCharacter(c);
         }

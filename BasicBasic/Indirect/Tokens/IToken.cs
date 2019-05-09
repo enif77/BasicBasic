@@ -61,14 +61,19 @@ namespace BasicBasic.Indirect.Tokens
         TOK_QSTR = 11,
 
         /// <summary>
+        /// An unquoted string token.
+        /// </summary>
+        TOK_UQSTR = 12,
+
+        /// <summary>
         /// A build in function name token.
         /// </summary>
-        TOK_FN = 12,
+        TOK_FN = 15,
 
         /// <summary>
         /// An user defined function name ("FN?") token.
         /// </summary>
-        TOK_UFN = 13,
+        TOK_UFN = 16,
 
         /// <summary>
         /// A PRINT statement values list separator (';') token.

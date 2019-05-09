@@ -853,7 +853,7 @@ namespace BasicBasic.Indirect
                             // Not all characters are allowed.
                             // unquoted-string-character : space | plain-string-character
                             // plain-string-character : plus-sign | minus-sign | full-stop | digit | letter
-                            if (Tokenizer.IsUquotedStringCharacter(c) == false)
+                            if (Tokenizer.IsUnquotedStringCharacter(c) == false)
                             {
                                 throw _programState.ErrorAtLine("Unexpected plain string character '{0}'", c);
                             }
