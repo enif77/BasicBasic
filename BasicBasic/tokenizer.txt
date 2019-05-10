@@ -1,0 +1,15 @@
+﻿plain-string-character : plus-sign | minus-sign | full-stop | digit | letter .
+
+unquoted-string-character : space | plain-string-character .
+
+unquoted-string : plain-string-character [ { unquoted-string-character } plain-string-character ] .
+
+---
+
+1. numeric-constant : [ sign ] numeric-rep .
+2.   sign : '+' | '-' .
+3.   numeric-rep = significand [ exrad ] .
+4.   significand : ( integer [ full-stop ] ) | ( [ integer ] fraction ) .
+5.   integer : digit { digit } .
+6.   fraction : '.' digit { digit } .
+7.   exrad : 'E' [ sign ] integer .

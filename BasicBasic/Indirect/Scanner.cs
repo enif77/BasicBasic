@@ -60,7 +60,7 @@ namespace BasicBasic.Indirect
                 Source = source
             };
 
-            var token = tokenizer.NextToken();
+            var token = tokenizer.NextToken(false);
             var line = 1;
             var atLineStart = true;
             var inData = false;
@@ -130,7 +130,7 @@ namespace BasicBasic.Indirect
                     }
                 }
 
-                token = tokenizer.NextToken();
+                token = tokenizer.NextToken(inData);
             }
 
             // The last line does not ended with the '\n' character.
@@ -154,7 +154,7 @@ namespace BasicBasic.Indirect
                 Source = source
             };
 
-            var token = tokenizer.NextToken();
+            var token = tokenizer.NextToken(false);
             var atLineStart = true;
             var inData = false;
             var wasValue = false;
@@ -232,7 +232,7 @@ namespace BasicBasic.Indirect
                     }
                 }
 
-                token = tokenizer.NextToken();
+                token = tokenizer.NextToken(inData);
             }
 
             // The interactive line does not ended with the '\n' character.

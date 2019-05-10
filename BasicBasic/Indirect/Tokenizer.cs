@@ -165,7 +165,7 @@ namespace BasicBasic.Indirect
         /// <summary>
         /// Extracts the next token found in the program source.
         /// </summary>
-        public IToken NextToken()
+        public IToken NextToken(bool withUnquotedStrings)
         {
             if (SourcePosition >= Source.Length)
             {
@@ -276,7 +276,8 @@ namespace BasicBasic.Indirect
                     case C_EOLN: return new SimpleToken(TokenCode.TOK_EOLN);
                 }
 
-                if (IsPlainStringCharacter(c))
+                // TODO: Extend support for unquoted strings (for the DATA and INPUT statements).
+                if (withUnquotedStrings && IsPlainStringCharacter(c))
                 {
                     return ParseUnquotedString(c);
                 }
@@ -382,23 +383,21 @@ namespace BasicBasic.Indirect
         {
             var strValue = c.ToString();
 
-            var pc = (char)0;
             c = NextChar();
             while (c != C_EOF)
             {
-                // Not all characters are allowed.
-                // unquoted-string-character : space | plain-string-character
-                // plain-string-character : plus-sign | minus-sign | full-stop | digit | letter
+                // Not all characters are allowed here.
                 if (IsUnquotedStringCharacter(c) == false)
                 {
                     break;
                 }
 
                 strValue += c;
-                pc = c;
                 c = NextChar();
             }
 
+            // plain-string-character : plus-sign | minus-sign | full-stop | digit | letter
+            // unquoted-string-character : space | plain-string-character
             // unquoted-string : plain-string-character [ { unquoted-string-character } plain-string-character ] .
             return new StringToken(TokenCode.TOK_UQSTR, strValue);
         }
