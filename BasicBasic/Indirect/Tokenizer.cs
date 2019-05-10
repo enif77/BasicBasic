@@ -80,7 +80,20 @@ namespace BasicBasic.Indirect
             { "RUN", TokenCode.TOK_KEY_RUN },
             { "NEW", TokenCode.TOK_KEY_NEW },
             { "LIST", TokenCode.TOK_KEY_LIST },
-            { "CLS", TokenCode.TOK_KEY_CLS }
+            { "CLS", TokenCode.TOK_KEY_CLS },
+
+            // Build in functions.
+            { "RND", TokenCode.TOK_FN },
+            { "ABS", TokenCode.TOK_FN },
+            { "ATN", TokenCode.TOK_FN },
+            { "COS", TokenCode.TOK_FN },
+            { "EXP", TokenCode.TOK_FN },
+            { "INT", TokenCode.TOK_FN },
+            { "LOG", TokenCode.TOK_FN },
+            { "SGN", TokenCode.TOK_FN },
+            { "SIN", TokenCode.TOK_FN },
+            { "SQR", TokenCode.TOK_FN },
+            { "TAN", TokenCode.TOK_FN }
         };
 
         #endregion
@@ -187,11 +200,21 @@ namespace BasicBasic.Indirect
 
                 if (IsDigit(c) || c == '.')
                 {
+                    //if (withUnquotedStrings)
+                    //{
+                    //    return ParseUnquotedString(c);
+                    //}
+
                     return ParseNumber(c);
                 }
 
                 if (IsLetter(c))
                 {
+                    if (withUnquotedStrings)
+                    {
+                        return ParseUnquotedString(c);
+                    }
+                    
                     return ParseIdent(c, wasWhite);
                 }
 
@@ -336,9 +359,15 @@ namespace BasicBasic.Indirect
                 {
                     if (strValue.Length == 3)
                     {
-                        return strValue.StartsWith("FN")
-                            ? new IdentifierToken(TokenCode.TOK_UFN, strValue)
-                            : new IdentifierToken(TokenCode.TOK_FN, strValue);
+                        if (strValue.StartsWith("FN"))
+                        {
+                            return new IdentifierToken(TokenCode.TOK_UFN, strValue);
+                        }
+
+                        if (_keyWordsMap.ContainsKey(strValue))
+                        {
+                            return new IdentifierToken(TokenCode.TOK_FN, strValue);
+                        }
                     }
 
                     return new StringToken(TokenCode.TOK_UQSTR, strValue);
@@ -364,7 +393,6 @@ namespace BasicBasic.Indirect
             while (c != '"' && c != C_EOLN)
             {
                 strValue += c;
-
                 c = NextChar();
             }
 
@@ -395,6 +423,9 @@ namespace BasicBasic.Indirect
                 strValue += c;
                 c = NextChar();
             }
+
+            // Go one char back, so the next time we will read the character behind this identifier.
+            PreviousChar();
 
             // plain-string-character : plus-sign | minus-sign | full-stop | digit | letter
             // unquoted-string-character : space | plain-string-character
