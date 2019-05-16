@@ -200,10 +200,10 @@ namespace BasicBasic.Indirect
 
                 if (IsDigit(c) || c == '.')
                 {
-                    //if (withUnquotedStrings)
-                    //{
-                    //    return ParseUnquotedString(c);
-                    //}
+                    if (withUnquotedStrings)
+                    {
+                        return ParseUnquotedString(c);
+                    }
 
                     return ParseNumber(c);
                 }
@@ -264,6 +264,11 @@ namespace BasicBasic.Indirect
                             var cc = NextChar();
                             PreviousChar();
 
+                            if (withUnquotedStrings)
+                            {
+                                return ParseUnquotedString(c);
+                            }
+
                             if (IsDigit(cc) || cc == '.')
                             {
                                 return ParseNumber(c);
@@ -278,6 +283,11 @@ namespace BasicBasic.Indirect
                         {
                             var cc = NextChar();
                             PreviousChar();
+
+                            if (withUnquotedStrings)
+                            {
+                                return ParseUnquotedString(c);
+                            }
 
                             if (IsDigit(cc) || cc == '.')
                             {
@@ -299,11 +309,11 @@ namespace BasicBasic.Indirect
                     case C_EOLN: return new SimpleToken(TokenCode.TOK_EOLN);
                 }
 
-                // TODO: Extend support for unquoted strings (for the DATA and INPUT statements).
-                if (withUnquotedStrings && IsPlainStringCharacter(c))
-                {
-                    return ParseUnquotedString(c);
-                }
+                //// TODO: Extend support for unquoted strings (for the DATA and INPUT statements).
+                //if (withUnquotedStrings && IsPlainStringCharacter(c))
+                //{
+                //    return ParseUnquotedString(c);
+                //}
 
                 c = NextChar();
             }
@@ -406,6 +416,9 @@ namespace BasicBasic.Indirect
 
         /// <summary>
         /// Parses the unquoted string using the ECMA-55 rules.
+        /// plain-string-character : plus-sign | minus-sign | full-stop | digit | letter .
+        /// unquoted-string-character : space | plain-string-character .
+        /// unquoted-string : plain-string-character [ { unquoted-string-character } plain-string-character ] .
         /// </summary>
         private IToken ParseUnquotedString(char c)
         {
@@ -427,9 +440,34 @@ namespace BasicBasic.Indirect
             // Go one char back, so the next time we will read the character behind this identifier.
             PreviousChar();
 
-            // plain-string-character : plus-sign | minus-sign | full-stop | digit | letter
-            // unquoted-string-character : space | plain-string-character
-            // unquoted-string : plain-string-character [ { unquoted-string-character } plain-string-character ] .
+            // Remove spaces at the end of the string.
+            strValue = strValue.TrimEnd();
+
+            // A single dot is not a number 0!
+            if (strValue == ".")
+            {
+                return new StringToken(TokenCode.TOK_UQSTR, strValue);
+            }
+
+            // Unquoted string can be a numeric literal.
+            if (IsDigit(strValue[0]) || strValue.StartsWith("+") || strValue.StartsWith("-") || strValue.StartsWith("."))
+            {
+                // Not an ideal numeric constants recognition/parsing here, but should be good enough. :-)
+                var tokenizer = new Tokenizer(ProgramState);
+                tokenizer.Source = strValue;
+
+                // We expect a number and the EOF tokens here only. Anything else is unquoted string.
+                var tok = tokenizer.NextToken(false);
+                if (tok.TokenCode == TokenCode.TOK_NUM)
+                {
+                    var ttok = tokenizer.NextToken(false);
+                    if (ttok.TokenCode == TokenCode.TOK_EOF)
+                    {
+                        return tok;
+                    }
+                }
+            }
+            
             return new StringToken(TokenCode.TOK_UQSTR, strValue);
         }
 

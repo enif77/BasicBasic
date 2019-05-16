@@ -263,7 +263,6 @@ namespace BasicBasic.Indirect
         /// <returns>True, if the current token is a value.</returns>
         private bool ScanData(IToken token, bool wasValue)
         {
-            // TODO: Add support for unquoted strings.
             if (token.TokenCode == TokenCode.TOK_NUM || token.TokenCode == TokenCode.TOK_QSTR || token.TokenCode == TokenCode.TOK_UQSTR)
             {
                 if (wasValue)
