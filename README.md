@@ -26,7 +26,7 @@ Each shows a different approach to how to interpret a program source.
 ### Direct interpreter
 
 Does no compilation at all. It reads the program source, splits it into tokens
-and interprets each token directly. This happens all the time, so it is siple, but
+and interprets each token directly. This happens all the time, so it is simple, but
 very "slow" way of doing it. Dont worry, our computers are fast enough to handle it. :-)
 
 Does NOT support - ON, DATA, READ and RESTORE commands. They are silently ignored.
@@ -258,7 +258,7 @@ Jups to a label based on a value.
 10  INPUT A
 20  ON A GOTO 100, 200
 30  REM We should not ever get here, because the ON statement will fail,
-40  REM if user enters anything else, then 1 or 2.
+40  REM if user enters anything else than 1 or 2.
 100 PRINT "first"
 110 GOTO 999
 200 PRINT "second"
@@ -396,6 +396,21 @@ The nonnegative square root of X; X must be nonnegative.
 
 The tangent of X, where X  is in radians.
 
+## Examples
+
+Some practical examples of using the BasicBasic interpreter.
+
+### Angle to radians conversion
+
+Converts an angle in degrees entered by an user to radians.
+
+<pre>
+10 PRINT "Enter an angle in degrees:"
+20 INPUT A
+30 PRINT "Radians:"; A * (3,14 / 180)
+99 END
+</pre>
+
 ## Syntax
 
 <pre>
@@ -469,8 +484,6 @@ gosub-statement : ( "GO" "SUB" label ) | ( "GOSUB" label ) .
 if-then-statement : "IF" expression "THEN" label .
 
 input-statement : "INPUT" variable { ',' variable } .
-
-### NOTE: The INPUT statement accepts numbers, quoted strings and unquoted strings.
 
 let-statement : "LET" variable '=' expression .
 
