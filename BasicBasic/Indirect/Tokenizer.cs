@@ -415,7 +415,7 @@ namespace BasicBasic.Indirect
         }
 
         /// <summary>
-        /// Parses the unquoted string using the ECMA-55 rules.
+        /// Parses the unquoted string using the ECMA-55 rules. Such a string can be a numeric literal, so it is recognized here too.
         /// plain-string-character : plus-sign | minus-sign | full-stop | digit | letter .
         /// unquoted-string-character : space | plain-string-character .
         /// unquoted-string : plain-string-character [ { unquoted-string-character } plain-string-character ] .
@@ -449,26 +449,37 @@ namespace BasicBasic.Indirect
                 return new StringToken(TokenCode.TOK_UQSTR, strValue);
             }
 
+            // A token we will return.
+            IToken token = new StringToken(TokenCode.TOK_UQSTR, strValue); ;
+
             // Unquoted string can be a numeric literal.
             if (IsDigit(strValue[0]) || strValue.StartsWith("+") || strValue.StartsWith("-") || strValue.StartsWith("."))
             {
                 // Not an ideal numeric constants recognition/parsing here, but should be good enough. :-)
-                var tokenizer = new Tokenizer(ProgramState);
-                tokenizer.Source = strValue;
+                var source = Source;
+                var sourcePosition = SourcePosition;
+
+                // Set the unquoted string as the current program source.
+                Source = strValue;
 
                 // We expect a number and the EOF tokens here only. Anything else is unquoted string.
-                var tok = tokenizer.NextToken(false);
+                var tok = NextToken(false);
                 if (tok.TokenCode == TokenCode.TOK_NUM)
                 {
-                    var ttok = tokenizer.NextToken(false);
+                    var ttok = NextToken(false);
                     if (ttok.TokenCode == TokenCode.TOK_EOF)
                     {
-                        return tok;
+                        // Not an unquoted string, but a number.
+                        token = tok;
                     }
                 }
+
+                // Go back to the main program source.
+                Source = source;
+                SourcePosition = sourcePosition;
             }
-            
-            return new StringToken(TokenCode.TOK_UQSTR, strValue);
+
+            return token;
         }
 
         /// <summary>

@@ -545,7 +545,7 @@ namespace BasicBasic.Indirect
         public string NextStringData()
         {
             var tok = Data.Next();
-            if (tok.TokenCode == TokenCode.TOK_QSTR)
+            if (tok.TokenCode == TokenCode.TOK_QSTR || tok.TokenCode == TokenCode.TOK_UQSTR)
             {
                 return tok.StrValue;
             }
