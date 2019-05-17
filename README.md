@@ -448,9 +448,7 @@ statement :
 
 data-statement : "DATA" datum { ',' datum } .
 
-datum : number | quoted-string .
-
-### NOTE: The DATA statement should support unquoted strings too.
+datum : number | quoted-string | unquoted-string .
 
 def-statement : "DEF" user-function-name [ '(' parameter-name ')' ] '=' numeric-expression
 

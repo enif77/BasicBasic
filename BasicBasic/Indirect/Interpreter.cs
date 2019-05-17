@@ -665,8 +665,9 @@ namespace BasicBasic.Indirect
         /// <param name="varsList">Variables, for which we need values.</param>
         private void ReadUserInput(List<string> varsList)
         {
-            var valuesList = new List<string>();
-
+            var valuesList = new List<IToken>();
+            var tokenizer = new Tokenizer(_programState);
+            
             while (true)
             {
                 Console.Write("? ");
@@ -680,22 +681,25 @@ namespace BasicBasic.Indirect
                     break;
                 }
 
-                // Parse th input.
+                tokenizer.Source = input;
+
+                // Parse the input.
                 // input : data { ',' data } .
                 // data : number | quoted-string
-                var i = 0;
+                //var i = 0;
                 bool atSep = true;
+                var tok = tokenizer.NextToken(true);
                 while (true)
                 {
-                    if (i >= input.Length || input[i] == Tokenizer.C_EOLN)
+                    if (tok.TokenCode == TokenCode.TOK_EOLN || tok.TokenCode == TokenCode.TOK_EOF)
                     {
                         inputParsed = true;
 
                         break;
                     }
 
-                    // A quoted string.
-                    if (input[i] == '\"')
+                    // A number or a string or.
+                    if (tok.TokenCode == TokenCode.TOK_NUM || tok.TokenCode == TokenCode.TOK_QSTR || tok.TokenCode == TokenCode.TOK_UQSTR)
                     {
                         // Missing separator.
                         if (atSep == false)
@@ -703,125 +707,11 @@ namespace BasicBasic.Indirect
                             break;
                         }
 
-                        var strValue = "$"; // '$' = a string value type.
-
-                        // Eat '"'.
-                        var c = input[++i];
-                        while (c != Tokenizer.C_EOLN)
-                        {
-                            if (c == '\"')
-                            {
-                                break;
-                            }
-
-                            strValue += c;
-                            c = input[++i];
-                        }
-
-                        if (c != '"')
-                        {
-                            // Unfinished quoted string.
-                            break;
-                        }
-
-                        valuesList.Add(c == 0 ? string.Empty : strValue);
+                        valuesList.Add(tok);
 
                         atSep = false;
                     }
-                    // A number.
-                    else if (input[i] == '+' || input[i] == '-' || Tokenizer.IsDigit(input[i]))
-                    {
-                        // Missing separator.
-                        if (atSep == false)
-                        {
-                            break;
-                        }
-
-                        var sign = '+';
-                        var numValue = (string)null;
-
-                        if (input[i] == '+')
-                        {
-                            i++;
-                        }
-                        else if (input[i] == '-')
-                        {
-                            sign = '-';
-                            i++;
-                        }
-
-                        var c = input[i];
-                        while (Tokenizer.IsDigit(c))
-                        {
-                            if (numValue == null)
-                            {
-                                numValue = sign.ToString();
-                            }
-
-                            numValue += c;
-                            c = input[++i];
-                        }
-
-                        if (c == '.')
-                        {
-                            if (numValue == null)
-                            {
-                                numValue = sign.ToString();
-                            }
-
-                            numValue += c;
-
-                            c = input[++i];
-                            while (Tokenizer.IsDigit(c))
-                            {
-                                numValue += c;
-                                c = input[++i];
-                            }
-                        }
-
-                        if (c == 'E')
-                        {
-                            if (numValue == null)
-                            {
-                                // A number should not start with the exponent.
-                                break;
-                            }
-
-                            numValue += c;
-
-                            c = input[++i];
-                            if (c == '+' || c == '-')
-                            {
-                                numValue += c;
-                                c = input[++i];
-                            }
-
-                            while (Tokenizer.IsDigit(c))
-                            {
-                                numValue += c;
-
-                                c = input[++i];
-                            }
-                        }
-
-                        // Not a number?
-                        if (numValue == null)
-                        {
-                            // TODO: '+', '-' and '.' can start the unquoted string.
-                            // unquoted-string-character : space | plain-string-character
-                            // plain-string-character : plus-sign | minus-sign | full-stop | digit | letter
-
-                            break;
-                        }
-
-                        valuesList.Add(numValue);
-
-                        // Go back one character.
-                        i--;
-
-                        atSep = false;
-                    }
-                    else if (input[i] == ',')
+                    else if (tok.TokenCode == TokenCode.TOK_LSTSEP)
                     {
                         // Missing value.
                         if (atSep)
@@ -831,76 +721,14 @@ namespace BasicBasic.Indirect
 
                         atSep = true;
                     }
-                    else if (Tokenizer.IsPlainStringCharacter(input[i]))
-                    {
-                        // Missing separator.
-                        if (atSep == false)
-                        {
-                            break;
-                        }
-
-                        var strValue = string.Empty;
-
-                        var pc = (char)0;
-                        var c = input[i];
-                        while (c != Tokenizer.C_EOLN)
-                        {
-                            if (c == ',')
-                            {
-                                break;
-                            }
-
-                            // Not all characters are allowed.
-                            // unquoted-string-character : space | plain-string-character
-                            // plain-string-character : plus-sign | minus-sign | full-stop | digit | letter
-                            if (Tokenizer.IsUnquotedStringCharacter(c) == false)
-                            {
-                                throw _programState.ErrorAtLine("Unexpected plain string character '{0}'", c);
-                            }
-
-                            strValue += c;
-                            pc = c;
-                            c = input[++i];
-                        }
-
-                        // unquoted-string : plain-string-character [ { unquoted-string-character } plain-string-character ] .
-                        if ((c == Tokenizer.C_EOLN || c == ',') && Tokenizer.IsPlainStringCharacter(pc) == false)
-                        {
-                            throw _programState.ErrorAtLine("Unexpected plain string character '{0}'", c);
-                        }
-
-                        valuesList.Add(string.IsNullOrWhiteSpace(strValue) ? string.Empty : ("$" + strValue.Trim())); // '$' = a string value type.
-
-                        // Go back one character.
-                        i--;
-
-                        atSep = false;
-                    }
                     else
                     {
-                        // Missing separator.
-                        if (atSep == false)
-                        {
-                            break;
-                        }
+                        _programState.NotifyError("Unexpected token in the user input.");
 
-                        // Skip white chars.
-                        var c = input[i];
-                        while (c != Tokenizer.C_EOLN)
-                        {
-                            if (Tokenizer.IsWhite(c) == false)
-                            {
-                                break;
-                            }
-
-                            c = input[++i];
-                        }
-
-                        // Go back one character.
-                        i--;
+                        break;
                     }
 
-                    i++;
+                    tok = tokenizer.NextToken(true);
                 }
 
                 // Something wrong?
@@ -922,7 +750,7 @@ namespace BasicBasic.Indirect
                 }
 
                 var valuesAssigned = true;
-                for (i = 0; i < varsList.Count; i++)
+                for (var i = 0; i < varsList.Count; i++)
                 {
                     var varName = varsList[i];
                     var value = valuesList[i];
@@ -930,46 +758,32 @@ namespace BasicBasic.Indirect
                     // A string variable?
                     if (varName.EndsWith("$"))
                     {
-                        if (string.IsNullOrWhiteSpace(value))
+                        // Not a string value?
+                        if (value.TokenCode == TokenCode.TOK_NUM)
                         {
-                            _programState.SetSVar(varName, string.Empty);
+                            _programState.NotifyError("A string value expected for the {0} variable.", varName);
+
+                            valuesAssigned = false;
+
+                            break;
                         }
-                        else
-                        {
-                            // Not a string value?
-                            if (value.StartsWith("$") == false)
-                            {
-                                _programState.NotifyError("A string value expected for the {0} variable.", varName);
 
-                                valuesAssigned = false;
-
-                                break;
-                            }
-
-                            _programState.SetSVar(varName, value.Substring(1));
-                        }
+                        _programState.SetSVar(varName, value.StrValue);
                     }
                     // A numeric variable.
                     else
                     {
-                        if (string.IsNullOrWhiteSpace(value))
+                        // Not a numeric value?
+                        if (value.TokenCode != TokenCode.TOK_NUM)
                         {
-                            _programState.SetNVar(varName, 0);
+                            _programState.NotifyError("A numeric value expected for the {0} variable.", varName);
+
+                            valuesAssigned = false;
+
+                            break;
                         }
-                        else
-                        {
-                            // Not a numeric value?
-                            if (value.StartsWith("$"))
-                            {
-                                _programState.NotifyError("A numeric value expected for the {0} variable.", varName);
 
-                                valuesAssigned = false;
-
-                                break;
-                            }
-
-                            _programState.SetNVar(varName, float.Parse(value, NumberStyles.Number, CultureInfo.InvariantCulture));
-                        }
+                        _programState.SetNVar(varName, value.NumValue);
                     }
                 }
 
