@@ -95,7 +95,7 @@ namespace BasicBasic.Indirect
         }
 
         /// <summary>
-        /// Scans the given sorce and interprets it.
+        /// Scans the given source and interprets it.
         /// </summary>
         /// <param name="source"></param>
         public void Interpret(string source)
@@ -122,7 +122,7 @@ namespace BasicBasic.Indirect
 
             if (QuitRequested)
             {
-                throw _programState.Error("Quit requested.");
+                throw _programState.Error("Quit already requested.");
             }
 
             // Each token should be preceeded by at least a single white character.

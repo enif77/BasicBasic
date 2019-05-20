@@ -41,7 +41,7 @@ namespace BasicBasic
         void Interpret();
 
         /// <summary>
-        /// Scans the given sorce and interprets it.
+        /// Scans the given source and interprets it.
         /// </summary>
         /// <param name="source"></param>
         void Interpret(string source);

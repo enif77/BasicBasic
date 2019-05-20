@@ -97,7 +97,7 @@ namespace BasicBasic.Direct
         }
 
         /// <summary>
-        /// Scans the given sorce and interprets it.
+        /// Scans the given source and interprets it.
         /// </summary>
         /// <param name="source"></param>
         public void Interpret(string source)
@@ -235,8 +235,6 @@ namespace BasicBasic.Direct
         /// <returns>The next program line to interpret.</returns>
         private ProgramLine InterpretLine(ProgramLine programLine)
         {
-            //Console.WriteLine("{0:000} -> {1}", programLine.Label, _source.Substring(programLine.Start, (programLine.End - programLine.Start) + 1));
-
             _programState.SetCurrentProgramLine(programLine);
 
             NextToken();
