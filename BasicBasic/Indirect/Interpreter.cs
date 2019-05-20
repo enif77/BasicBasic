@@ -313,6 +313,12 @@ namespace BasicBasic.Indirect
 
             ExpToken(TokenCode.TOK_EOLN, NextToken());
 
+            _programState.ReturnStackClear();
+            _programState.ClearVariables();
+            _programState.ClearArrays();
+            _programState.ClearUserFunctions();
+            _programState.ClearData();
+
             RemoveAllProgramLines();
 
             return null;
@@ -699,7 +705,7 @@ namespace BasicBasic.Indirect
                     }
 
                     // A number or a string or.
-                    if (tok.TokenCode == TokenCode.TOK_NUM || tok.TokenCode == TokenCode.TOK_QSTR || tok.TokenCode == TokenCode.TOK_UQSTR)
+                    if (tok.TokenCode == TokenCode.TOK_NUM || tok.TokenCode == TokenCode.TOK_STR)
                     {
                         // Missing separator.
                         if (atSep == false)
@@ -1193,7 +1199,7 @@ namespace BasicBasic.Indirect
         // string-expression : quoted-string | string-variable .
         private bool IsStringExpression(IToken token)
         {
-            return token.TokenCode == TokenCode.TOK_QSTR || token.TokenCode == TokenCode.TOK_STRIDNT;
+            return token.TokenCode == TokenCode.TOK_STR || token.TokenCode == TokenCode.TOK_STRIDNT;
         }
 
         // string-expression : string-variable | string-constant .
@@ -1201,7 +1207,7 @@ namespace BasicBasic.Indirect
         {
             switch (token.TokenCode)
             {
-                case TokenCode.TOK_QSTR: return token.StrValue;
+                case TokenCode.TOK_STR: return token.StrValue;
                 case TokenCode.TOK_STRIDNT: return _programState.GetSVar(token.StrValue);
 
                 default:

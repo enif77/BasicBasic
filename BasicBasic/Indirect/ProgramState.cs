@@ -545,12 +545,18 @@ namespace BasicBasic.Indirect
         public string NextStringData()
         {
             var tok = Data.Next();
-            if (tok.TokenCode == TokenCode.TOK_QSTR || tok.TokenCode == TokenCode.TOK_UQSTR)
+            if (tok.TokenCode == TokenCode.TOK_STR)
             {
                 return tok.StrValue;
             }
 
             throw ErrorAtLine("A string value in data expected");
+        }
+
+
+        public void ClearData()
+        {
+            Data.Clear();
         }
 
 

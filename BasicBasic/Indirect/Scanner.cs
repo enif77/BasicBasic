@@ -263,7 +263,7 @@ namespace BasicBasic.Indirect
         /// <returns>True, if the current token is a value.</returns>
         private bool ScanData(IToken token, bool wasValue)
         {
-            if (token.TokenCode == TokenCode.TOK_NUM || token.TokenCode == TokenCode.TOK_QSTR || token.TokenCode == TokenCode.TOK_UQSTR)
+            if (token.TokenCode == TokenCode.TOK_NUM || token.TokenCode == TokenCode.TOK_STR)
             {
                 if (wasValue)
                 {

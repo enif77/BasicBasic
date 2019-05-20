@@ -380,7 +380,7 @@ namespace BasicBasic.Indirect
                         }
                     }
 
-                    return new StringToken(TokenCode.TOK_UQSTR, strValue);
+                    return new StringToken(TokenCode.TOK_STR, strValue);
                 }
             }
             else
@@ -411,7 +411,7 @@ namespace BasicBasic.Indirect
                 throw ProgramState.ErrorAtLine("Unexpected end of quoted string");
             }
 
-            return new StringToken(TokenCode.TOK_QSTR, strValue);
+            return new StringToken(TokenCode.TOK_STR, strValue);
         }
 
         /// <summary>
@@ -446,11 +446,11 @@ namespace BasicBasic.Indirect
             // A single dot is not a number 0!
             if (strValue == ".")
             {
-                return new StringToken(TokenCode.TOK_UQSTR, strValue);
+                return new StringToken(TokenCode.TOK_STR, strValue);
             }
 
             // A token we will return.
-            IToken token = new StringToken(TokenCode.TOK_UQSTR, strValue); ;
+            IToken token = new StringToken(TokenCode.TOK_STR, strValue);
 
             // Unquoted string can be a numeric literal.
             if (IsDigit(strValue[0]) || strValue.StartsWith("+") || strValue.StartsWith("-") || strValue.StartsWith("."))

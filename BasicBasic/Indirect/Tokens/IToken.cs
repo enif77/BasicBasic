@@ -56,14 +56,9 @@ namespace BasicBasic.Indirect.Tokens
         TOK_NUM = 10,
 
         /// <summary>
-        /// A quoted string token.
+        /// A quoted or an unquoted string token.
         /// </summary>
-        TOK_QSTR = 11,
-
-        /// <summary>
-        /// An unquoted string token.
-        /// </summary>
-        TOK_UQSTR = 12,
+        TOK_STR = 11,
 
         /// <summary>
         /// A build in function name token.
