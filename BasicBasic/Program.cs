@@ -26,7 +26,8 @@ namespace BasicBasic
     using System.IO;
 
     using BasicBasic.Direct;
-    
+    using BasicBasic.Indirect;
+
 
     class Program : IErrorHandler
     {
@@ -37,8 +38,8 @@ namespace BasicBasic
                 var p = new Program();
 
                 // TODO: Allow user to choose an interpreter implementation.
-                //p.Run(args, new Interpreter(p));
-                p.Run(args, new Indirect.Interpreter(p));
+                p.Run(args, new Direct.Interpreter(p));
+                //p.Run(args, new Indirect.Interpreter(p));
             }
             catch (Exception ex)
             {
@@ -77,7 +78,7 @@ namespace BasicBasic
 
                 try
                 {
-                    if (Interpreter.IsDigit(input[0]))
+                    if (Tokenizer.IsDigit(input[0]))
                     {
                         interpreter.AddProgramLine(input);
                     }

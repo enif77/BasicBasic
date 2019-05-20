@@ -29,7 +29,7 @@ namespace BasicBasic.Direct
     /// <summary>
     /// The global program state.
     /// </summary>
-    public class ProgramState
+    public class ProgramState : IErrorHandler
     {
         #region constants
 
