@@ -25,6 +25,7 @@ namespace BasicBasic.Indirect
     using System;
     using System.Collections.Generic;
     using System.Text;
+
     using BasicBasic.Indirect.Tokens;
     
 
@@ -102,7 +103,7 @@ namespace BasicBasic.Indirect
         /// <summary>
         /// The program state instance this tokenizer works with.
         /// </summary>
-        public ProgramState ProgramState { get; }
+        public IErrorHandler ErrorHandler { get; }
 
 
         private string _source;
@@ -133,11 +134,9 @@ namespace BasicBasic.Indirect
         /// <summary>
         /// Constructor.
         /// </summary>
-        public Tokenizer(ProgramState programState)
+        public Tokenizer(IErrorHandler errorHandler)
         {
-            if (programState == null) throw new ArgumentNullException(nameof(programState));
-
-            ProgramState = programState;
+            ErrorHandler = errorHandler ?? throw new ArgumentNullException(nameof(errorHandler));
         }
 
 
@@ -149,7 +148,7 @@ namespace BasicBasic.Indirect
         {
             if (SourcePosition >= Source.Length)
             {
-                throw ProgramState.ErrorAtLine("Read beyond the Source end");
+                throw ErrorHandler.ErrorAtLine("Read beyond the Source end");
             }
 
             var sb = new StringBuilder();
@@ -182,14 +181,12 @@ namespace BasicBasic.Indirect
         {
             if (SourcePosition >= Source.Length)
             {
-                throw ProgramState.ErrorAtLine("Read beyond the Source end");
+                throw ErrorHandler.ErrorAtLine("Read beyond the Source end");
             }
 
             var c = NextChar();
             while (c != C_EOF)
             {
-                //Console.WriteLine("C[{0:00}]: {1}", _currentProgramLinePos, c);
-
                 // Skip white chars.
                 bool wasWhite = false;
                 while (IsWhite(c))
@@ -309,12 +306,6 @@ namespace BasicBasic.Indirect
                     case C_EOLN: return new SimpleToken(TokenCode.TOK_EOLN);
                 }
 
-                //// TODO: Extend support for unquoted strings (for the DATA and INPUT statements).
-                //if (withUnquotedStrings && IsPlainStringCharacter(c))
-                //{
-                //    return ParseUnquotedString(c);
-                //}
-
                 c = NextChar();
             }
 
@@ -360,7 +351,7 @@ namespace BasicBasic.Indirect
                     // Each keyword should be preceeded by at least a single white character.
                     if (wasWhite == false)
                     {
-                        throw ProgramState.ErrorAtLine("No white character before the {0} keyword found", strValue);
+                        throw ErrorHandler.ErrorAtLine("No white character before the {0} keyword found", strValue);
                     }
 
                     return new SimpleToken(_keyWordsMap[strValue]);
@@ -408,7 +399,7 @@ namespace BasicBasic.Indirect
 
             if (c != '"')
             {
-                throw ProgramState.ErrorAtLine("Unexpected end of quoted string");
+                throw ErrorHandler.ErrorAtLine("Unexpected end of quoted string");
             }
 
             return new StringToken(TokenCode.TOK_STR, strValue);

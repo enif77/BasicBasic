@@ -110,6 +110,24 @@ namespace BasicBasic
         }
 
         /// <summary>
+        /// Gets a general error on a program line and returns it as a throwable exception.
+        /// </summary>
+        /// <param name="message">An error message.</param>
+        /// <param name="args">Error message arguments.</param>
+        /// <returns>A general error on a program line as a throwable exception.</returns>
+        public InterpreterException ErrorAtLine(string message, params object[] args)
+        {
+            if (args == null || args.Length == 0)
+            {
+                return Error(message + ".");
+            }
+            else
+            {
+                return Error("{0}.", string.Format(message, args));
+            }
+        }
+
+        /// <summary>
         /// Gets a general error description with parameters and returns it as a throwable exception.
         /// </summary>
         /// <param name="message">An error message.</param>
@@ -119,7 +137,7 @@ namespace BasicBasic
         {
             return new InterpreterException(string.Format(message, args));
         }
-
+        
         #endregion
     }
 }

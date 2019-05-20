@@ -34,20 +34,13 @@ namespace BasicBasic
         /// <param name="args">Error message arguments.</param>
         void NotifyError(string message, params object[] args);
 
-        ///// <summary>
-        ///// Reports the unexpected token error.
-        ///// </summary>
-        ///// <param name="tok">The unexpected token.</param>
-        ///// <returns>An unexpected token error on a program line as a throwable exception.</returns>
-        //InterpreterException UnexpectedTokenError(int tok);
-
-        ///// <summary>
-        ///// Gets a general error on a program line and returns it as a throwable exception.
-        ///// </summary>
-        ///// <param name="message">An error message.</param>
-        ///// <param name="args">Error message arguments.</param>
-        ///// <returns>A general error on a program line as a throwable exception.</returns>
-        //InterpreterException ErrorAtLine(string message, params object[] args);
+        /// <summary>
+        /// Gets a general error on a program line and returns it as a throwable exception.
+        /// </summary>
+        /// <param name="message">An error message.</param>
+        /// <param name="args">Error message arguments.</param>
+        /// <returns>A general error on a program line as a throwable exception.</returns>
+        InterpreterException ErrorAtLine(string message, params object[] args);
 
         /// <summary>
         /// Gets a general error description with parameters and returns it as a throwable exception.
