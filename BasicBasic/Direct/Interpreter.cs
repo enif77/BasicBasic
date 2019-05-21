@@ -146,7 +146,6 @@ namespace BasicBasic.Direct
                 Source = source,
                 Label = -1,
                 Start = 0,
-                SourcePosition = -1,  // Start - 1.
                 End = source.Length - 1
             };
 
@@ -239,7 +238,10 @@ namespace BasicBasic.Direct
         {
             _programState.SetCurrentProgramLine(programLine);
 
-            _tokenizer.Source = programLine.Source;
+            // The tokenizer, we are using here does not know, how to work with a "substring defined" source,
+            // so we have to cut the substring here for it. It is not very effective though.
+            _tokenizer.Source = programLine.Source.Substring(programLine.Start, programLine.Length);
+
             NextToken();
 
             if (_token.TokenCode == TokenCode.TOK_NUM)
@@ -1821,7 +1823,6 @@ namespace BasicBasic.Direct
                         programLine.Source = source;
                         programLine.Label = label;
                         programLine.Start = i;
-                        programLine.SourcePosition = programLine.Start - 1;
 
                         // Remember this line.
                         _programState.SetProgramLine(programLine);

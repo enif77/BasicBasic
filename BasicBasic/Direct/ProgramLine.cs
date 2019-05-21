@@ -36,11 +36,6 @@ namespace BasicBasic.Direct
         public string Source { get; set; }
 
         /// <summary>
-        /// The current source position (from where was the last character).
-        /// </summary>
-        public int SourcePosition { get; set; }
-
-        /// <summary>
         /// The label extracted from this program line.
         /// Can be -1, if it is a program line for immediate execution from the interactive
         /// mode. Meaning - there is no label int the source at all.
@@ -63,100 +58,7 @@ namespace BasicBasic.Direct
         /// The length of this program line in character.
         /// </summary>
         public int Length { get { return (End - Start) + 1; } }
-
-
-        /// <summary>
-        /// Returns the next character and advances the SourcePosition.
-        /// </summary>
-        /// <returns>The next character or 0 at the end of the Source.</returns>
-        public char NextChar()
-        {
-            var p = SourcePosition + 1;
-            if (p >= Start && p <= End)
-            {
-                SourcePosition = p;
-
-                return Source[SourcePosition];
-            }
-            else
-            {
-                SourcePosition = End + 1;
-
-                return (char)0;
-            }
-        }
-
-        /// <summary>
-        /// Returns the next character, but does not advance the SourcePosition.
-        /// </summary>
-        /// <returns>The next character or 0 at the end of the Source.</returns>
-        public char PeekNextChar()
-        {
-            var p = SourcePosition + 1;
-            if (p >= Start && p <= End)
-            {
-                return Source[SourcePosition];
-            }
-            else
-            {
-                return (char)0;
-            }
-        }
-
-        /// <summary>
-        /// Returns the previous character and advances the SourcePosition.
-        /// </summary>
-        /// <returns>The previous character or 0 at the beginning of the Source.</returns>
-        public char PreviousChar()
-        {
-            var p = SourcePosition;
-            if (p >= Start && p <= End)
-            {
-                SourcePosition--;
-
-                return Source[p];
-            }
-            else if (SourcePosition > End)
-            {
-                SourcePosition = End;
-
-                return PreviousChar();
-            }
-            else
-            {
-                SourcePosition = Start - 1;
-
-                return (char)0;
-            }
-        }
-
-        /// <summary>
-        /// Returns the character at the current SourcePosition.
-        /// Returns 0 untill the NextChar() was called atleast once.
-        /// </summary>
-        /// <returns>The the character at the current SourcePosition or 0.</returns>
-        public char CurrentChar()
-        {
-            var p = SourcePosition;
-            if (p >= Start && p <= End)
-            {
-                return Source[SourcePosition];
-            }
-            else
-            {
-                return (char)0;
-            }
-        }
-
-        /// <summary>
-        /// Returns to the first character.
-        /// Call NextChar() to read the first character and let the CurrentChar() to return it.
-        /// </summary>
-        public void Rewind()
-        {
-            SourcePosition = Start - 1;
-        }
-
+               
 
         /// <summary>
         /// The string representation of this program line.
@@ -164,10 +66,7 @@ namespace BasicBasic.Direct
         /// <returns>The string representation of this program line.</returns>
         public override string ToString()
         {
-            //return string.Format("{0}: {1} - {2}", Label, Start, End);
-            return string.Format("{0}{1}",
-                Label,
-                Source.Substring(Start, End - Start));
+            return Source.Replace("\n", string.Empty);
         }
     }
 }

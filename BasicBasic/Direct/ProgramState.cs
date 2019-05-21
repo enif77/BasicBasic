@@ -155,11 +155,6 @@ namespace BasicBasic.Direct
         public void SetCurrentProgramLine(ProgramLine programLine, bool rewind = true)
         {
             CurrentProgramLine = programLine;
-
-            //if (rewind)
-            //{
-            //    CurrentProgramLine.Rewind();
-            //}
         }
 
         /// <summary>
