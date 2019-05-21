@@ -25,6 +25,8 @@ namespace BasicBasic.Direct
     using System;
     using System.Collections.Generic;
 
+    using BasicBasic.Indirect.Tokens;
+
 
     /// <summary>
     /// The global program state.
@@ -154,10 +156,10 @@ namespace BasicBasic.Direct
         {
             CurrentProgramLine = programLine;
 
-            if (rewind)
-            {
-                CurrentProgramLine.Rewind();
-            }
+            //if (rewind)
+            //{
+            //    CurrentProgramLine.Rewind();
+            //}
         }
 
         /// <summary>
@@ -480,7 +482,7 @@ namespace BasicBasic.Direct
         /// </summary>
         /// <param name="tok">The unexpected token.</param>
         /// <returns>An unexpected token error on a program line as a throwable exception.</returns>
-        public InterpreterException UnexpectedTokenError(int tok)
+        public InterpreterException UnexpectedTokenError(TokenCode tok)
         {
             return ErrorAtLine("Unexpected token {0}", tok);
         }
