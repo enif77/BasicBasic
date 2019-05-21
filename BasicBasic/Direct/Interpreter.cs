@@ -220,7 +220,7 @@ namespace BasicBasic.Direct
             var programLine = _programState.NextProgramLine(0);
             while (programLine != null)
             {
-                programLine = InterpretLine(programLine);
+                programLine = InterpretLine((ProgramLine)programLine);
             }
 
             if (_programState.WasEnd == false)
@@ -283,7 +283,7 @@ namespace BasicBasic.Direct
                     return QuitCommand();
 
                 default:
-                    throw _programState.UnexpectedTokenError(_token.TokenCode);
+                    throw _programState.UnexpectedTokenError(_token);
             }
         }
 
@@ -387,7 +387,7 @@ namespace BasicBasic.Direct
                 throw _programState.Error("DATA statement is not supported in the interactive mode.");
             }
 
-            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // An user defined function.
@@ -414,7 +414,7 @@ namespace BasicBasic.Direct
             // Save this function definition.
             _programState.DefineUserFn(fname,  _programState.CurrentProgramLine.Label);
 
-            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // An array definition.
@@ -435,7 +435,7 @@ namespace BasicBasic.Direct
 
             ExpToken(TokenCode.TOK_EOLN);
 
-            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // array-declaration : letter '(' integer ')' .
@@ -541,7 +541,7 @@ namespace BasicBasic.Direct
                 }
             }
 
-            return _programState.GetProgramLine(label);
+            return (ProgramLine)_programState.GetProgramLine(label);
         }
         
         // IF exp1 rel exp2 THEN line-number
@@ -595,8 +595,8 @@ namespace BasicBasic.Direct
             ExpToken(TokenCode.TOK_EOLN);
 
             return jump
-                ? _programState.GetProgramLine(label) 
-                : _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+                ? (ProgramLine)_programState.GetProgramLine(label) 
+                : (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
 
@@ -612,7 +612,7 @@ namespace BasicBasic.Direct
                 case TokenCode.TOK_GTE: return v1 >= v2; // >=
 
                 default:
-                    throw _programState.UnexpectedTokenError(relTok.TokenCode);
+                    throw _programState.UnexpectedTokenError(relTok);
             }
         }
 
@@ -625,7 +625,7 @@ namespace BasicBasic.Direct
                 case TokenCode.TOK_NEQL: return v1 != v2; // <>
 
                 default:
-                    throw _programState.UnexpectedTokenError(relTok.TokenCode);
+                    throw _programState.UnexpectedTokenError(relTok);
             }
         }
 
@@ -664,7 +664,7 @@ namespace BasicBasic.Direct
                         }
                         else
                         {
-                            throw _programState.UnexpectedTokenError(_token.TokenCode);
+                            throw _programState.UnexpectedTokenError(_token);
                         }
 
                         atSep = false;
@@ -681,7 +681,7 @@ namespace BasicBasic.Direct
 
             ReadUserInput(varsList);
 
-            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         /// <summary>
@@ -1044,7 +1044,7 @@ namespace BasicBasic.Direct
 
             _programState.ArrayBase = option;
 
-            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // LET var = expr EOLN
@@ -1112,13 +1112,13 @@ namespace BasicBasic.Direct
             }
             else
             {
-                throw _programState.UnexpectedTokenError(_token.TokenCode);
+                throw _programState.UnexpectedTokenError(_token);
             }
                         
             // EOLN
             ExpToken(TokenCode.TOK_EOLN);
 
-            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // ON ...
@@ -1131,7 +1131,7 @@ namespace BasicBasic.Direct
 
             // This statement does nothing in this implementation.
 
-            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // PRINT [ expr { print-sep expr } ] EOLN
@@ -1180,7 +1180,7 @@ namespace BasicBasic.Direct
 
             Console.WriteLine();
 
-            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // Reseeds the random number generator.
@@ -1192,7 +1192,7 @@ namespace BasicBasic.Direct
 
             _programState.Randomize();
 
-            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // READ ...
@@ -1205,14 +1205,14 @@ namespace BasicBasic.Direct
 
             // This statement does nothing in this implementation.
 
-            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // The comment.
         // REM ...
         private ProgramLine RemStatement()
         {
-            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // RESTORE ...
@@ -1225,7 +1225,7 @@ namespace BasicBasic.Direct
 
             // This statement does nothing in this implementation.
 
-            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // Returns from a subroutine.
@@ -1242,7 +1242,7 @@ namespace BasicBasic.Direct
 
             try
             {
-                return _programState.NextProgramLine(_programState.ReturnStackPopLabel());
+                return (ProgramLine)_programState.NextProgramLine(_programState.ReturnStackPopLabel());
             }
             catch
             {
@@ -1287,7 +1287,7 @@ namespace BasicBasic.Direct
                 case TokenCode.TOK_STRIDNT: return _programState.GetSVar(_token.StrValue);
 
                 default:
-                    throw _programState.UnexpectedTokenError(_token.TokenCode);
+                    throw _programState.UnexpectedTokenError(_token);
             }
         }
 
@@ -1596,7 +1596,7 @@ namespace BasicBasic.Direct
                     }
                     
                 default:
-                    throw _programState.UnexpectedTokenError(_token.TokenCode);
+                    throw _programState.UnexpectedTokenError(_token);
             }
         }
 
@@ -1692,16 +1692,6 @@ namespace BasicBasic.Direct
         /// </summary>
         private IToken _token;
 
-        ///// <summary>
-        ///// A value of the TOK_NUM.
-        ///// </summary>
-        //private float _numValue;
-
-        ///// <summary>
-        ///// A value of TOK_STR, TOK_SVARIDNT, TOK_VARIDNT, TOK_STRIDNT, TOK_FN and TOK_UFN tokens.
-        ///// </summary>
-        //private string _strValue;
-
 
         /// <summary>
         /// Extracts the next token found in the current program line source.
@@ -1757,7 +1747,7 @@ namespace BasicBasic.Direct
         {
             if (_token.TokenCode != expTok)
             {
-                throw _programState.UnexpectedTokenError(_token.TokenCode);
+                throw _programState.UnexpectedTokenError(_token);
             }
         }
 

@@ -48,13 +48,14 @@
     <Compile Include="Direct\Interpreter.cs" />
     <Compile Include="Shared\IInterpreter.cs" />
     <Compile Include="Indirect\Interpreter.cs" />
+    <Compile Include="Shared\IProgramLine.cs" />
+    <Compile Include="Shared\ProgramState.cs" />
     <Compile Include="Shared\Tokens\AToken.cs" />
     <Compile Include="Shared\Tokens\IToken.cs" />
     <Compile Include="Shared\Tokens\RemToken.cs" />
     <Compile Include="Shared\Tokens\IdentifierToken.cs" />
     <Compile Include="Shared\Tokens\StringToken.cs" />
     <Compile Include="Indirect\ProgramLine.cs" />
-    <Compile Include="Indirect\ProgramState.cs" />
     <Compile Include="Indirect\Scanner.cs" />
     <Compile Include="Shared\Tokens\NumberToken.cs" />
     <Compile Include="Shared\Tokens\SimpleToken.cs" />
@@ -62,7 +63,6 @@
     <Compile Include="Shared\InterpreterException.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Direct\ProgramLine.cs" />
-    <Compile Include="Direct\ProgramState.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Shared\TokensList.cs" />
   </ItemGroup>

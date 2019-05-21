@@ -22,10 +22,13 @@ freely, subject to the following restrictions:
 
 namespace BasicBasic.Direct
 {
+    using BasicBasic.Shared;
+
+
     /// <summary>
     /// Holds information about a single program line.
     /// </summary>
-    public class ProgramLine
+    public class ProgramLine : IProgramLine
     {
         /// <summary>
         /// The source of this program line.
@@ -58,8 +61,16 @@ namespace BasicBasic.Direct
         /// The length of this program line in character.
         /// </summary>
         public int Length { get { return (End - Start) + 1; } }
-               
 
+
+        /// <summary>
+        /// Returns processing to the beginning of this program line.
+        /// </summary>
+        public void Rewind()
+        {
+            ;  // Does nothing here.
+        }
+        
         /// <summary>
         /// The string representation of this program line.
         /// </summary>

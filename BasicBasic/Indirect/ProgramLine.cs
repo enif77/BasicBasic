@@ -32,7 +32,7 @@ namespace BasicBasic.Indirect
     /// <summary>
     /// Holds information about a single program line.
     /// </summary>
-    public class ProgramLine
+    public class ProgramLine : IProgramLine
     {
         /// <summary>
         /// The label extracted from this program line.

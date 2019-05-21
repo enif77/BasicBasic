@@ -194,7 +194,7 @@ namespace BasicBasic.Indirect
 
         private ProgramLine NextProgramLine()
         {
-            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
                
         /// <summary>
@@ -213,7 +213,7 @@ namespace BasicBasic.Indirect
             var programLine = _programState.NextProgramLine(0);
             while (programLine != null)
             {
-                programLine = InterpretLine(programLine);
+                programLine = InterpretLine((ProgramLine)programLine);
             }
 
             if (_programState.WasEnd == false)
@@ -398,7 +398,7 @@ namespace BasicBasic.Indirect
             // Save this function definition.
             _programState.DefineUserFn(fname, _programState.CurrentProgramLine.Label);
 
-            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // An array definition.
@@ -419,7 +419,7 @@ namespace BasicBasic.Indirect
 
             ExpToken(TokenCode.TOK_EOLN, ThisToken());
 
-            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // array-declaration : letter '(' integer ')' .
@@ -524,7 +524,7 @@ namespace BasicBasic.Indirect
                 }
             }
 
-            return _programState.GetProgramLine(label);
+            return (ProgramLine)_programState.GetProgramLine(label);
         }
 
         // IF exp1 rel exp2 THEN line-number
@@ -578,8 +578,8 @@ namespace BasicBasic.Indirect
             ExpToken(TokenCode.TOK_EOLN, ThisToken());
 
             return jump
-                ? _programState.GetProgramLine(label)
-                : _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+                ? (ProgramLine)_programState.GetProgramLine(label)
+                : (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
 
@@ -664,7 +664,7 @@ namespace BasicBasic.Indirect
 
             ReadUserInput(varsList);
 
-            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         /// <summary>
@@ -845,7 +845,7 @@ namespace BasicBasic.Indirect
             }
 
             var labelIndex = 0;
-            var labels = new IToken[_programState.CurrentProgramLine.TokensCount()];
+            var labels = new IToken[((ProgramLine)_programState.CurrentProgramLine).TokensCount()];
 
             // At least one label is expected.
             ExpToken(TokenCode.TOK_NUM, ThisToken());
@@ -877,7 +877,7 @@ namespace BasicBasic.Indirect
                 throw _programState.ErrorAtLine("Not enought labels to go to");
             }
 
-            return _programState.GetProgramLine((int)labels[v - 1].NumValue);
+            return (ProgramLine)_programState.GetProgramLine((int)labels[v - 1].NumValue);
         }
 
         // Sets the array bottom dimension.
@@ -911,7 +911,7 @@ namespace BasicBasic.Indirect
 
             _programState.ArrayBase = option;
 
-            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // LET var = expr EOLN
@@ -1034,7 +1034,7 @@ namespace BasicBasic.Indirect
 
             Console.WriteLine();
 
-            return _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
 
         // Reseeds the random number generator.
@@ -1169,7 +1169,7 @@ namespace BasicBasic.Indirect
 
             try
             {
-                return _programState.NextProgramLine(_programState.ReturnStackPopLabel());
+                return (ProgramLine)_programState.NextProgramLine(_programState.ReturnStackPopLabel());
             }
             catch
             {
@@ -1617,7 +1617,7 @@ namespace BasicBasic.Indirect
         /// <returns>The current token from the current program line.</returns>
         private IToken ThisToken()
         {
-            return _programState.CurrentProgramLine.ThisToken();
+            return ((ProgramLine)_programState.CurrentProgramLine).ThisToken();
         }
 
         /// <summary>
@@ -1626,7 +1626,7 @@ namespace BasicBasic.Indirect
         /// <returns>The next token from the current program line.</returns>
         private IToken NextToken()
         {
-            return _programState.CurrentProgramLine.NextToken();
+            return ((ProgramLine)_programState.CurrentProgramLine).NextToken();
         }
 
         /// <summary>

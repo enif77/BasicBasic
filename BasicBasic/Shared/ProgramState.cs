@@ -20,12 +20,11 @@ freely, subject to the following restrictions:
  
  */
 
-namespace BasicBasic.Direct
+namespace BasicBasic.Shared
 {
     using System;
     using System.Collections.Generic;
 
-    using BasicBasic.Shared;
     using BasicBasic.Shared.Tokens;
 
 
@@ -45,8 +44,8 @@ namespace BasicBasic.Direct
         /// <summary>
         /// The currently interpreted program line.
         /// </summary>
-        public ProgramLine CurrentProgramLine { get; private set; }
-                       
+        public IProgramLine CurrentProgramLine { get; private set; }
+
         /// <summary>
         /// True, it this program reaced the end line.
         /// </summary>
@@ -67,12 +66,13 @@ namespace BasicBasic.Direct
 
             _errorHandler = errorHandler;
 
-            ProgramLines = new ProgramLine[MaxLabel + 1];
+            ProgramLines = new IProgramLine[MaxLabel + 1];
             ReturnStack = new int[ReturnStackSize];
             ReturnStackTop = -1;
             UserFns = new int[('Z' - 'A') + 1];
             Arrays = new float[('Z' - 'A') + 1][];
             ArrayBase = -1;                  // -1 = not yet user defined = 0.
+            Data = new TokensList();
             Random = new Random(20170327);
 
             NVars = new float[(('Z' - 'A') + 1) * 10]; // A or A0 .. A9;
@@ -85,15 +85,35 @@ namespace BasicBasic.Direct
 
         #region program lines
 
-        private ProgramLine[] ProgramLines { get; }
+        private IProgramLine[] ProgramLines { get; }
 
 
+        /// <summary>
+        /// Checks, if a label is from allowed range.
+        /// </summary>
+        /// <param name="label">A label.</param>
+        /// <param name="line">At which source line.</param>
+        public void CheckLabel(int label, int line = -1)
+        {
+            if (label < 1 || label > MaxLabel)
+            {
+                if (line > 0)
+                {
+                    throw Error("Label {0} at line {1} out of <1 ... {2}> rangle.", label, line, MaxLabel);
+                }
+                else
+                {
+                    throw Error("The label {0} is out of <1 ... {2}> rangle.", label, MaxLabel);
+                }
+            }
+        }
+        
         /// <summary>
         /// Returns a program line for a specific label.
         /// </summary>
         /// <param name="label">A label.</param>
         /// <returns>A program line for a specific label.</returns>
-        public ProgramLine GetProgramLine(int label)
+        public IProgramLine GetProgramLine(int label)
         {
             return ProgramLines[label - 1];
         }
@@ -102,7 +122,7 @@ namespace BasicBasic.Direct
         /// Stores a program line for a certain label.
         /// </summary>
         /// <param name="programLine">A program line.</param>
-        public void SetProgramLine(ProgramLine programLine)
+        public void SetProgramLine(IProgramLine programLine)
         {
             ProgramLines[programLine.Label - 1] = programLine;
         }
@@ -153,9 +173,14 @@ namespace BasicBasic.Direct
         /// </summary>
         /// <param name="programLine">A program line.</param>
         /// <param name="rewind">If true, call Rewind() on the program line to start its proccesing from its beginning.</param>
-        public void SetCurrentProgramLine(ProgramLine programLine, bool rewind = true)
+        public void SetCurrentProgramLine(IProgramLine programLine, bool rewind = true)
         {
             CurrentProgramLine = programLine;
+
+            if (rewind)
+            {
+                CurrentProgramLine.Rewind();
+            }
         }
 
         /// <summary>
@@ -163,7 +188,7 @@ namespace BasicBasic.Direct
         /// </summary>
         /// <param name="fromLabel">From which label should we start to look for the next program line.</param>
         /// <returns>The next defined program line or null.</returns>
-        public ProgramLine NextProgramLine(int fromLabel)
+        public IProgramLine NextProgramLine(int fromLabel)
         {
             // Interactive mode line.
             if (fromLabel < 0)
@@ -213,6 +238,14 @@ namespace BasicBasic.Direct
             return ReturnStack[ReturnStackTop--];
         }
 
+        /// <summary>
+        /// Removes all labels from the the return stack.
+        /// </summary>
+        public void ReturnStackClear()
+        {
+            ReturnStackTop = -1;
+        }
+
         #endregion
 
 
@@ -251,6 +284,15 @@ namespace BasicBasic.Direct
             return UserFns[fname[2] - 'A'];
         }
 
+        /// <summary>
+        /// Undefines all user defined functions.
+        /// </summary>
+        public void ClearUserFunctions()
+        {
+            UserFns = new int[('Z' - 'A') + 1];
+        }
+
+
         #endregion
 
 
@@ -287,12 +329,12 @@ namespace BasicBasic.Direct
         /// <summary>
         /// Numeric variables values.
         /// </summary>
-        private float[] NVars { get; }
+        private float[] NVars { get; set; }
 
         /// <summary>
         /// String variables values.
         /// </summary>
-        private string[] SVars { get; }
+        private string[] SVars { get; set; }
 
 
         /// <summary>
@@ -347,6 +389,15 @@ namespace BasicBasic.Direct
         public void SetSVar(string varName, string v)
         {
             SVars[varName[0] - 'A'] = v;
+        }
+
+        /// <summary>
+        /// Removes values from all variables.
+        /// </summary>
+        public void ClearVariables()
+        {
+            NVars = new float[(('Z' - 'A') + 1) * 10]; // A or A0 .. A9;
+            SVars = new string[('Z' - 'A') + 1];      // A$ .. Z$
         }
 
         #endregion
@@ -456,6 +507,64 @@ namespace BasicBasic.Direct
             Arrays[arrayName[0] - 'A'][index - bottomBound] = v;
         }
 
+        /// <summary>
+        /// Undefines all arrays.
+        /// </summary>
+        public void ClearArrays()
+        {
+            Arrays = new float[('Z' - 'A') + 1][];
+            ArrayBase = -1;                  // -1 = not yet user defined = 0.
+        }
+
+        #endregion
+
+
+        #region data
+
+        private TokensList Data { get; set; }
+
+
+        public void AddData(IToken token)
+        {
+            Data.Add(token);
+        }
+
+
+        public float NextNumericData()
+        {
+            var tok = Data.Next();
+            if (tok.TokenCode == TokenCode.TOK_NUM)
+            {
+                return tok.NumValue;
+            }
+
+            throw ErrorAtLine("A numeric value in data expected");
+        }
+
+
+        public string NextStringData()
+        {
+            var tok = Data.Next();
+            if (tok.TokenCode == TokenCode.TOK_STR)
+            {
+                return tok.StrValue;
+            }
+
+            throw ErrorAtLine("A string value in data expected");
+        }
+
+
+        public void ClearData()
+        {
+            Data.Clear();
+        }
+
+
+        public void RestoreData()
+        {
+            Data.Rewind();
+        }
+
         #endregion
 
 
@@ -478,7 +587,7 @@ namespace BasicBasic.Direct
         /// </summary>
         /// <param name="tok">The unexpected token.</param>
         /// <returns>An unexpected token error on a program line as a throwable exception.</returns>
-        public InterpreterException UnexpectedTokenError(TokenCode tok)
+        public InterpreterException UnexpectedTokenError(IToken tok)
         {
             return ErrorAtLine("Unexpected token {0}", tok);
         }
@@ -492,7 +601,7 @@ namespace BasicBasic.Direct
         public InterpreterException ErrorAtLine(string message, params object[] args)
         {
             // Interactive mode?
-            if (CurrentProgramLine.Label < 1)
+            if (CurrentProgramLine == null || CurrentProgramLine.Label < 1)
             {
                 if (args == null || args.Length == 0)
                 {
