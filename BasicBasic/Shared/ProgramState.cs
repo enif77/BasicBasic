@@ -211,6 +211,15 @@ namespace BasicBasic.Shared
             return null;
         }
 
+        /// <summary>
+        /// Gets the next defined program line after the current programline.
+        /// </summary>
+        /// <returns>The next defined program line after the current programline</returns>
+        public IProgramLine NextProgramLine()
+        {
+            return NextProgramLine((CurrentProgramLine == null) ? -1 : CurrentProgramLine.Label);
+        }
+
         #endregion
 
 

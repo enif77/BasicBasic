@@ -220,7 +220,7 @@ namespace BasicBasic.Direct
             var programLine = _programState.NextProgramLine(0);
             while (programLine != null)
             {
-                programLine = InterpretLine((ProgramLine)programLine);
+                programLine = InterpretLine(programLine);
             }
 
             if (_programState.WasEnd == false)
@@ -234,13 +234,13 @@ namespace BasicBasic.Direct
         /// </summary>
         /// <param name="programLine">A program line.</param>
         /// <returns>The next program line to interpret.</returns>
-        private ProgramLine InterpretLine(ProgramLine programLine)
+        private IProgramLine InterpretLine(IProgramLine programLine)
         {
             _programState.SetCurrentProgramLine(programLine);
 
             // The tokenizer, we are using here does not know, how to work with a "substring defined" source,
             // so we have to cut the substring here for it. It is not very effective though.
-            _tokenizer.Source = programLine.Source.Substring(programLine.Start, programLine.Length);
+            _tokenizer.Source = ((ProgramLine)programLine).Source.Substring(((ProgramLine)programLine).Start, ((ProgramLine)programLine).Length);
 
             NextToken();
 
@@ -291,7 +291,7 @@ namespace BasicBasic.Direct
         #region interactive mode controll commands
 
         // CLS EOLN
-        private ProgramLine ClsCommand()
+        private IProgramLine ClsCommand()
         {
             if (IsInteractiveModeProgramLine() == false)
             {
@@ -307,7 +307,7 @@ namespace BasicBasic.Direct
         }
 
         // LIST EOLN
-        private ProgramLine ListCommand()
+        private IProgramLine ListCommand()
         {
             if (IsInteractiveModeProgramLine() == false)
             {
@@ -326,7 +326,7 @@ namespace BasicBasic.Direct
         }
 
         // NEW EOLN
-        private ProgramLine NewCommand()
+        private IProgramLine NewCommand()
         {
             if (IsInteractiveModeProgramLine() == false)
             {
@@ -342,7 +342,7 @@ namespace BasicBasic.Direct
         }
 
         // RUN EOLN
-        private ProgramLine RunCommand()
+        private IProgramLine RunCommand()
         {
             if (IsInteractiveModeProgramLine() == false)
             {
@@ -359,7 +359,7 @@ namespace BasicBasic.Direct
 
         // BY EOLN
         // QUIT EOLN
-        private ProgramLine QuitCommand()
+        private IProgramLine QuitCommand()
         {
             if (IsInteractiveModeProgramLine() == false)
             {
@@ -380,19 +380,19 @@ namespace BasicBasic.Direct
         #region statements
 
         // DATA ...
-        private ProgramLine DataStatement()
+        private IProgramLine DataStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
                 throw _programState.Error("DATA statement is not supported in the interactive mode.");
             }
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // An user defined function.
         // DEF FNx = numeric-expression EOLN
-        private ProgramLine DefStatement()
+        private IProgramLine DefStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -414,12 +414,12 @@ namespace BasicBasic.Direct
             // Save this function definition.
             _programState.DefineUserFn(fname,  _programState.CurrentProgramLine.Label);
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // An array definition.
         // DIM array-declaration { ',' array-declaration } EOLN
-        private ProgramLine DimStatement()
+        private IProgramLine DimStatement()
         {
             EatToken(TokenCode.TOK_KEY_DIM);
 
@@ -435,7 +435,7 @@ namespace BasicBasic.Direct
 
             ExpToken(TokenCode.TOK_EOLN);
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // array-declaration : letter '(' integer ')' .
@@ -464,7 +464,7 @@ namespace BasicBasic.Direct
 
         // The end of program.
         // END EOLN
-        private ProgramLine EndStatement()
+        private IProgramLine EndStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -474,7 +474,7 @@ namespace BasicBasic.Direct
             EatToken(TokenCode.TOK_KEY_END);
             ExpToken(TokenCode.TOK_EOLN);
 
-            var nextLine = _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            var nextLine = _programState.NextProgramLine();
             if (nextLine != null)
             {
                 throw _programState.ErrorAtLine("Unexpected END statement");
@@ -489,7 +489,7 @@ namespace BasicBasic.Direct
         // GOTO line-number EOLN
         // GO SUB line-number EOLN
         // GOSUB line-number EOLN
-        private ProgramLine GoToStatement()
+        private IProgramLine GoToStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -541,13 +541,13 @@ namespace BasicBasic.Direct
                 }
             }
 
-            return (ProgramLine)_programState.GetProgramLine(label);
+            return _programState.GetProgramLine(label);
         }
         
         // IF exp1 rel exp2 THEN line-number
         // rel-num :: = <> >= <=
         // rel-str :: = <>
-        private ProgramLine IfStatement()
+        private IProgramLine IfStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -595,8 +595,8 @@ namespace BasicBasic.Direct
             ExpToken(TokenCode.TOK_EOLN);
 
             return jump
-                ? (ProgramLine)_programState.GetProgramLine(label) 
-                : (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+                ? _programState.GetProgramLine(label) 
+                : _programState.NextProgramLine();
         }
 
 
@@ -631,7 +631,7 @@ namespace BasicBasic.Direct
 
 
         // INPUT variable { ',' variable } EOLN
-        private ProgramLine InputStatement()
+        private IProgramLine InputStatement()
         {
             // Eat INPUT.
             NextToken();
@@ -681,7 +681,7 @@ namespace BasicBasic.Direct
 
             ReadUserInput(varsList);
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         /// <summary>
@@ -1015,7 +1015,7 @@ namespace BasicBasic.Direct
 
         // Sets the array bottom dimension.
         // OPTION BASE 1
-        private ProgramLine OptionStatement()
+        private IProgramLine OptionStatement()
         {
             if (_programState.ArrayBase >= 0)
             {
@@ -1044,12 +1044,12 @@ namespace BasicBasic.Direct
 
             _programState.ArrayBase = option;
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // LET var = expr EOLN
         // var :: num-var | string-var
-        private ProgramLine LetStatement()
+        private IProgramLine LetStatement()
         {
             EatToken(TokenCode.TOK_KEY_LET);
 
@@ -1118,11 +1118,11 @@ namespace BasicBasic.Direct
             // EOLN
             ExpToken(TokenCode.TOK_EOLN);
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // ON ...
-        private ProgramLine OnStatement()
+        private IProgramLine OnStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -1131,12 +1131,12 @@ namespace BasicBasic.Direct
 
             // This statement does nothing in this implementation.
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // PRINT [ expr { print-sep expr } ] EOLN
         // print-sep :: ';' | ','
-        private ProgramLine PrintStatement()
+        private IProgramLine PrintStatement()
         {
             // Eat PRINT.
             NextToken();
@@ -1180,23 +1180,23 @@ namespace BasicBasic.Direct
 
             Console.WriteLine();
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // Reseeds the random number generator.
         // RANDOMIZE EOLN
-        private ProgramLine RandomizeStatement()
+        private IProgramLine RandomizeStatement()
         {
             NextToken();
             ExpToken(TokenCode.TOK_EOLN);
 
             _programState.Randomize();
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // READ ...
-        private ProgramLine ReadStatement()
+        private IProgramLine ReadStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -1205,18 +1205,18 @@ namespace BasicBasic.Direct
 
             // This statement does nothing in this implementation.
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // The comment.
         // REM ...
-        private ProgramLine RemStatement()
+        private IProgramLine RemStatement()
         {
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // RESTORE ...
-        private ProgramLine RestoreStatement()
+        private IProgramLine RestoreStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -1225,12 +1225,12 @@ namespace BasicBasic.Direct
 
             // This statement does nothing in this implementation.
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // Returns from a subroutine.
         // RETURN EOLN
-        private ProgramLine ReturnStatement()
+        private IProgramLine ReturnStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -1242,7 +1242,7 @@ namespace BasicBasic.Direct
 
             try
             {
-                return (ProgramLine)_programState.NextProgramLine(_programState.ReturnStackPopLabel());
+                return _programState.NextProgramLine(_programState.ReturnStackPopLabel());
             }
             catch
             {
@@ -1252,7 +1252,7 @@ namespace BasicBasic.Direct
 
         // The end of execution.
         // STOP EOLN
-        private ProgramLine StopStatement()
+        private IProgramLine StopStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
