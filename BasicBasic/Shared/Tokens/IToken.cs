@@ -20,7 +20,7 @@ freely, subject to the following restrictions:
  
  */
 
-namespace BasicBasic.Indirect.Tokens
+namespace BasicBasic.Shared.Tokens
 {
     public enum TokenCode
     {

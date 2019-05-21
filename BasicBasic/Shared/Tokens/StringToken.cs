@@ -20,20 +20,20 @@ freely, subject to the following restrictions:
  
  */
 
-namespace BasicBasic.Indirect.Tokens
+namespace BasicBasic.Shared.Tokens
 {
-    public class RemToken : AToken
+    public class StringToken : AToken
     {
-        public RemToken(string s)
+        public StringToken(TokenCode tokenCode, string s)
         {
-            TokenCode = TokenCode.TOK_KEY_REM;
+            TokenCode = tokenCode;
             StrValue = s ?? string.Empty;
         }
 
 
         public override string ToString()
         {
-            return string.Format("REM {0}", StrValue);
+            return string.Format("\"{0}\"", StrValue);
         }
     }
 }

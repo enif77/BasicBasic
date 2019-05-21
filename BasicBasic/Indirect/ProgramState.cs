@@ -25,7 +25,8 @@ namespace BasicBasic.Indirect
     using System;
     using System.Collections.Generic;
 
-    using BasicBasic.Indirect.Tokens;
+    using BasicBasic.Shared;
+    using BasicBasic.Shared.Tokens;
 
 
     /// <summary>

@@ -25,8 +25,7 @@ namespace BasicBasic
     using System;
     using System.IO;
 
-    using BasicBasic.Direct;
-    using BasicBasic.Indirect;
+    using BasicBasic.Shared;
 
 
     class Program : IErrorHandler

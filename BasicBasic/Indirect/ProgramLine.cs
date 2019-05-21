@@ -25,7 +25,8 @@ namespace BasicBasic.Indirect
     using System.Globalization;
     using System.Text;
 
-    using BasicBasic.Indirect.Tokens;
+    using BasicBasic.Shared;
+    using BasicBasic.Shared.Tokens;
     
 
     /// <summary>

@@ -19,27 +19,21 @@ freely, subject to the following restrictions:
 3. This notice may not be removed or altered from any source distribution.
  
  */
- 
-namespace BasicBasic
+
+namespace BasicBasic.Shared.Tokens
 {
-    using System;
-
-
-    /// <summary>
-    /// Represents and error, that occurred during the execution of a program.
-    /// </summary>
-    public class InterpreterException : Exception
+    public class IdentifierToken : AToken
     {
-        public InterpreterException() : base()
+        public IdentifierToken(TokenCode tokenCode, string s)
         {
+            TokenCode = tokenCode;
+            StrValue = s ?? string.Empty;
         }
 
-        public InterpreterException(string message) : base(message)
-        {
-        }
 
-        public InterpreterException(string message, Exception innerException) : base(message, innerException)
+        public override string ToString()
         {
+            return StrValue;
         }
     }
 }

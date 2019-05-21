@@ -20,20 +20,13 @@ freely, subject to the following restrictions:
  
  */
 
-namespace BasicBasic.Indirect.Tokens
+namespace BasicBasic.Shared.Tokens
 {
-    public class IdentifierToken : AToken
+    public class SimpleToken : AToken
     {
-        public IdentifierToken(TokenCode tokenCode, string s)
+        public SimpleToken(TokenCode tokenCode)
         {
             TokenCode = tokenCode;
-            StrValue = s ?? string.Empty;
-        }
-
-
-        public override string ToString()
-        {
-            return StrValue;
         }
     }
 }

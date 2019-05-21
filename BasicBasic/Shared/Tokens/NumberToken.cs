@@ -20,20 +20,20 @@ freely, subject to the following restrictions:
  
  */
 
-namespace BasicBasic.Indirect.Tokens
+namespace BasicBasic.Shared.Tokens
 {
-    public class StringToken : AToken
+    public class NumberToken : AToken
     {
-        public StringToken(TokenCode tokenCode, string s)
+        public NumberToken(TokenCode tokenCode, float n)
         {
             TokenCode = tokenCode;
-            StrValue = s ?? string.Empty;
+            NumValue = n;
         }
 
 
         public override string ToString()
         {
-            return string.Format("\"{0}\"", StrValue);
+            return NumValue.ToString();
         }
     }
 }

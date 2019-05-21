@@ -20,12 +20,12 @@ freely, subject to the following restrictions:
  
  */
 
-namespace BasicBasic.Indirect
+namespace BasicBasic.Shared
 {
     using System;
     using System.Collections.Generic;
 
-    using BasicBasic.Indirect.Tokens;
+    using BasicBasic.Shared.Tokens;
 
 
     /// <summary>

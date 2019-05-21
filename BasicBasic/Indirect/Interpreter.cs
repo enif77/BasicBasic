@@ -22,10 +22,12 @@ freely, subject to the following restrictions:
 
 namespace BasicBasic.Indirect
 {
-    using BasicBasic.Indirect.Tokens;
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+
+    using BasicBasic.Shared;
+    using BasicBasic.Shared.Tokens;
 
 
     /// <summary>

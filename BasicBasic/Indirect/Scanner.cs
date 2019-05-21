@@ -24,7 +24,8 @@ namespace BasicBasic.Indirect
 {
     using System;
 
-    using BasicBasic.Indirect.Tokens;
+    using BasicBasic.Shared;
+    using BasicBasic.Shared.Tokens;
     
 
     public class Scanner
