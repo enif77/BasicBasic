@@ -552,7 +552,7 @@ namespace BasicBasic.Indirect
                 var v2 = StringExpression(ThisToken());
                 NextToken();
 
-                jump = StringComparison(relTok, v1, v2);
+                jump = _programState.StringComparison(relTok, v1, v2);
             }
             else
             {
@@ -563,7 +563,7 @@ namespace BasicBasic.Indirect
 
                 var v2 = NumericExpression();
 
-                jump = NumericComparison(relTok, v1, v2);
+                jump = _programState.NumericComparison(relTok, v1, v2);
             }
 
             EatToken(TokenCode.TOK_KEY_THEN);
@@ -579,37 +579,6 @@ namespace BasicBasic.Indirect
                 ? _programState.GetProgramLine(label)
                 : _programState.NextProgramLine();
         }
-
-
-        private bool NumericComparison(IToken relTok, float v1, float v2)
-        {
-            switch (relTok.TokenCode)
-            {
-                case TokenCode.TOK_EQL: return v1 == v2; // =
-                case TokenCode.TOK_NEQL: return v1 != v2; // <>
-                case TokenCode.TOK_LT: return v1 < v2; // <
-                case TokenCode.TOK_LTE: return v1 <= v2; // <=
-                case TokenCode.TOK_GT: return v1 > v2; // >
-                case TokenCode.TOK_GTE: return v1 >= v2; // >=
-
-                default:
-                    throw _programState.UnexpectedTokenError(relTok);
-            }
-        }
-
-
-        private bool StringComparison(IToken relTok, string v1, string v2)
-        {
-            switch (relTok.TokenCode)
-            {
-                case TokenCode.TOK_EQL: return v1 == v2; // =
-                case TokenCode.TOK_NEQL: return v1 != v2; // <>
-
-                default:
-                    throw _programState.UnexpectedTokenError(relTok);
-            }
-        }
-        
 
         // INPUT variable { ',' variable } EOLN
         private IProgramLine InputStatement()
@@ -660,153 +629,11 @@ namespace BasicBasic.Indirect
                 throw _programState.ErrorAtLine("The INPUT statement variables list can not be empty");
             }
 
-            ReadUserInput(varsList);
+            _programState.ReadUserInput(varsList);
 
             return _programState.NextProgramLine();
         }
-
-        /// <summary>
-        /// Reads the user's inputs and assigns it to selected variables.
-        /// </summary>
-        /// <param name="varsList">Variables, for which we need values.</param>
-        private void ReadUserInput(List<string> varsList)
-        {
-            var valuesList = new List<IToken>();
-            var tokenizer = new Tokenizer(_programState);
-            
-            while (true)
-            {
-                Console.Write("? ");
-
-                var input = Console.ReadLine() + Tokenizer.C_EOLN;
-                var inputParsed = false;
-
-                // Remove this!
-                if (string.IsNullOrWhiteSpace(input))
-                {
-                    break;
-                }
-
-                tokenizer.Source = input;
-
-                // Parse the input.
-                // input : data { ',' data } .
-                // data : number | quoted-string
-                //var i = 0;
-                bool atSep = true;
-                var tok = tokenizer.NextToken(true);
-                while (true)
-                {
-                    if (tok.TokenCode == TokenCode.TOK_EOLN || tok.TokenCode == TokenCode.TOK_EOF)
-                    {
-                        inputParsed = true;
-
-                        break;
-                    }
-
-                    // A number or a string or.
-                    if (tok.TokenCode == TokenCode.TOK_NUM || tok.TokenCode == TokenCode.TOK_STR)
-                    {
-                        // Missing separator.
-                        if (atSep == false)
-                        {
-                            break;
-                        }
-
-                        valuesList.Add(tok);
-
-                        atSep = false;
-                    }
-                    else if (tok.TokenCode == TokenCode.TOK_LSTSEP)
-                    {
-                        // Missing value.
-                        if (atSep)
-                        {
-                            break;
-                        }
-
-                        atSep = true;
-                    }
-                    else
-                    {
-                        _programState.NotifyError("Unexpected token in the user input.");
-
-                        break;
-                    }
-
-                    tok = tokenizer.NextToken(true);
-                }
-
-                // Something wrong?
-                if (inputParsed == false || atSep)
-                {
-                    valuesList.Clear();
-
-                    continue;
-                }
-
-                // Assign values.
-                if (varsList.Count != valuesList.Count)
-                {
-                    _programState.NotifyError("Not enought or too much values.");
-
-                    valuesList.Clear();
-
-                    continue;
-                }
-
-                var valuesAssigned = true;
-                for (var i = 0; i < varsList.Count; i++)
-                {
-                    var varName = varsList[i];
-                    var value = valuesList[i];
-
-                    // A string variable?
-                    if (varName.EndsWith("$"))
-                    {
-                        // Not a string value?
-                        if (value.TokenCode == TokenCode.TOK_NUM)
-                        {
-                            _programState.NotifyError("A string value expected for the {0} variable.", varName);
-
-                            valuesAssigned = false;
-
-                            break;
-                        }
-
-                        _programState.SetSVar(varName, value.StrValue);
-                    }
-                    // A numeric variable.
-                    else
-                    {
-                        // Not a numeric value?
-                        if (value.TokenCode != TokenCode.TOK_NUM)
-                        {
-                            _programState.NotifyError("A numeric value expected for the {0} variable.", varName);
-
-                            valuesAssigned = false;
-
-                            break;
-                        }
-
-                        _programState.SetNVar(varName, value.NumValue);
-                    }
-                }
-
-                // Values assignment failed.
-                if (valuesAssigned == false)
-                {
-                    _programState.NotifyError("Can not assign values.");
-
-                    valuesList.Clear();
-
-                    continue;
-                }
-
-                break;
-            }
-        }
-
+               
         // on-goto-statement = ON numeric-expression GO space* TO line-number ( comma line-number )*
         private IProgramLine OnStatement()
         {
