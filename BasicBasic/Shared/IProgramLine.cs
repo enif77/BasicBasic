@@ -33,10 +33,5 @@ namespace BasicBasic.Shared
         /// mode. Meaning - there is no label int the source at all.
         /// </summary>
         int Label { get; set; }
-
-        /// <summary>
-        /// Returns processing to the beginning of this program line.
-        /// </summary>
-        void Rewind();
     }
 }

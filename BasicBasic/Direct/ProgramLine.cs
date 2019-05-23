@@ -62,15 +62,7 @@ namespace BasicBasic.Direct
         /// </summary>
         public int Length { get { return (End - Start) + 1; } }
 
-
-        /// <summary>
-        /// Returns processing to the beginning of this program line.
-        /// </summary>
-        public void Rewind()
-        {
-            ;  // Does nothing here.
-        }
-        
+       
         /// <summary>
         /// The string representation of this program line.
         /// </summary>

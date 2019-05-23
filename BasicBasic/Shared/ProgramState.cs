@@ -44,7 +44,7 @@ namespace BasicBasic.Shared
         /// <summary>
         /// The currently interpreted program line.
         /// </summary>
-        public IProgramLine CurrentProgramLine { get; private set; }
+        public IProgramLine CurrentProgramLine { get; set; }
 
         /// <summary>
         /// True, it this program reaced the end line.
@@ -165,21 +165,6 @@ namespace BasicBasic.Shared
             for (var i = 0; i < ProgramLines.Length; i++)
             {
                 ProgramLines[i] = null;
-            }
-        }
-
-        /// <summary>
-        /// Sets the current program line.
-        /// </summary>
-        /// <param name="programLine">A program line.</param>
-        /// <param name="rewind">If true, call Rewind() on the program line to start its proccesing from its beginning.</param>
-        public void SetCurrentProgramLine(IProgramLine programLine, bool rewind = true)
-        {
-            CurrentProgramLine = programLine;
-
-            if (rewind)
-            {
-                CurrentProgramLine.Rewind();
             }
         }
 

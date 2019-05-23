@@ -92,9 +92,11 @@ namespace BasicBasic.Indirect
         /// <summary>
         /// Returns to the first token in this program line.
         /// </summary>
-        public void Rewind()
+        public IProgramLine Rewind()
         {
             _tokens.Rewind();
+
+            return this;
         }
         
         /// <summary>

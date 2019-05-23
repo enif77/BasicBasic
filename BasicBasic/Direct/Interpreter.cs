@@ -217,6 +217,14 @@ namespace BasicBasic.Direct
         /// </summary>
         private void InterpretImpl()
         {
+            QuitRequested = false;
+
+            _programState.ReturnStackClear();
+            _programState.ClearVariables();
+            _programState.ClearArrays();
+            _programState.ClearUserFunctions();
+            _programState.RestoreData();
+
             var programLine = _programState.NextProgramLine(0);
             while (programLine != null)
             {
@@ -236,7 +244,7 @@ namespace BasicBasic.Direct
         /// <returns>The next program line to interpret.</returns>
         private ProgramLine InterpretLine(ProgramLine programLine)
         {
-            _programState.SetCurrentProgramLine(programLine);
+            _programState.CurrentProgramLine = programLine;
 
             // The tokenizer, we are using here does not know, how to work with a "substring defined" source,
             // so we have to cut the substring here for it. It is not very effective though.
@@ -1535,9 +1543,19 @@ namespace BasicBasic.Direct
 
                         // Remember, where we are.
                         var cpl = _programState.CurrentProgramLine;
+                        var tok = _token;
+                        var tk = _tokenizer;
+
+                        _tokenizer = new Tokenizer(_programState);
+                        _token = null;
 
                         // Go to the user function definition.
-                        _programState.SetCurrentProgramLine(_programState.GetProgramLine(flabel));
+                        var fline = (ProgramLine)_programState.GetProgramLine(flabel);
+                        _programState.CurrentProgramLine = fline;
+
+                        // The tokenizer, we are using here does not know, how to work with a "substring defined" source,
+                        // so we have to cut the substring here for it. It is not very effective though.
+                        _tokenizer.Source = fline.Source.Substring(fline.Start, fline.Length);
 
                         // DEF
                         NextToken();
@@ -1590,7 +1608,9 @@ namespace BasicBasic.Direct
                         ExpToken(TokenCode.TOK_EOLN);
 
                         // Restore the previous position.
-                        _programState.SetCurrentProgramLine(cpl, false);
+                        _programState.CurrentProgramLine = cpl;
+                        _token = tok;
+                        _tokenizer = tk;
 
                         return v;
                     }

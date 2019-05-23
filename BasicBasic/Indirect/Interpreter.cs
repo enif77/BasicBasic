@@ -229,8 +229,8 @@ namespace BasicBasic.Indirect
         /// <returns>The next program line to interpret.</returns>
         private ProgramLine InterpretLine(ProgramLine programLine)
         {
-            _programState.SetCurrentProgramLine(programLine);
-
+            _programState.CurrentProgramLine = programLine.Rewind();
+            
             // The statement.
             var token = NextToken();
             switch (token.TokenCode)
@@ -1463,7 +1463,9 @@ namespace BasicBasic.Indirect
                         var cpl = _programState.CurrentProgramLine;
 
                         // Go to the user function definition.
-                        _programState.SetCurrentProgramLine(_programState.GetProgramLine(flabel));
+                        var fline = (ProgramLine)_programState.GetProgramLine(flabel);
+                        _programState.CurrentProgramLine = fline.Rewind();
+                        
 
                         // DEF
                         NextToken();
@@ -1516,7 +1518,7 @@ namespace BasicBasic.Indirect
                         ExpToken(TokenCode.TOK_EOLN, ThisToken());
 
                         // Restore the previous position.
-                        _programState.SetCurrentProgramLine(cpl, false);
+                        _programState.CurrentProgramLine = cpl;
 
                         return v;
                     }
