@@ -227,7 +227,7 @@ namespace BasicBasic.Indirect
         /// <returns>The next program line to interpret.</returns>
         private IProgramLine InterpretLine(IProgramLine programLine)
         {
-            _programState.CurrentProgramLine = programLine.Rewind();
+            _programState.CurrentProgramLine = ((ProgramLine)programLine).Rewind();
             
             // The statement.
             var token = NextToken();
@@ -1291,7 +1291,6 @@ namespace BasicBasic.Indirect
                         var fline = (ProgramLine)_programState.GetProgramLine(flabel);
                         _programState.CurrentProgramLine = fline.Rewind();
                         
-
                         // DEF
                         NextToken();
                         EatToken(TokenCode.TOK_KEY_DEF);

@@ -188,11 +188,9 @@ namespace BasicBasic.Shared
             while (c != C_EOF)
             {
                 // Skip white chars.
-                bool wasWhite = false;
                 while (IsWhite(c))
                 {
                     c = NextChar();
-                    wasWhite = true;
                 }
 
                 if (IsDigit(c) || c == '.')
@@ -212,7 +210,7 @@ namespace BasicBasic.Shared
                         return ParseUnquotedString(c);
                     }
                     
-                    return ParseIdent(c, wasWhite);
+                    return ParseIdent(c);
                 }
 
                 if (c == '"')
@@ -316,10 +314,13 @@ namespace BasicBasic.Shared
         /// Parses an identifier the ECMA-55 rules.
         /// </summary>
         /// <param name="c">The first character of the parsed identifier.</param>
-        private IToken ParseIdent(char c, bool wasWhite)
+        private IToken ParseIdent(char c)
         {
-            var strValue = c.ToString();
+            // To check, if we have some allowed character before this ident.
+            var charBeforeIdent = PeekPreviousChar();
 
+            var strValue = c.ToString();
+                       
             c = NextChar();
             if (IsDigit(c))
             {
@@ -348,10 +349,17 @@ namespace BasicBasic.Shared
 
                 if (_keyWordsMap.ContainsKey(strValue))
                 {
-                    // Each keyword should be preceeded by at least a single white character.
-                    if (wasWhite == false)
+                    // Each keyword should be preceeded by at least a single white character or by an allowed character.
+                    if (IsWhite(charBeforeIdent) == false && charBeforeIdent != '(' && charBeforeIdent != ';' && charBeforeIdent != ',')
                     {
                         throw ErrorHandler.ErrorAtLine("No white character before the {0} keyword found", strValue);
+                    }
+
+                    // Predefined functions are recognized by the name.
+                    var tokId = _keyWordsMap[strValue];
+                    if (tokId == TokenCode.TOK_FN)
+                    {
+                        return new IdentifierToken(TokenCode.TOK_FN, strValue);
                     }
 
                     return new SimpleToken(_keyWordsMap[strValue]);
@@ -568,9 +576,9 @@ namespace BasicBasic.Shared
         }
 
         /// <summary>
-        /// Gets the next character from the current program line source.
+        /// Gets the previous character from the current program line source.
         /// </summary>
-        /// <returns>The next character from the current program line source.</returns>
+        /// <returns>The previous character from the current program line source.</returns>
         private char PreviousChar()
         {
             if (SourcePosition > 0 && SourcePosition <= Source.Length)
@@ -591,6 +599,20 @@ namespace BasicBasic.Shared
 
                 return C_EOF;
             }
+        }
+
+        /// <summary>
+        /// Gets the previous character from the current program line source.
+        /// </summary>
+        /// <returns>The previous character from the current program line source.</returns>
+        private char PeekPreviousChar()
+        {
+            if (SourcePosition > 0 && SourcePosition <= Source.Length)
+            {
+                return Source[SourcePosition - 1];
+            }
+            
+            return C_EOF;
         }
 
         /// <summary>
