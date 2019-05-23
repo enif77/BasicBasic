@@ -186,15 +186,13 @@ namespace BasicBasic.Indirect
         private Scanner _scanner;
 
 
+        /// <summary>
+        /// Checks, if the current programline is from the interactive mode.
+        /// </summary>
+        /// <returns>True, if the current programline is from the interactive mode.</returns>
         private bool IsInteractiveModeProgramLine()
         {
             return _programState.CurrentProgramLine.Label < 0;
-        }
-
-
-        private ProgramLine NextProgramLine()
-        {
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
         }
                
         /// <summary>
@@ -213,7 +211,7 @@ namespace BasicBasic.Indirect
             var programLine = _programState.NextProgramLine(0);
             while (programLine != null)
             {
-                programLine = InterpretLine((ProgramLine)programLine);
+                programLine = InterpretLine(programLine);
             }
 
             if (_programState.WasEnd == false)
@@ -227,7 +225,7 @@ namespace BasicBasic.Indirect
         /// </summary>
         /// <param name="programLine">A program line.</param>
         /// <returns>The next program line to interpret.</returns>
-        private ProgramLine InterpretLine(ProgramLine programLine)
+        private IProgramLine InterpretLine(IProgramLine programLine)
         {
             _programState.CurrentProgramLine = programLine.Rewind();
             
@@ -364,19 +362,19 @@ namespace BasicBasic.Indirect
 
         // The data.
         // DATA ...
-        private ProgramLine DataStatement()
+        private IProgramLine DataStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
                 throw _programState.Error("DATA statement is not supported in the interactive mode.");
             }
 
-            return NextProgramLine();
+            return _programState.NextProgramLine();
         }
 
         // An user defined function.
         // DEF FNx = numeric-expression EOLN
-        private ProgramLine DefStatement()
+        private IProgramLine DefStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -398,12 +396,12 @@ namespace BasicBasic.Indirect
             // Save this function definition.
             _programState.DefineUserFn(fname, _programState.CurrentProgramLine.Label);
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // An array definition.
         // DIM array-declaration { ',' array-declaration } EOLN
-        private ProgramLine DimStatement()
+        private IProgramLine DimStatement()
         {
             EatToken(TokenCode.TOK_KEY_DIM);
 
@@ -419,7 +417,7 @@ namespace BasicBasic.Indirect
 
             ExpToken(TokenCode.TOK_EOLN, ThisToken());
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // array-declaration : letter '(' integer ')' .
@@ -448,7 +446,7 @@ namespace BasicBasic.Indirect
 
         // The end of program.
         // END EOLN
-        private ProgramLine EndStatement()
+        private IProgramLine EndStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -457,7 +455,7 @@ namespace BasicBasic.Indirect
 
             ExpToken(TokenCode.TOK_EOLN, NextToken());
 
-            var nextLine = NextProgramLine();
+            var nextLine = _programState.NextProgramLine();
             if (nextLine != null)
             {
                 throw _programState.ErrorAtLine("Unexpected END statement");
@@ -472,7 +470,7 @@ namespace BasicBasic.Indirect
         // GOTO line-number EOLN
         // GO SUB line-number EOLN
         // GOSUB line-number EOLN
-        private ProgramLine GoToStatement()
+        private IProgramLine GoToStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -524,13 +522,13 @@ namespace BasicBasic.Indirect
                 }
             }
 
-            return (ProgramLine)_programState.GetProgramLine(label);
+            return _programState.GetProgramLine(label);
         }
 
         // IF exp1 rel exp2 THEN line-number
         // rel-num :: = <> >= <=
         // rel-str :: = <>
-        private ProgramLine IfStatement()
+        private IProgramLine IfStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -554,7 +552,7 @@ namespace BasicBasic.Indirect
                 var v2 = StringExpression(ThisToken());
                 NextToken();
 
-                jump = StringComparison(relTok, v1, v2);
+                jump = _programState.StringComparison(relTok, v1, v2);
             }
             else
             {
@@ -565,7 +563,7 @@ namespace BasicBasic.Indirect
 
                 var v2 = NumericExpression();
 
-                jump = NumericComparison(relTok, v1, v2);
+                jump = _programState.NumericComparison(relTok, v1, v2);
             }
 
             EatToken(TokenCode.TOK_KEY_THEN);
@@ -578,43 +576,12 @@ namespace BasicBasic.Indirect
             ExpToken(TokenCode.TOK_EOLN, ThisToken());
 
             return jump
-                ? (ProgramLine)_programState.GetProgramLine(label)
-                : (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+                ? _programState.GetProgramLine(label)
+                : _programState.NextProgramLine();
         }
-
-
-        private bool NumericComparison(IToken relTok, float v1, float v2)
-        {
-            switch (relTok.TokenCode)
-            {
-                case TokenCode.TOK_EQL: return v1 == v2; // =
-                case TokenCode.TOK_NEQL: return v1 != v2; // <>
-                case TokenCode.TOK_LT: return v1 < v2; // <
-                case TokenCode.TOK_LTE: return v1 <= v2; // <=
-                case TokenCode.TOK_GT: return v1 > v2; // >
-                case TokenCode.TOK_GTE: return v1 >= v2; // >=
-
-                default:
-                    throw _programState.UnexpectedTokenError(relTok);
-            }
-        }
-
-
-        private bool StringComparison(IToken relTok, string v1, string v2)
-        {
-            switch (relTok.TokenCode)
-            {
-                case TokenCode.TOK_EQL: return v1 == v2; // =
-                case TokenCode.TOK_NEQL: return v1 != v2; // <>
-
-                default:
-                    throw _programState.UnexpectedTokenError(relTok);
-            }
-        }
-        
 
         // INPUT variable { ',' variable } EOLN
-        private ProgramLine InputStatement()
+        private IProgramLine InputStatement()
         {
             // Eat INPUT.
             NextToken();
@@ -662,155 +629,13 @@ namespace BasicBasic.Indirect
                 throw _programState.ErrorAtLine("The INPUT statement variables list can not be empty");
             }
 
-            ReadUserInput(varsList);
+            _programState.ReadUserInput(varsList);
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
-
-        /// <summary>
-        /// Reads the user's inputs and assigns it to selected variables.
-        /// </summary>
-        /// <param name="varsList">Variables, for which we need values.</param>
-        private void ReadUserInput(List<string> varsList)
-        {
-            var valuesList = new List<IToken>();
-            var tokenizer = new Tokenizer(_programState);
-            
-            while (true)
-            {
-                Console.Write("? ");
-
-                var input = Console.ReadLine() + Tokenizer.C_EOLN;
-                var inputParsed = false;
-
-                // Remove this!
-                if (string.IsNullOrWhiteSpace(input))
-                {
-                    break;
-                }
-
-                tokenizer.Source = input;
-
-                // Parse the input.
-                // input : data { ',' data } .
-                // data : number | quoted-string
-                //var i = 0;
-                bool atSep = true;
-                var tok = tokenizer.NextToken(true);
-                while (true)
-                {
-                    if (tok.TokenCode == TokenCode.TOK_EOLN || tok.TokenCode == TokenCode.TOK_EOF)
-                    {
-                        inputParsed = true;
-
-                        break;
-                    }
-
-                    // A number or a string or.
-                    if (tok.TokenCode == TokenCode.TOK_NUM || tok.TokenCode == TokenCode.TOK_STR)
-                    {
-                        // Missing separator.
-                        if (atSep == false)
-                        {
-                            break;
-                        }
-
-                        valuesList.Add(tok);
-
-                        atSep = false;
-                    }
-                    else if (tok.TokenCode == TokenCode.TOK_LSTSEP)
-                    {
-                        // Missing value.
-                        if (atSep)
-                        {
-                            break;
-                        }
-
-                        atSep = true;
-                    }
-                    else
-                    {
-                        _programState.NotifyError("Unexpected token in the user input.");
-
-                        break;
-                    }
-
-                    tok = tokenizer.NextToken(true);
-                }
-
-                // Something wrong?
-                if (inputParsed == false || atSep)
-                {
-                    valuesList.Clear();
-
-                    continue;
-                }
-
-                // Assign values.
-                if (varsList.Count != valuesList.Count)
-                {
-                    _programState.NotifyError("Not enought or too much values.");
-
-                    valuesList.Clear();
-
-                    continue;
-                }
-
-                var valuesAssigned = true;
-                for (var i = 0; i < varsList.Count; i++)
-                {
-                    var varName = varsList[i];
-                    var value = valuesList[i];
-
-                    // A string variable?
-                    if (varName.EndsWith("$"))
-                    {
-                        // Not a string value?
-                        if (value.TokenCode == TokenCode.TOK_NUM)
-                        {
-                            _programState.NotifyError("A string value expected for the {0} variable.", varName);
-
-                            valuesAssigned = false;
-
-                            break;
-                        }
-
-                        _programState.SetSVar(varName, value.StrValue);
-                    }
-                    // A numeric variable.
-                    else
-                    {
-                        // Not a numeric value?
-                        if (value.TokenCode != TokenCode.TOK_NUM)
-                        {
-                            _programState.NotifyError("A numeric value expected for the {0} variable.", varName);
-
-                            valuesAssigned = false;
-
-                            break;
-                        }
-
-                        _programState.SetNVar(varName, value.NumValue);
-                    }
-                }
-
-                // Values assignment failed.
-                if (valuesAssigned == false)
-                {
-                    _programState.NotifyError("Can not assign values.");
-
-                    valuesList.Clear();
-
-                    continue;
-                }
-
-                break;
-            }
-        }
-
+               
         // on-goto-statement = ON numeric-expression GO space* TO line-number ( comma line-number )*
-        private ProgramLine OnStatement()
+        private IProgramLine OnStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -877,12 +702,12 @@ namespace BasicBasic.Indirect
                 throw _programState.ErrorAtLine("Not enought labels to go to");
             }
 
-            return (ProgramLine)_programState.GetProgramLine((int)labels[v - 1].NumValue);
+            return _programState.GetProgramLine((int)labels[v - 1].NumValue);
         }
 
         // Sets the array bottom dimension.
         // OPTION BASE 1
-        private ProgramLine OptionStatement()
+        private IProgramLine OptionStatement()
         {
             if (_programState.ArrayBase >= 0)
             {
@@ -911,12 +736,12 @@ namespace BasicBasic.Indirect
 
             _programState.ArrayBase = option;
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // LET var = expr EOLN
         // var :: num-var | string-var | array-var
-        private ProgramLine LetStatement()
+        private IProgramLine LetStatement()
         {
             EatToken(TokenCode.TOK_KEY_LET);
 
@@ -985,12 +810,12 @@ namespace BasicBasic.Indirect
             // EOLN
             ExpToken(TokenCode.TOK_EOLN, ThisToken());
 
-            return NextProgramLine(); 
+            return _programState.NextProgramLine(); 
         }
 
         // PRINT [ expr { print-sep expr } ] EOLN
         // print-sep :: ';' | ','
-        private ProgramLine PrintStatement()
+        private IProgramLine PrintStatement()
         {
             // Eat PRINT.
             NextToken();
@@ -1034,24 +859,24 @@ namespace BasicBasic.Indirect
 
             Console.WriteLine();
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // Reseeds the random number generator.
         // RANDOMIZE EOLN
-        private ProgramLine RandomizeStatement()
+        private IProgramLine RandomizeStatement()
         {
             ExpToken(TokenCode.TOK_EOLN, NextToken());
 
             _programState.Randomize();
 
-            return NextProgramLine();
+            return _programState.NextProgramLine();
         }
 
         // The READ statement.
         // READ var { ',' var } EOLN
         // var :: num-var | string-var | array-var
-        private ProgramLine ReadStatement()
+        private IProgramLine ReadStatement()
         {
             EatToken(TokenCode.TOK_KEY_READ);
 
@@ -1130,19 +955,19 @@ namespace BasicBasic.Indirect
                 throw _programState.ErrorAtLine("At least one variable expected");
             }
 
-            return NextProgramLine();
+            return _programState.NextProgramLine();
         }
 
         // The comment.
         // REM ... EOLN
-        private ProgramLine RemStatement()
+        private IProgramLine RemStatement()
         {
-            return NextProgramLine();
+            return _programState.NextProgramLine();
         }
 
         // Allows re-readind data.
         // RESTORE EOLN
-        private ProgramLine RestoreStatement()
+        private IProgramLine RestoreStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -1153,12 +978,12 @@ namespace BasicBasic.Indirect
 
             _programState.RestoreData();
 
-            return NextProgramLine();
+            return _programState.NextProgramLine();
         }
 
         // Returns from a subroutine.
         // RETURN EOLN
-        private ProgramLine ReturnStatement()
+        private IProgramLine ReturnStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -1169,7 +994,7 @@ namespace BasicBasic.Indirect
 
             try
             {
-                return (ProgramLine)_programState.NextProgramLine(_programState.ReturnStackPopLabel());
+                return _programState.NextProgramLine(_programState.ReturnStackPopLabel());
             }
             catch
             {
@@ -1179,7 +1004,7 @@ namespace BasicBasic.Indirect
 
         // The end of execution.
         // STOP EOLN
-        private ProgramLine StopStatement()
+        private IProgramLine StopStatement()
         {
             if (IsInteractiveModeProgramLine())
             {

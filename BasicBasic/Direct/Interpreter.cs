@@ -228,7 +228,7 @@ namespace BasicBasic.Direct
             var programLine = _programState.NextProgramLine(0);
             while (programLine != null)
             {
-                programLine = InterpretLine((ProgramLine)programLine);
+                programLine = InterpretLine(programLine);
             }
 
             if (_programState.WasEnd == false)
@@ -242,13 +242,13 @@ namespace BasicBasic.Direct
         /// </summary>
         /// <param name="programLine">A program line.</param>
         /// <returns>The next program line to interpret.</returns>
-        private ProgramLine InterpretLine(ProgramLine programLine)
+        private IProgramLine InterpretLine(IProgramLine programLine)
         {
             _programState.CurrentProgramLine = programLine;
 
             // The tokenizer, we are using here does not know, how to work with a "substring defined" source,
             // so we have to cut the substring here for it. It is not very effective though.
-            _tokenizer.Source = programLine.Source.Substring(programLine.Start, programLine.Length);
+            _tokenizer.Source = ((ProgramLine)programLine).Source.Substring(((ProgramLine)programLine).Start, ((ProgramLine)programLine).Length);
 
             NextToken();
 
@@ -299,7 +299,7 @@ namespace BasicBasic.Direct
         #region interactive mode controll commands
 
         // CLS EOLN
-        private ProgramLine ClsCommand()
+        private IProgramLine ClsCommand()
         {
             if (IsInteractiveModeProgramLine() == false)
             {
@@ -315,7 +315,7 @@ namespace BasicBasic.Direct
         }
 
         // LIST EOLN
-        private ProgramLine ListCommand()
+        private IProgramLine ListCommand()
         {
             if (IsInteractiveModeProgramLine() == false)
             {
@@ -334,7 +334,7 @@ namespace BasicBasic.Direct
         }
 
         // NEW EOLN
-        private ProgramLine NewCommand()
+        private IProgramLine NewCommand()
         {
             if (IsInteractiveModeProgramLine() == false)
             {
@@ -350,7 +350,7 @@ namespace BasicBasic.Direct
         }
 
         // RUN EOLN
-        private ProgramLine RunCommand()
+        private IProgramLine RunCommand()
         {
             if (IsInteractiveModeProgramLine() == false)
             {
@@ -367,7 +367,7 @@ namespace BasicBasic.Direct
 
         // BY EOLN
         // QUIT EOLN
-        private ProgramLine QuitCommand()
+        private IProgramLine QuitCommand()
         {
             if (IsInteractiveModeProgramLine() == false)
             {
@@ -388,19 +388,19 @@ namespace BasicBasic.Direct
         #region statements
 
         // DATA ...
-        private ProgramLine DataStatement()
+        private IProgramLine DataStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
                 throw _programState.Error("DATA statement is not supported in the interactive mode.");
             }
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // An user defined function.
         // DEF FNx = numeric-expression EOLN
-        private ProgramLine DefStatement()
+        private IProgramLine DefStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -422,12 +422,12 @@ namespace BasicBasic.Direct
             // Save this function definition.
             _programState.DefineUserFn(fname,  _programState.CurrentProgramLine.Label);
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // An array definition.
         // DIM array-declaration { ',' array-declaration } EOLN
-        private ProgramLine DimStatement()
+        private IProgramLine DimStatement()
         {
             EatToken(TokenCode.TOK_KEY_DIM);
 
@@ -443,7 +443,7 @@ namespace BasicBasic.Direct
 
             ExpToken(TokenCode.TOK_EOLN);
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // array-declaration : letter '(' integer ')' .
@@ -472,7 +472,7 @@ namespace BasicBasic.Direct
 
         // The end of program.
         // END EOLN
-        private ProgramLine EndStatement()
+        private IProgramLine EndStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -482,7 +482,7 @@ namespace BasicBasic.Direct
             EatToken(TokenCode.TOK_KEY_END);
             ExpToken(TokenCode.TOK_EOLN);
 
-            var nextLine = _programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            var nextLine = _programState.NextProgramLine();
             if (nextLine != null)
             {
                 throw _programState.ErrorAtLine("Unexpected END statement");
@@ -497,7 +497,7 @@ namespace BasicBasic.Direct
         // GOTO line-number EOLN
         // GO SUB line-number EOLN
         // GOSUB line-number EOLN
-        private ProgramLine GoToStatement()
+        private IProgramLine GoToStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -549,13 +549,13 @@ namespace BasicBasic.Direct
                 }
             }
 
-            return (ProgramLine)_programState.GetProgramLine(label);
+            return _programState.GetProgramLine(label);
         }
         
         // IF exp1 rel exp2 THEN line-number
         // rel-num :: = <> >= <=
         // rel-str :: = <>
-        private ProgramLine IfStatement()
+        private IProgramLine IfStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -579,7 +579,7 @@ namespace BasicBasic.Direct
                 var v2 = StringExpression();
                 NextToken();
 
-                jump = StringComparison(relTok, v1, v2);
+                jump = _programState.StringComparison(relTok, v1, v2);
             }
             else
             {
@@ -590,7 +590,7 @@ namespace BasicBasic.Direct
 
                 var v2 = NumericExpression();
 
-                jump = NumericComparison(relTok, v1, v2);
+                jump = _programState.NumericComparison(relTok, v1, v2);
             }
 
             EatToken(TokenCode.TOK_KEY_THEN);
@@ -603,43 +603,12 @@ namespace BasicBasic.Direct
             ExpToken(TokenCode.TOK_EOLN);
 
             return jump
-                ? (ProgramLine)_programState.GetProgramLine(label) 
-                : (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+                ? _programState.GetProgramLine(label) 
+                : _programState.NextProgramLine();
         }
-
-
-        private bool NumericComparison(IToken relTok, float v1, float v2)
-        {
-            switch (relTok.TokenCode)
-            {
-                case TokenCode.TOK_EQL: return v1 == v2; // =
-                case TokenCode.TOK_NEQL: return v1 != v2; // <>
-                case TokenCode.TOK_LT: return v1 < v2; // <
-                case TokenCode.TOK_LTE: return v1 <= v2; // <=
-                case TokenCode.TOK_GT: return v1 > v2; // >
-                case TokenCode.TOK_GTE: return v1 >= v2; // >=
-
-                default:
-                    throw _programState.UnexpectedTokenError(relTok);
-            }
-        }
-
-
-        private bool StringComparison(IToken relTok, string v1, string v2)
-        {
-            switch (relTok.TokenCode)
-            {
-                case TokenCode.TOK_EQL: return v1 == v2; // =
-                case TokenCode.TOK_NEQL: return v1 != v2; // <>
-
-                default:
-                    throw _programState.UnexpectedTokenError(relTok);
-            }
-        }
-
 
         // INPUT variable { ',' variable } EOLN
-        private ProgramLine InputStatement()
+        private IProgramLine InputStatement()
         {
             // Eat INPUT.
             NextToken();
@@ -687,343 +656,14 @@ namespace BasicBasic.Direct
                 throw _programState.ErrorAtLine("The INPUT statement variables list can not be empty");
             }
 
-            ReadUserInput(varsList);
+            _programState.ReadUserInput(varsList);
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
-
-        /// <summary>
-        /// Reads the user's inputs and assigns it to selected variables.
-        /// </summary>
-        /// <param name="varsList">Variables, for which we need values.</param>
-        private void ReadUserInput(List<string> varsList)
-        {
-            var valuesList = new List<string>();
-
-            while (true)
-            {
-                Console.Write("? ");
-
-                var input = Console.ReadLine() + Tokenizer.C_EOLN;
-                var inputParsed = false;
-
-                // Remove this!
-                if (string.IsNullOrWhiteSpace(input))
-                {
-                    break;
-                }
-
-                // Parse th input.
-                // input : data { ',' data } .
-                // data : number | quoted-string
-                var i = 0;
-                bool atSep = true;
-                while (true)
-                {
-                    if (i >= input.Length || input[i] == Tokenizer.C_EOLN)
-                    {
-                        inputParsed = true;
-
-                        break;
-                    }
-
-                    // A quoted string.
-                    if (input[i] == '\"')
-                    {
-                        // Missing separator.
-                        if (atSep == false)
-                        {
-                            break;
-                        }
-
-                        var strValue = "$"; // '$' = a string value type.
-
-                        // Eat '"'.
-                        var c = input[++i];
-                        while (c != Tokenizer.C_EOLN)
-                        {
-                            if (c == '\"')
-                            {
-                                break;
-                            }
-
-                            strValue += c;
-                            c = input[++i];
-                        }
-
-                        if (c != '"')
-                        {
-                            // Unfinished quoted string.
-                            break;
-                        }
-
-                        valuesList.Add(c == 0 ? string.Empty : strValue);
-
-                        atSep = false;
-                    }
-                    // A number.
-                    else if (input[i] == '+' || input[i] == '-' || Tokenizer.IsDigit(input[i]))
-                    {
-                        // Missing separator.
-                        if (atSep == false)
-                        {
-                            break;
-                        }
-
-                        var sign = '+';
-                        var numValue = (string)null;
-
-                        if (input[i] == '+')
-                        {
-                            i++;
-                        }
-                        else if (input[i] == '-')
-                        {
-                            sign = '-';
-                            i++;
-                        }
-
-                        var c = input[i];
-                        while (Tokenizer.IsDigit(c))
-                        {
-                            if (numValue == null)
-                            {
-                                numValue = sign.ToString();
-                            }
-
-                            numValue += c;
-                            c = input[++i];
-                        }
-
-                        if (c == '.')
-                        {
-                            if (numValue == null)
-                            {
-                                numValue = sign.ToString();
-                            }
-
-                            numValue += c;
-
-                            c = input[++i];
-                            while (Tokenizer.IsDigit(c))
-                            {
-                                numValue += c;
-                                c = input[++i];
-                            }
-                        }
-
-                        if (c == 'E')
-                        {
-                            if (numValue == null)
-                            {
-                                // A number should not start with the exponent.
-                                break;
-                            }
-
-                            numValue += c;
-
-                            c = input[++i];
-                            if (c == '+' || c == '-')
-                            {
-                                numValue += c;
-                                c = input[++i];
-                            }
-
-                            while (Tokenizer.IsDigit(c))
-                            {
-                                numValue += c;
-
-                                c = input[++i];
-                            }
-                        }
-
-                        // Not a number?
-                        if (numValue == null)
-                        {
-                            // TODO: '+', '-' and '.' can start the unquoted string.
-                            // unquoted-string-character : space | plain-string-character
-                            // plain-string-character : plus-sign | minus-sign | full-stop | digit | letter
-
-                            break;
-                        }
-
-                        valuesList.Add(numValue);
-
-                        // Go back one character.
-                        i--;
-
-                        atSep = false;
-                    }
-                    else if (input[i] == ',')
-                    {
-                        // Missing value.
-                        if (atSep)
-                        {
-                            break;
-                        }
-
-                        atSep = true;
-                    }
-                    else if (Tokenizer.IsPlainStringCharacter(input[i]))
-                    {
-                        // Missing separator.
-                        if (atSep == false)
-                        {
-                            break;
-                        }
-
-                        var strValue = string.Empty;
-
-                        var pc = (char)0;
-                        var c = input[i];
-                        while (c != Tokenizer.C_EOLN)
-                        {
-                            if (c == ',')
-                            {
-                                break;
-                            }
-
-                            // Not all characters are allowed.
-                            // unquoted-string-character : space | plain-string-character
-                            // plain-string-character : plus-sign | minus-sign | full-stop | digit | letter
-                            if (Tokenizer.IsUnquotedStringCharacter(c) == false)
-                            {
-                                throw _programState.ErrorAtLine("Unexpected plain string character '{0}'", c);
-                            }
-
-                            strValue += c;
-                            pc = c;
-                            c = input[++i];
-                        }
-
-                        // unquoted-string : plain-string-character [ { unquoted-string-character } plain-string-character ] .
-                        if ((c == Tokenizer.C_EOLN || c == ',') && Tokenizer.IsPlainStringCharacter(pc) == false)
-                        {
-                            throw _programState.ErrorAtLine("Unexpected plain string character '{0}'", c);
-                        }
-
-                        valuesList.Add(string.IsNullOrWhiteSpace(strValue) ? string.Empty : ("$" + strValue.Trim())); // '$' = a string value type.
-
-                        // Go back one character.
-                        i--;
-
-                        atSep = false;
-                    }
-                    else
-                    {
-                        // Missing separator.
-                        if (atSep == false)
-                        {
-                            break;
-                        }
-
-                        // Skip white chars.
-                        var c = input[i];
-                        while (c != Tokenizer.C_EOLN)
-                        {
-                            if (Tokenizer.IsWhite(c) == false)
-                            {
-                                break;
-                            }
-
-                            c = input [++i];
-                        }
-
-                        // Go back one character.
-                        i--;
-                    }
-
-                    i++;
-                }
-
-                // Something wrong?
-                if (inputParsed == false || atSep)
-                {
-                    valuesList.Clear();
-
-                    continue;
-                }
-
-                // Assign values.
-                if (varsList.Count != valuesList.Count)
-                {
-                    _programState.NotifyError("Not enought or too much values.");
-
-                    valuesList.Clear();
-
-                    continue;
-                }
-
-                var valuesAssigned = true;
-                for (i = 0; i < varsList.Count; i++)
-                {
-                    var varName = varsList[i];
-                    var value = valuesList[i];
-
-                    // A string variable?
-                    if (varName.EndsWith("$"))
-                    {
-                        if (string.IsNullOrWhiteSpace(value))
-                        {
-                            _programState.SetSVar(varName, string.Empty);
-                        }
-                        else
-                        {
-                            // Not a string value?
-                            if (value.StartsWith("$") == false)
-                            {
-                                _programState.NotifyError("A string value expected for the {0} variable.", varName);
-
-                                valuesAssigned = false;
-
-                                break;
-                            }
-
-                            _programState.SetSVar(varName, value.Substring(1));
-                        }
-                    }
-                    // A numeric variable.
-                    else
-                    {
-                        if (string.IsNullOrWhiteSpace(value))
-                        {
-                            _programState.SetNVar(varName, 0);
-                        }
-                        else
-                        {
-                            // Not a numeric value?
-                            if (value.StartsWith("$"))
-                            {
-                                _programState.NotifyError("A numeric value expected for the {0} variable.", varName);
-
-                                valuesAssigned = false;
-
-                                break;
-                            }
-
-                            _programState.SetNVar(varName, float.Parse(value, NumberStyles.Number, CultureInfo.InvariantCulture));
-                        }
-                    }
-                }
-
-                // Values assignment failed.
-                if (valuesAssigned == false)
-                {
-                    _programState.NotifyError("Can not assign values.");
-
-                    valuesList.Clear();
-
-                    continue;
-                }
-
-                break;
-            }
-        }
-
-
+                
         // Sets the array bottom dimension.
         // OPTION BASE 1
-        private ProgramLine OptionStatement()
+        private IProgramLine OptionStatement()
         {
             if (_programState.ArrayBase >= 0)
             {
@@ -1052,12 +692,12 @@ namespace BasicBasic.Direct
 
             _programState.ArrayBase = option;
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // LET var = expr EOLN
         // var :: num-var | string-var
-        private ProgramLine LetStatement()
+        private IProgramLine LetStatement()
         {
             EatToken(TokenCode.TOK_KEY_LET);
 
@@ -1126,11 +766,11 @@ namespace BasicBasic.Direct
             // EOLN
             ExpToken(TokenCode.TOK_EOLN);
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // ON ...
-        private ProgramLine OnStatement()
+        private IProgramLine OnStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -1139,12 +779,12 @@ namespace BasicBasic.Direct
 
             // This statement does nothing in this implementation.
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // PRINT [ expr { print-sep expr } ] EOLN
         // print-sep :: ';' | ','
-        private ProgramLine PrintStatement()
+        private IProgramLine PrintStatement()
         {
             // Eat PRINT.
             NextToken();
@@ -1188,23 +828,23 @@ namespace BasicBasic.Direct
 
             Console.WriteLine();
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // Reseeds the random number generator.
         // RANDOMIZE EOLN
-        private ProgramLine RandomizeStatement()
+        private IProgramLine RandomizeStatement()
         {
             NextToken();
             ExpToken(TokenCode.TOK_EOLN);
 
             _programState.Randomize();
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // READ ...
-        private ProgramLine ReadStatement()
+        private IProgramLine ReadStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -1213,18 +853,18 @@ namespace BasicBasic.Direct
 
             // This statement does nothing in this implementation.
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // The comment.
         // REM ...
-        private ProgramLine RemStatement()
+        private IProgramLine RemStatement()
         {
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // RESTORE ...
-        private ProgramLine RestoreStatement()
+        private IProgramLine RestoreStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -1233,12 +873,12 @@ namespace BasicBasic.Direct
 
             // This statement does nothing in this implementation.
 
-            return (ProgramLine)_programState.NextProgramLine(_programState.CurrentProgramLine.Label);
+            return _programState.NextProgramLine();
         }
 
         // Returns from a subroutine.
         // RETURN EOLN
-        private ProgramLine ReturnStatement()
+        private IProgramLine ReturnStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
@@ -1250,7 +890,7 @@ namespace BasicBasic.Direct
 
             try
             {
-                return (ProgramLine)_programState.NextProgramLine(_programState.ReturnStackPopLabel());
+                return _programState.NextProgramLine(_programState.ReturnStackPopLabel());
             }
             catch
             {
@@ -1260,7 +900,7 @@ namespace BasicBasic.Direct
 
         // The end of execution.
         // STOP EOLN
-        private ProgramLine StopStatement()
+        private IProgramLine StopStatement()
         {
             if (IsInteractiveModeProgramLine())
             {
